@@ -40,6 +40,13 @@
 #define INCLUDED_DIRECTORY_PREFIX '+'
 #define EXCLUDED_DIRECTORY_PREFIX '-'
 
+typedef enum {
+	CHECK_CERTIFICATE_ENABLED,
+	CHECK_CERTIFICATE_DISABLED,
+	// certificate error/warning log is enabled in the other modes
+	CHECK_CERTIFICATE_LOG_DISABLED
+} check_certificate_mode;
+
 //types for --https-enforce
 typedef enum {
 	HTTPS_ENFORCE_NONE,
@@ -195,6 +202,8 @@ struct config {
 		default_https_port;
 	wget_report_speed
 		report_speed;
+	check_certificate_mode
+		check_certificate;
 	https_enforce_mode
 		https_enforce;
 	gpg_verify_mode
@@ -258,7 +267,6 @@ struct config {
 		cookies,
 		spider,
 		dns_caching,
-		check_certificate,
 		check_hostname,
 		span_hosts,
 		verbose,

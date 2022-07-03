@@ -100,6 +100,7 @@ static struct config {
 		key_type;
 	bool
 		check_certificate : 1,
+		report_invalid_cert : 1,
 		check_hostname : 1,
 		print_info : 1,
 		ocsp : 1,
@@ -108,6 +109,7 @@ static struct config {
 		ocsp_nonce : 1;
 } config = {
 	.check_certificate = 1,
+	.report_invalid_cert = 1,
 	.check_hostname = 1,
 #ifdef WITH_OCSP
 	.ocsp = 1,
@@ -138,6 +140,8 @@ static gnutls_certificate_credentials_t
 	credentials;
 static gnutls_priority_t
 	priority_cache;
+
+#define error_printf_check(...) if (config.report_invalid_cert) wget_error_printf(__VA_ARGS__)
 
 /**
  * \param[in] key An identifier for the config parameter (starting with `WGET_SSL_`) to set
@@ -251,6 +255,7 @@ void wget_ssl_set_config_object(int key, void *value)
  * These are the parameters that can be set (\p key can have any of these values):
  *
  *  - WGET_SSL_CHECK_CERTIFICATE: whether certificates should be verified (1) or not (0)
+ *  - WGET_SSL_REPORT_INVALID_CERT: whether to print (1) errors/warnings regarding certificate verification or not (0)
  *  - WGET_SSL_CHECK_HOSTNAME: whether or not to check if the certificate's subject field
  *  matches the peer's hostname. This check is done according to the rules in [RFC 6125](https://tools.ietf.org/html/rfc6125)
  *  and typically involves checking whether the hostname and the common name (CN) field of the subject match.
@@ -282,6 +287,7 @@ void wget_ssl_set_config_int(int key, int value)
 {
 	switch (key) {
 	case WGET_SSL_CHECK_CERTIFICATE: config.check_certificate = (char)value; break;
+	case WGET_SSL_REPORT_INVALID_CERT: config.report_invalid_cert = (char)value; break;
 	case WGET_SSL_CHECK_HOSTNAME: config.check_hostname = (char)value; break;
 	case WGET_SSL_CA_TYPE: config.ca_type = (char)value; break;
 	case WGET_SSL_CERT_TYPE: config.cert_type = (char)value; break;
@@ -953,7 +959,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 #endif
 //		if (wget_get_logger(WGET_LOGGER_DEBUG))
 //			_print_info(session);
-		error_printf(_("%s: Certificate verification error\n"), tag);
+		error_printf_check(_("%s: Certificate verification error\n"), tag);
 		goto out;
 	}
 
@@ -984,7 +990,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 		if (gnutls_certificate_verification_status_print(
 			status, gnutls_certificate_type_get(session), &out, 0) == GNUTLS_E_SUCCESS)
 		{
-			error_printf("%s: %s\n", tag, out.data); // no translation
+			error_printf_check("%s: %s\n", tag, out.data); // no translation
 			xfree(out.data);
 		}
 
@@ -993,24 +999,24 @@ static int verify_certificate_callback(gnutls_session_t session)
 #else
 	if (status) {
 		if (status & GNUTLS_CERT_INVALID)
-			error_printf(_("%s: The certificate is not trusted.\n"), tag);
+			error_printf_check(_("%s: The certificate is not trusted.\n"), tag);
 		if (status & GNUTLS_CERT_REVOKED)
-			error_printf(_("%s: The certificate has been revoked.\n"), tag);
+			error_printf_check(_("%s: The certificate has been revoked.\n"), tag);
 		if (status & GNUTLS_CERT_SIGNER_NOT_FOUND)
-			error_printf(_("%s: The certificate doesn't have a known issuer.\n"), tag);
+			error_printf_check(_("%s: The certificate doesn't have a known issuer.\n"), tag);
 		if (status & GNUTLS_CERT_SIGNER_NOT_CA)
-			error_printf(_("%s: The certificate signer was not a CA.\n"), tag);
+			error_printf_check(_("%s: The certificate signer was not a CA.\n"), tag);
 		if (status & GNUTLS_CERT_INSECURE_ALGORITHM)
-			error_printf(_("%s: The certificate was signed using an insecure algorithm.\n"), tag);
+			error_printf_check(_("%s: The certificate was signed using an insecure algorithm.\n"), tag);
 		if (status & GNUTLS_CERT_NOT_ACTIVATED)
-			error_printf(_("%s: The certificate is not yet activated.\n"), tag);
+			error_printf_check(_("%s: The certificate is not yet activated.\n"), tag);
 		if (status & GNUTLS_CERT_EXPIRED)
-			error_printf(_("%s: The certificate has expired.\n"), tag);
+			error_printf_check(_("%s: The certificate has expired.\n"), tag);
 #if GNUTLS_VERSION_NUMBER >= 0x030100
 		if (status & GNUTLS_CERT_SIGNATURE_FAILURE)
-			error_printf(_("%s: The certificate signature is invalid.\n"), tag);
+			error_printf_check(_("%s: The certificate signature is invalid.\n"), tag);
 		if (status & GNUTLS_CERT_UNEXPECTED_OWNER)
-			error_printf(_("%s: The certificate's owner does not match hostname '%s'.\n"), tag, hostname);
+			error_printf_check(_("%s: The certificate's owner does not match hostname '%s'.\n"), tag, hostname);
 #endif
 
 		// any other reason
@@ -1022,7 +1028,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 			|GNUTLS_CERT_UNEXPECTED_OWNER
 #endif
 			))
-			error_printf(_("%s: The certificate could not be verified (0x%X).\n"), tag, status);
+			error_printf_check(_("%s: The certificate could not be verified (0x%X).\n"), tag, status);
 
 		goto out;
 	}
@@ -1033,23 +1039,23 @@ static int verify_certificate_callback(gnutls_session_t session)
 	 * be easily extended to work with openpgp keys as well.
 	 */
 	if (gnutls_certificate_type_get(session) != GNUTLS_CRT_X509) {
-		error_printf(_("%s: Certificate must be X.509\n"), tag);
+		error_printf_check(_("%s: Certificate must be X.509\n"), tag);
 		goto out;
 	}
 
 	if (gnutls_x509_crt_init(&cert) != GNUTLS_E_SUCCESS) {
-		error_printf(_("%s: Error initializing X.509 certificate\n"), tag);
+		error_printf_check(_("%s: Error initializing X.509 certificate\n"), tag);
 		goto out;
 	}
 	deinit_cert = 1;
 
 	if (!(cert_list = gnutls_certificate_get_peers(session, &cert_list_size))) {
-		error_printf(_("%s: No certificate was found!\n"), tag);
+		error_printf_check(_("%s: No certificate was found!\n"), tag);
 		goto out;
 	}
 
 	if ((err = gnutls_x509_crt_import(cert, &cert_list[0], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
-		error_printf(_("%s: Failed to parse certificate: %s\n"), tag, gnutls_strerror (err));
+		error_printf_check(_("%s: Failed to parse certificate: %s\n"), tag, gnutls_strerror (err));
 		goto out;
 	}
 
@@ -1072,11 +1078,11 @@ static int verify_certificate_callback(gnutls_session_t session)
 			}
 #if GNUTLS_VERSION_NUMBER >= 0x030400
 			else if (gnutls_ocsp_status_request_is_checked(session, GNUTLS_OCSP_SR_IS_AVAIL)) {
-				error_printf(_("WARNING: The certificate's (stapled) OCSP status is invalid\n"));
+				error_printf_check(_("WARNING: The certificate's (stapled) OCSP status is invalid\n"));
 			}
 #endif
 			else if (!config.ocsp)
-				error_printf(_("WARNING: The certificate's (stapled) OCSP status has not been sent\n"));
+				error_printf_check(_("WARNING: The certificate's (stapled) OCSP status has not been sent\n"));
 #endif
 		} else if (ctx->valid)
 			debug_printf("OCSP: Host '%s' is valid (from cache)\n", hostname);
@@ -1088,7 +1094,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 		gnutls_x509_crt_init(&cert);
 
 		if ((err = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
-			error_printf(_("%s: Failed to parse certificate[%u]: %s\n"), tag, it, gnutls_strerror (err));
+			error_printf_check(_("%s: Failed to parse certificate[%u]: %s\n"), tag, it, gnutls_strerror (err));
 			continue;
 		}
 
@@ -1174,7 +1180,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 #endif
 
 	if (!pinning_ok) {
-		error_printf(_("%s: Pubkey pinning mismatch!\n"), tag);
+		error_printf_check(_("%s: Pubkey pinning mismatch!\n"), tag);
 		ret = -1;
 	}
 

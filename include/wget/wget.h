@@ -1994,6 +1994,7 @@ WGETAPI bool
 #define WGET_SSL_HPKP_CACHE     20
 #define WGET_SSL_OCSP_NONCE     21
 #define WGET_SSL_OCSP_DATE      22
+#define WGET_SSL_REPORT_INVALID_CERT 23
 
 WGETAPI void
 	wget_ssl_init(void);

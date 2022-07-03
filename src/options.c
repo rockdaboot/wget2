@@ -664,6 +664,24 @@ static int parse_taglist(option_t opt, const char *val, WGET_GCC_UNUSED const ch
 	return 0;
 }
 
+static int parse_check_certificate(option_t opt, const char *val, const char invert)
+{
+	if (opt->var) {
+		if (!val || !strcmp(val, "1") || !wget_strcasecmp_ascii(val, "y") || !wget_strcasecmp_ascii(val, "yes") || !wget_strcasecmp_ascii(val, "on"))
+			*((check_certificate_mode *) opt->var) = !invert ? CHECK_CERTIFICATE_ENABLED : CHECK_CERTIFICATE_DISABLED;
+		else if (!*val || !strcmp(val, "0") || !wget_strcasecmp_ascii(val, "n") || !wget_strcasecmp_ascii(val, "no") || !wget_strcasecmp_ascii(val, "off"))
+			*((check_certificate_mode *) opt->var) = invert ? CHECK_CERTIFICATE_ENABLED : CHECK_CERTIFICATE_DISABLED;
+		else if (!strcmp(val, "quiet"))
+			*((check_certificate_mode *) opt->var) = CHECK_CERTIFICATE_LOG_DISABLED;
+		else {
+			error_printf(_("Invalid value '%s'\n"), val);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 static int parse_bool(option_t opt, const char *val, const char invert)
 {
 	if (opt->var) {
@@ -1216,7 +1234,7 @@ struct config config = {
 	.tcp_fastopen = 1,
 	.user_agent = PACKAGE_NAME"/"PACKAGE_VERSION,
 	.verbose = 1,
-	.check_certificate=1,
+	.check_certificate= CHECK_CERTIFICATE_ENABLED,
 	.check_hostname=1,
 	.cert_type = WGET_SSL_X509_FMT_PEM,
 	.private_key_type = WGET_SSL_X509_FMT_PEM,
@@ -1379,7 +1397,7 @@ static const struct optionw options[] = {
 		  "(default: PEM)\n"
 		}
 	},
-	{ "check-certificate", &config.check_certificate, parse_bool, -1, 0,
+	{ "check-certificate", &config.check_certificate, parse_check_certificate, -1, 0,
 		SECTION_SSL,
 		{ "Check the server's certificate. (default: on)\n"
 		}
@@ -3671,7 +3689,8 @@ int init(int argc, const char **argv)
 	wget_iri_set_defaultpage(config.default_page);
 
 	// SSL settings
-	wget_ssl_set_config_int(WGET_SSL_CHECK_CERTIFICATE, config.check_certificate);
+	wget_ssl_set_config_int(WGET_SSL_CHECK_CERTIFICATE, config.check_certificate == CHECK_CERTIFICATE_ENABLED);
+	wget_ssl_set_config_int(WGET_SSL_REPORT_INVALID_CERT, config.check_certificate != CHECK_CERTIFICATE_LOG_DISABLED);
 	wget_ssl_set_config_int(WGET_SSL_CHECK_HOSTNAME, config.check_hostname);
 	wget_ssl_set_config_int(WGET_SSL_CERT_TYPE, config.cert_type);
 	wget_ssl_set_config_int(WGET_SSL_KEY_TYPE, config.private_key_type);

@@ -281,6 +281,7 @@ void wget_ssl_set_config_object(int key, void *value)
  * These are the parameters that can be set (\p key can have any of these values):
  *
  *  - WGET_SSL_CHECK_CERTIFICATE: whether certificates should be verified (1) or not (0)
+ *  - WGET_SSL_REPORT_INVALID_CERT: currently ignored on the OpenSSL backend
  *  - WGET_SSL_CHECK_HOSTNAME: whether or not to check if the certificate's subject field
  *  matches the peer's hostname. This check is done according to the rules in [RFC 6125](https://tools.ietf.org/html/rfc6125)
  *  and typically involves checking whether the hostname and the common name (CN) field of the subject match.
@@ -313,6 +314,9 @@ void wget_ssl_set_config_int(int key, int value)
 	switch (key) {
 	case WGET_SSL_CHECK_CERTIFICATE:
 		config.check_certificate = value;
+		break;
+	case WGET_SSL_REPORT_INVALID_CERT:
+		// The OpenSSL backend doesn't report any certificate errors if certificate verification is disabled
 		break;
 	case WGET_SSL_CHECK_HOSTNAME:
 		config.check_hostname = value;
