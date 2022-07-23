@@ -2378,7 +2378,7 @@ static void test_robots(void)
 		int count;
 
 		if (wget_robots_parse(&robots, t->input, PACKAGE_NAME) != WGET_E_SUCCESS) {
-			info_printf("'%s': Failed to parse: \"%s\" on robots\n", t->name, t->path[it]);
+			info_printf("'%s': Failed to parse input\n", t->name);
 			failed++;
 			continue;
 		}
