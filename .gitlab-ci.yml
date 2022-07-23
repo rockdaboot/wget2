@@ -208,7 +208,7 @@ Minimal/Debian:
     - sed -i 's/dist-lzip//g' configure.ac
     - ./bootstrap --skip-po && touch .manywarnings
     - ./configure $CONFIGURE_BASE_FLAGS --disable-doc
-        --disable-xattr --without-gnutls --without-libpsl --without-libnghttp2 --without-bzip2
+        --disable-xattr --with-ssl=none --without-libpsl --without-libnghttp2 --without-bzip2
         --without-gpgme --without-zlib --without-lzma --without-brotlidec --without-libidn2
         --without-libidn --without-libpcre2 --without-libpcre --without-plugin-support
     - make -j$(nproc) -C lib
