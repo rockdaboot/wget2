@@ -2283,6 +2283,20 @@ static void test_robots(void)
 			{ "http://www.example.com/sitemap.xml", NULL }
 		},
 		{
+			"Allow wget2, bar but deny foo /cgi-bin and deny all /",
+			"User-agent: foo\n"
+			"User-agent: wget2\n"
+			"Disallow: /cgi-bin/\n"
+			"Sitemap: \n"
+			"User-agent: bar\n"
+			"User-agent: wget2\n"
+			"Disallow: \n"
+			"User-agent: *\n"
+			"Disallow: /",
+			{ NULL },
+			{ NULL }
+		},
+		{
 			"Deny all /cgi-bin",
 			"User-agent: *\n"
 			"Disallow: /cgi-bin/ # comment\n",
@@ -2311,12 +2325,21 @@ static void test_robots(void)
 			{ NULL }
 		},
 		{
-			"Allow all but deny wget2 /",
+			"Deny all but allow wget2",
 			"User-agent: *\n"
 			"Disallow: /\n"
 			"User-agent: wget2\n"
 			"Disallow: \n",
-			{ "/", NULL },
+			{ NULL },
+			{ NULL }
+		},
+		{
+			"Deny all and deny wget2 /cgi-bin/",
+			"User-agent: *\n"
+			"Disallow: /\n"
+			"User-agent: wget2\n"
+			"Disallow: /cgi-bin/",
+			{ "/cgi-bin/", NULL },
 			{ NULL }
 		},
 		{
@@ -2334,6 +2357,22 @@ static void test_robots(void)
 			"Sitemap: http://www.example.com/sitemap.xml",
 			{ "/cgi-bin/", NULL },
 			{ "http://www.example.com/sitemap.xml", NULL }
+		},
+		{
+			"Allow all but deny wget2 /cgi-bin, /tmp + 2 sitemaps",
+			" User-agent : *\n"
+			" Disallow : \n"
+			" User-agent : wget2\n"
+			" User-agent : foo\n"
+			" Disallow : /cgi-bin/#This is a comment\n"
+			" Sitemap : http://www.example1.com/sitemap.xml\n"
+			" Sitemap : \n"
+			" Sitemap : http://www.example2.com/sitemap.xml#Another comment\n"
+			" User-agent : bar\n"
+			" User-agent : wget2\n"
+			" Disallow : /tmp/",
+			{ "/cgi-bin/", "/tmp/", NULL },
+			{ "http://www.example1.com/sitemap.xml", "http://www.example2.com/sitemap.xml", NULL }
 		},
 		{
 			"Deny all /cgi-bin + 2 sitemaps",
