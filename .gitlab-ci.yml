@@ -443,6 +443,7 @@ MinGW64:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
   script:
     - ./bootstrap --skip-po
+    - - export CFLAGS="$CFLAGS_DEFAULT"
     - export CC="ccache $PREFIX-gcc"
     - export GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|grep posix))
     - export WINEPATH="$WINEPATH;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
@@ -474,7 +475,7 @@ MinGW64-static:
     - unset CC
     - ./bootstrap --skip-po
     - LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
-      CFLAGS="$CFLAGS -DNGHTTP2_STATICLIB"
+      CFLAGS="$CFLAGS_DEFAULT -DNGHTTP2_STATICLIB"
       ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme
     - make -j$(nproc)
     - mv src/wget2.exe .
