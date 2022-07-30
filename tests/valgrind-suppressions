@@ -62,6 +62,16 @@
    ...
 }
 {
+   Issue from libgpgme
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:calloc
+   obj:/usr/lib/x86_64-linux-gnu/libgpgme.so.11.26.0
+   fun:gpgme_data_new_from_mem
+   ...
+}
+
+{
    Leak in glibc's getaddrinfo_a()
    Memcheck:Leak
 #   match-leak-kinds: reachable
