@@ -99,9 +99,11 @@ nobar:
 
 void bar_deinit(void)
 {
-	terminate_thread = 1;
-	wget_thread_join(&progress_thread);
-	wget_bar_free(&bar);
+	if (bar) {
+		terminate_thread = 1;
+		wget_thread_join(&progress_thread);
+		wget_bar_free(&bar);
+	}
 }
 
 void bar_print(int slot, const char *s)
