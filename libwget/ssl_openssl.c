@@ -1023,6 +1023,30 @@ bail:
 	return NULL;
 }
 
+static X509 *find_issuer_cert(const STACK_OF(X509) *certs, const X509 *subject, unsigned starting_idx)
+{
+	unsigned cert_chain_size;
+
+	/* Try with the next cert first */
+	X509 *candidate = sk_X509_value(certs, starting_idx + 1);
+	if (!candidate)
+		return NULL;
+	if (X509_check_issued(candidate, subject) == X509_V_OK)
+		return candidate;
+
+	/* Traverse the whole chain */
+	cert_chain_size = sk_X509_num(certs);
+	for (unsigned i = 0; i < cert_chain_size; i++) {
+		if (i == starting_idx)
+			continue;
+		candidate = sk_X509_value(certs, i);
+		if (X509_check_issued(candidate, subject) == X509_V_OK)
+			return candidate;
+	}
+
+	return NULL;
+}
+
 static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, const char *hostname)
 {
 	wget_ocsp_stats_data stats;
@@ -1035,7 +1059,7 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 
 	for (unsigned i = 0; i < cert_list_size; i++) {
 		cert = sk_X509_value(certs, i);
-		issuer_cert = sk_X509_value(certs, i+1);
+		issuer_cert = find_issuer_cert(certs, cert, i);
 
 		if (!issuer_cert)
 			break;
