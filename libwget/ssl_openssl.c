@@ -555,14 +555,118 @@ struct verification_flags {
 	bool
 		verifying_ocsp,
 		ocsp_checked;
+	wget_vector
+		*ocsp_stapled_cache;
+};
+
+struct ocsp_stapled_response {
+	int status;
+	OCSP_CERTID *certid;
 };
 
 static int check_ocsp_response(OCSP_RESPONSE *,
 		STACK_OF(X509) *,
 		X509_STORE *,
-		bool);
+		bool,
+		void (*ocsp_singleresp_callback_func)(const OCSP_SINGLERESP *, int, void *arg), void *func_arg);
 
 static char *compute_cert_fingerprint(X509 *cert);
+
+static int _ocsp_stapled_response_compare_func(const void *elem1, const void *elem2)
+{
+	const OCSP_CERTID *certid = elem1;
+	const struct ocsp_stapled_response *stored = elem2;
+	return OCSP_id_cmp(certid, stored->certid);
+}
+
+static void _ocsp_stapled_response_destroy_func(void *elem)
+{
+	struct ocsp_stapled_response *resp = elem;
+	OCSP_CERTID_free((OCSP_CERTID *) resp->certid);
+	xfree(elem);
+}
+
+static wget_vector *ocsp_create_stapled_response_vector()
+{
+	wget_vector *vec = wget_vector_create(5, _ocsp_stapled_response_compare_func);
+	if (!vec)
+		return NULL;
+
+	wget_vector_set_resize_factor(vec, 1);
+	wget_vector_set_destructor(vec, _ocsp_stapled_response_destroy_func);
+	return vec;
+}
+
+static void ocsp_destroy_stapled_response_vector(wget_vector **vec)
+{
+	wget_vector_free(vec);
+}
+
+static void ocsp_stapled_responses_add_single(const OCSP_SINGLERESP *singleresp, int status, void *arg)
+{
+	wget_vector *vec = arg;
+	struct ocsp_stapled_response *resp = wget_malloc(sizeof(struct ocsp_stapled_response));
+	OCSP_CERTID *certid = OCSP_CERTID_dup(OCSP_SINGLERESP_get0_id(singleresp));
+
+	if (resp && certid) {
+		resp->status = status;
+		resp->certid = certid;
+		wget_vector_insert(vec, (const void *) resp, 0);
+	} else {
+		if (certid)
+			OCSP_CERTID_free(certid);
+		xfree(resp);
+	}
+}
+
+static const struct ocsp_stapled_response *ocsp_stapled_response_get(const X509 *cert, const X509 *issuer,
+								     const wget_vector *vec)
+{
+	OCSP_CERTID *certid = OCSP_cert_to_id(NULL, cert, issuer);
+	int pos = wget_vector_find(vec, (const void *) certid);
+
+	OCSP_CERTID_free(certid);
+
+	if (pos >= 0)
+		return wget_vector_get(vec, pos);
+
+	return NULL;
+}
+
+static int ocsp_lookup_in_cache(X509 *cert, X509 *issuer,
+				const wget_vector *ocsp_stapled_cache, const wget_ocsp_db *ocsp_cert_cache,
+				int *revoked, char **cache_origin)
+{
+	char *fingerprint = NULL;
+	const struct ocsp_stapled_response *ocsp_stapled_resp;
+
+	/* Check if there's already a stapled OCSP response in our cache */
+	ocsp_stapled_resp = ocsp_stapled_response_get(cert, issuer, ocsp_stapled_cache);
+	if (ocsp_stapled_resp &&
+			(ocsp_stapled_resp->status == V_OCSP_CERTSTATUS_GOOD || ocsp_stapled_resp->status == V_OCSP_CERTSTATUS_REVOKED)) {
+		*revoked = (ocsp_stapled_resp->status == V_OCSP_CERTSTATUS_REVOKED);
+		*cache_origin = "stapled";
+		return 1;
+	}
+
+	if (ocsp_cert_cache) {
+		/* Compute cert fingerprint */
+		fingerprint = compute_cert_fingerprint(cert);
+		if (!fingerprint)
+			return -1; /* Treat this as an error */
+
+		/* Check if there's already an OCSP response stored in cache */
+		if (wget_ocsp_fingerprint_in_cache(ocsp_cert_cache, fingerprint, revoked)) {
+			/* Found cert's fingerprint in cache */
+			xfree(fingerprint);
+			*cache_origin = "cached";
+			return 1;
+		}
+	}
+
+	xfree(fingerprint);
+	return 0;
+}
 
 static int ocsp_resp_cb(SSL *s, void *arg)
 {
@@ -571,9 +675,9 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 	const unsigned char *ocsp_resp_raw = NULL;
 	OCSP_RESPONSE *ocspresp;
 	STACK_OF(X509) *certstack;
-	struct verification_flags *vflags = arg;
+	struct verification_flags *ocsp_verif = arg;
 
-	if (!vflags)
+	if (!arg || !ocsp_verif->certstore || !ocsp_verif->ocsp_stapled_cache)
 		return 0;
 
 	ocsp_resp_len = SSL_get_tlsext_status_ocsp_resp(s, &ocsp_resp_raw);
@@ -588,7 +692,7 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 		return 0;
 	}
 
-	certstack = SSL_get_peer_cert_chain(vflags->ssl);
+	certstack = SSL_get_peer_cert_chain(s);
 	if (!certstack) {
 		error_printf(_("Could not get server's cert stack\n"));
 		return 0;
@@ -596,8 +700,9 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 
 	result = check_ocsp_response(ocspresp,
 		certstack,
-		vflags->certstore,
-		0);
+		ocsp_verif->certstore,
+		0,
+		ocsp_stapled_responses_add_single, ocsp_verif->ocsp_stapled_cache);
 
 	if (result == -1) {
 		OCSP_RESPONSE_free(ocspresp);
@@ -819,7 +924,8 @@ end:
 static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 		STACK_OF(X509) *certstack,
 		X509_STORE *certstore,
-		bool check_time)
+		bool check_time,
+		void (*ocsp_singleresp_callback_func)(const OCSP_SINGLERESP *, int, void *arg), void *func_arg)
 {
 	int
 		retval = -1,
@@ -880,6 +986,13 @@ static int check_ocsp_response(OCSP_RESPONSE *ocspresp,
 		}
 	}
 
+	/*
+	 * Add response to cache
+	 * Other than these two, the cert could also be V_OCSP_CERTSTATUS_UNKNOWN. We're not adding these ones to the cache.
+	 */
+	if (ocsp_singleresp_callback_func && (status == V_OCSP_CERTSTATUS_GOOD || status == V_OCSP_CERTSTATUS_REVOKED))
+		ocsp_singleresp_callback_func(single, status, func_arg);
+
 	retval = 0; // Success!
 
 end:
@@ -919,7 +1032,7 @@ static int verify_ocsp(const char *ocsp_uri,
 		return -1;
 	}
 
-	if ((retval = check_ocsp_response(ocspresp, certs, certstore, check_time)) != 0)
+	if ((retval = check_ocsp_response(ocspresp, certs, certstore, check_time, NULL, NULL)) != 0)
 		goto end;
 
 	/* If we sent a nonce, verify the server's response contains the nonce */
@@ -1023,7 +1136,7 @@ bail:
 	return NULL;
 }
 
-static X509 *find_issuer_cert(const STACK_OF(X509) *certs, const X509 *subject, unsigned starting_idx)
+static X509 *find_issuer_cert(const STACK_OF(X509) *certs, X509 *subject, unsigned starting_idx)
 {
 	unsigned cert_chain_size;
 
@@ -1047,13 +1160,15 @@ static X509 *find_issuer_cert(const STACK_OF(X509) *certs, const X509 *subject, 
 	return NULL;
 }
 
-static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, const char *hostname)
+static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, const char *hostname,
+				     wget_vector *ocsp_stapled_cache)
 {
 	wget_ocsp_stats_data stats;
-	int num_ok = 0, num_revoked = 0, num_ignored = 0, revoked, ocsp_ok;
+	int num_ok = 0, num_revoked = 0, num_ignored = 0, revoked, ocsp_ok, retval;
 	char
 		*ocsp_uri = NULL,
-		*fingerprint;
+		*fingerprint,
+		*cache_origin;
 	X509 *cert, *issuer_cert;
 	unsigned cert_list_size = sk_X509_num(certs);
 
@@ -1064,29 +1179,33 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 		if (!issuer_cert)
 			break;
 
-		/* Compute cert fingerprint */
-		fingerprint = compute_cert_fingerprint(cert);
-		if (!fingerprint) {
-			error_printf(_("Could not compute certificate fingerprint for cert %u\n"), i);
-			return 0; /* Treat this as an error */
-		}
-
-		/* Check if there's already an OCSP response stored in cache */
-		if (config.ocsp_cert_cache) {
-			if (wget_ocsp_fingerprint_in_cache(config.ocsp_cert_cache, fingerprint, &revoked)) {
-				/* Found cert's fingerprint in cache */
-				if (revoked) {
-					debug_printf("Certificate %u has been revoked (cached response)\n", i);
-					num_revoked++;
-				} else {
-					debug_printf("Certificate %u is valid (cached response)\n", i);
-					num_ok++;
-				}
-
-				xfree(fingerprint);
-				continue;
+		/*
+		 * Check if there's already a valid (stapled or cached) OCSP response in our cache
+		 * for this cert
+		 */
+		retval = ocsp_lookup_in_cache(cert, issuer_cert, ocsp_stapled_cache, config.ocsp_cert_cache,
+					      &revoked, &cache_origin);
+		if (retval == 1) {
+			if (revoked) {
+				debug_printf("Certificate %u has been revoked (%s response)\n", i, cache_origin);
+				num_revoked++;
+			} else {
+				debug_printf("Certificate %u is valid (%s response)\n", i, cache_origin);
+				num_ok++;
 			}
+
+			continue;
 		}
+
+		if (retval == -1) {
+			error_printf(_("Could not compute certificate fingerprint for cert %u\n"), i);
+			return 0;  // treat this as an error
+		}
+
+		/*
+		 * We don't have an OCSP response for this certificate.
+		 * So now it's time to ask the OCSP server.
+		 */
 
 		if (!config.ocsp_server) {
 			ocsp_uri = read_ocsp_uri_from_certificate(cert);
@@ -1113,6 +1232,12 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 			num_ignored++;
 
 		/* Add the certificate to the OCSP cache */
+		fingerprint = compute_cert_fingerprint(cert);
+		if (!fingerprint) {
+			error_printf(_("Could not compute certificate fingerprint for cert %u\n"), i);
+			return 0;
+		}
+
 		if (ocsp_ok == 0 || ocsp_ok == 1) {
 			wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache,
 				fingerprint,
@@ -1527,6 +1652,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	vflags->verifying_ocsp = 0;
 	vflags->cert_chain_size = 0;
 	vflags->hostname = tcp->ssl_hostname;
+	vflags->ocsp_stapled_cache = NULL;
 
 	if (store_userdata_idx == -1) {
 		retval = WGET_E_UNKNOWN;
@@ -1547,6 +1673,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		goto bail;
 	}
 #ifdef WITH_OCSP
+	vflags->ocsp_stapled_cache = ocsp_create_stapled_response_vector();
 	SSL_CTX_set_tlsext_status_arg(_ctx, vflags);
 #endif
 
@@ -1642,13 +1769,17 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (config.ocsp) {
 		if (!check_cert_chain_for_ocsp(SSL_get0_verified_chain(ssl),
 					       store,
-					       tcp->ssl_hostname)) {
+					       tcp->ssl_hostname,
+					       vflags->ocsp_stapled_cache)) {
 			error_printf(_("Aborting handshake. Could not verify OCSP chain.\n"));
 			retval = WGET_E_HANDSHAKE;
 			goto bail;
 		}
 	}
 #endif
+
+	if (vflags->ocsp_stapled_cache)
+		ocsp_destroy_stapled_response_vector(&vflags->ocsp_stapled_cache);
 
 	/* Save the current TLS session */
 	if (ssl_save_session(ssl, tcp->ssl_hostname))
