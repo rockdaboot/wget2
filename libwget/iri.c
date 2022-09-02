@@ -291,34 +291,6 @@ static char *iri_unescape_inline(char *src, int ctype)
 					continue;
 				}
 			}
-		} else if (*s == '&') {
-			// entities are case sensitive (RFC1866, 3.2.3)
-			if (!strncmp((char *) s + 1, "amp;", 4)) {
-				*d++ = '&';
-				s += 5;
-				ret = src;
-				continue;
-			} else if (!strncmp((char *) s + 1, "gt;", 3)) {
-				*d++ = '>';
-				s += 4;
-				ret = src;
-				continue;
-			} else if (!strncmp((char *) s + 1, "lt;", 3)) {
-				*d++ = '<';
-				s += 4;
-				ret = src;
-				continue;
-			} else if (!strncmp((char *) s + 1, "quot;", 5)) {
-				*d++ = '\"';
-				s += 6;
-				ret = src;
-				continue;
-			} else if (!strncmp((char *) s + 1, "apos;", 5)) {
-				*d++ = '\'';
-				s += 6;
-				ret = src;
-				continue;
-			}
 		} else if (*s == '#') {
 			uint32_t value = 0;
 

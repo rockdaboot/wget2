@@ -2527,6 +2527,7 @@ static int normalize_uri(const wget_iri *base, wget_string *url, const char *enc
 		return -1;
 	}
 
+	wget_xml_decode_entities_inline(urlpart);
 	wget_iri_unescape_url_inline(urlpart);
 	rc = wget_memiconv(encoding, urlpart, strlen(urlpart), "utf-8", &urlpart_encoded, &urlpart_encoded_length);
 	xfree(urlpart);

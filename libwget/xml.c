@@ -709,4 +709,60 @@ void wget_html_parse_file(
 	wget_xml_parse_file(fname, callback, user_ctx, hints | XML_HINT_HTML);
 }
 
+/**
+ * \param[in] src A string
+ * \return A pointer to \p src, after the XML entities have been converted
+ *
+ * Decode XML entities from \p src.
+ *
+ * **The transformation is done inline**, so `src` will be modified after this function returns.
+ * If no XML entities have been found, \p src is left untouched.
+ *
+ * Only a small subset of available XML entities is currently recognized.
+ */
+char *wget_xml_decode_entities_inline(char *src)
+{
+	char *ret = NULL;
+	unsigned char *s = (unsigned char *)src; // just a helper to avoid casting a lot
+	unsigned char *d = s;
+
+	while (*s) {
+		if (*s == '&') {
+			// entities are case sensitive (RFC1866, 3.2.3)
+			if (!strncmp((char *) s + 1, "amp;", 4)) {
+				*d++ = '&';
+				s += 5;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "gt;", 3)) {
+				*d++ = '>';
+				s += 4;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "lt;", 3)) {
+				*d++ = '<';
+				s += 4;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "quot;", 5)) {
+				*d++ = '\"';
+				s += 6;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "apos;", 5)) {
+				*d++ = '\'';
+				s += 6;
+				ret = src;
+				continue;
+			}
+		}
+
+		*d++ = *s++;
+	}
+	*d = 0;
+
+	return ret;
+}
+
+
 /** @} */

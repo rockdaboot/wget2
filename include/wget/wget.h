@@ -1834,6 +1834,8 @@ WGETAPI void
 		wget_xml_callback *callback,
 		void *user_ctx,
 		int hints) WGET_GCC_NONNULL((1));
+WGETAPI char *
+	wget_xml_decode_entities_inline(char *src) WGET_GCC_NONNULL((1));
 
 /*
  * DNS caching routines
