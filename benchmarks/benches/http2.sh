@@ -50,7 +50,7 @@ run_bench() {
 
 	rm -f "../../${program}_${BENCHM_NAME}.data"
 
-	# Warmup Run
+	# Warm-up Run
 	$cmdline
 
 	for ((nreq=1; nreq<=NURL; nreq++)); do
