@@ -562,6 +562,8 @@ static int check_ocsp_response(OCSP_RESPONSE *,
 		X509_STORE *,
 		bool);
 
+static char *compute_cert_fingerprint(X509 *cert);
+
 static int ocsp_resp_cb(SSL *s, void *arg)
 {
 	int result;
@@ -604,7 +606,8 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 	}
 
 	OCSP_RESPONSE_free(ocspresp);
-	debug_printf("Got a stapled OCSP response. Length: %ld. Status: OK\n", ocsp_resp_len);
+	debug_printf("*** Stapled OCSP response verified. Length: %ld. Status: OK\n", ocsp_resp_len);
+
 	return 1;
 }
 
@@ -900,12 +903,14 @@ static int verify_ocsp(const char *ocsp_uri,
 
 	/* Generate CertID and OCSP request */
 	certid = OCSP_cert_to_id(EVP_sha1(), subject_cert, issuer_cert);
+
+	/* Send OCSP request to server, via HTTP */
 	if (!(ocspreq = send_ocsp_request(ocsp_uri,
 			certid,
 			&resp)))
 		return -1;
 
-	/* Check response */
+	/* Check server's OCSP response */
 	body = (const unsigned char *) resp->body->data;
 	ocspresp = d2i_OCSP_RESPONSE(NULL, &body, resp->body->length);
 	if (!ocspresp) {
@@ -917,6 +922,7 @@ static int verify_ocsp(const char *ocsp_uri,
 	if ((retval = check_ocsp_response(ocspresp, certs, certstore, check_time)) != 0)
 		goto end;
 
+	/* If we sent a nonce, verify the server's response contains the nonce */
 	if (check_nonce) {
 		if (!(ocspbs = OCSP_response_get1_basic(ocspresp))) {
 			error_printf(_("Could not obtain OCSP_BASICRESPONSE\n"));
@@ -1139,9 +1145,6 @@ static int openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx
 		goto end;
 	}
 
-	if (vflags->verifying_ocsp)
-		goto end;
-
 	/* Store the certificate chain size */
 	vflags->cert_chain_size = sk_X509_num(certs);
 
@@ -1152,20 +1155,6 @@ static int openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx
 			ossl_retval = 0;
 			goto end;
 		}
-	}
-
-	if (config.ocsp && !vflags->ocsp_checked) {
-		/* Check cert chain against OCSP */
-		vflags->verifying_ocsp = 1;
-
-		if (!check_cert_chain_for_ocsp(certs, store, vflags->hostname)) {
-			error_printf(_("Certificate revoked by OCSP.\n"));
-			ossl_retval = 0;
-			goto end;
-		}
-
-		vflags->ocsp_checked = 1;
-		vflags->verifying_ocsp = 0;
 	}
 
 end:
@@ -1221,7 +1210,7 @@ static int openssl_init(SSL_CTX *ctx)
 		SSL_CTX_set_tlsext_status_cb(ctx, ocsp_resp_cb);
 #endif
 
-	/* Set our custom revocation check function, for HPKP and OCSP validation */
+	/* Set our custom revocation check function, for HPKP validation */
 	X509_STORE_set_verify_cb(store, openssl_revocation_check_fn);
 
 	retval = openssl_set_priorities(ctx, config.secure_protocol);
@@ -1617,6 +1606,25 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	/* Success! */
 	debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : " (full handshake - not resumed)");
+
+#ifdef WITH_OCSP
+	/*
+	 * Now check the (non-stapled) OCSP, if any.
+	 * check_cert_chain_for_ocsp() will check whether a cached valid OCSP response exists for every certificate,
+	 * and will contact OCSP servers for those that don't have such cached response.
+	 * If the server sent stapled OCSP responses, these have been kept in memory as well
+	 * and hence we'll not contact OCSP servers for them.
+	 */
+	if (config.ocsp) {
+		if (!check_cert_chain_for_ocsp(SSL_get0_verified_chain(ssl),
+					       store,
+					       tcp->ssl_hostname)) {
+			error_printf(_("Aborting handshake. Could not verify OCSP chain.\n"));
+			retval = WGET_E_HANDSHAKE;
+			goto bail;
+		}
+	}
+#endif
 
 	/* Save the current TLS session */
 	if (ssl_save_session(ssl, tcp->ssl_hostname))
