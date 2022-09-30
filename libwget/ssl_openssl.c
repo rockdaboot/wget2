@@ -542,8 +542,6 @@ static int check_cert_chain_for_hpkp(STACK_OF(X509) *certs, const char *hostname
 }
 
 struct verification_flags {
-	SSL
-		*ssl;
 	const char
 		*hostname;
 	X509_STORE
@@ -552,9 +550,6 @@ struct verification_flags {
 		cert_chain_size;
 	wget_hpkp_stats_result
 		hpkp_stats;
-	bool
-		verifying_ocsp,
-		ocsp_checked;
 	wget_vector
 		*ocsp_stapled_cache;
 };
@@ -627,17 +622,13 @@ static const struct ocsp_stapled_response *ocsp_stapled_response_get(const X509 
 
 	OCSP_CERTID_free(certid);
 
-	if (pos >= 0)
-		return wget_vector_get(vec, pos);
-
-	return NULL;
+	return wget_vector_get(vec, pos);
 }
 
 static int ocsp_lookup_in_cache(X509 *cert, X509 *issuer,
 				const wget_vector *ocsp_stapled_cache, const wget_ocsp_db *ocsp_cert_cache,
 				int *revoked, char **cache_origin)
 {
-	char *fingerprint = NULL;
 	const struct ocsp_stapled_response *ocsp_stapled_resp;
 
 	/* Check if there's already a stapled OCSP response in our cache */
@@ -651,7 +642,7 @@ static int ocsp_lookup_in_cache(X509 *cert, X509 *issuer,
 
 	if (ocsp_cert_cache) {
 		/* Compute cert fingerprint */
-		fingerprint = compute_cert_fingerprint(cert);
+		char *fingerprint = compute_cert_fingerprint(cert);
 		if (!fingerprint)
 			return -1; /* Treat this as an error */
 
@@ -662,9 +653,10 @@ static int ocsp_lookup_in_cache(X509 *cert, X509 *issuer,
 			*cache_origin = "cached";
 			return 1;
 		}
+
+		xfree(fingerprint);
 	}
 
-	xfree(fingerprint);
 	return 0;
 }
 
@@ -1648,8 +1640,6 @@ int wget_ssl_open(wget_tcp *tcp)
 		goto bail;
 	}
 
-	vflags->ocsp_checked = 0;
-	vflags->verifying_ocsp = 0;
 	vflags->cert_chain_size = 0;
 	vflags->hostname = tcp->ssl_hostname;
 	vflags->ocsp_stapled_cache = NULL;
@@ -1666,7 +1656,6 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 
 	vflags->certstore = store;
-	vflags->ssl = ssl;
 
 	if (!X509_STORE_set_ex_data(store, store_userdata_idx, (void *) vflags)) {
 		retval = WGET_E_UNKNOWN;
@@ -1810,6 +1799,8 @@ int wget_ssl_open(wget_tcp *tcp)
 	return WGET_E_SUCCESS;
 
 bail:
+	if (vflags->ocsp_stapled_cache)
+		ocsp_destroy_stapled_response_vector(&vflags->ocsp_stapled_cache);
 	if (stats_p)
 		xfree(stats_p->alpn_protocol);
 	xfree(vflags);
