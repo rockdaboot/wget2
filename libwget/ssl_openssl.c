@@ -1130,22 +1130,13 @@ bail:
 
 static X509 *find_issuer_cert(const STACK_OF(X509) *certs, X509 *subject, unsigned starting_idx)
 {
-	unsigned cert_chain_size;
+	X509 *candidate;
+	unsigned cert_chain_size = sk_X509_num(certs), next = starting_idx;
 
-	/* Try with the next cert first */
-	X509 *candidate = sk_X509_value(certs, starting_idx + 1);
-	if (!candidate)
-		return NULL;
-	if (X509_check_issued(candidate, subject) == X509_V_OK)
-		return candidate;
-
-	/* Traverse the whole chain */
-	cert_chain_size = sk_X509_num(certs);
-	for (unsigned i = 0; i < cert_chain_size; i++) {
-		if (i == starting_idx)
-			continue;
-		candidate = sk_X509_value(certs, i);
-		if (X509_check_issued(candidate, subject) == X509_V_OK)
+	for (unsigned i = 0; i < cert_chain_size - 1; i++) {
+		next = (next == cert_chain_size - 1) ? 0 : next + 1;
+		candidate = sk_X509_value(certs, next);
+		if (candidate && X509_check_issued(candidate, subject) == X509_V_OK)
 			return candidate;
 	}
 
