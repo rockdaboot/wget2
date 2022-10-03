@@ -261,7 +261,7 @@ static void convert_pointer(wget_buffer *buf, void *pointer)
 
 static const char *read_precision(const char *p, int *out, int precision_is_external)
 {
-	int precision = -1;
+	int precision;
 
 	if (precision_is_external) {
 		precision = *out;
