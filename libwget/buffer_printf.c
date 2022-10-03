@@ -62,13 +62,14 @@ static void copy_string(wget_buffer *buf, unsigned int flags, int field_width, i
 		return;
 	}
 
-	length = strlen(arg);
+	if (precision >= 0) {
+		length = strnlen(arg, precision);
+	} else {
+		length = strlen(arg);
+	}
 
-	// info_printf("flags=0x%02x field_width=%d precision=%d length=%zd arg='%s'\n",
+	// debug_printf("flags=0x%02x field_width=%d precision=%d length=%zu arg='%s'\n",
 	//	flags,field_width,precision,length,arg);
-
-	if (precision >= 0 && length > (size_t)precision)
-		length = precision;
 
 	if (field_width) {
 		if ((unsigned)field_width > length) {
