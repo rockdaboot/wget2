@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <c-ctype.h>
 
 #include <wget.h>
@@ -260,7 +261,7 @@ static void convert_pointer(wget_buffer *buf, void *pointer)
 	wget_buffer_memcat(buf, dst, length);
 }
 
-static const char *read_precision(const char *p, int *out, int precision_is_external)
+static const char *read_precision(const char *p, int *out, bool precision_is_external)
 {
 	int precision;
 
@@ -301,7 +302,7 @@ static const char *read_flag_chars(const char *p, unsigned int *out)
 	return p;
 }
 
-static const char *read_field_width(const char *p, int *out, unsigned int *flags, int width_is_external)
+static const char *read_field_width(const char *p, int *out, unsigned int *flags, bool width_is_external)
 {
 	int field_width;
 
