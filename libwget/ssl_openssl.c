@@ -119,7 +119,7 @@ static int init;
 static wget_thread_mutex mutex;
 
 static SSL_CTX *_ctx;
-static int store_userdata_idx;
+static int store_userdata_idx, ssl_userdata_idx;
 
 /*
  * Constructor & destructor
@@ -130,14 +130,24 @@ static void __attribute__ ((constructor)) tls_init(void)
 		wget_thread_mutex_init(&mutex);
 
 	store_userdata_idx = X509_STORE_CTX_get_ex_new_index(
-			0, NULL,	/* argl, argp */
-			NULL,		/* new_func */
-			NULL,		/* dup_func */
-			NULL);		/* free_func */
+		0, NULL,  /* argl, argp */
+		NULL,     /* new_func */
+		NULL,     /* dup_func */
+		NULL      /* free_func */
+	);
+
+	ssl_userdata_idx = CRYPTO_get_ex_new_index(
+		CRYPTO_EX_INDEX_APP,
+		0, NULL,  /* argl, argp */
+		NULL,     /* new_func, dup_func, free_func */
+		NULL,     /* dup_func */
+		NULL      /* free_func */
+	);
 }
 
 static void __attribute__ ((destructor)) tls_exit(void)
 {
+	CRYPTO_free_ex_index(CRYPTO_EX_INDEX_APP, ssl_userdata_idx);
 	if (mutex)
 		wget_thread_mutex_destroy(&mutex);
 }
@@ -1243,56 +1253,6 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 	return (num_revoked == 0);
 }
 
-/*
- * This is our custom revocation check function.
- * It will be invoked by OpenSSL at some point during the TLS handshake.
- * It takes the server's certificate chain, and its purpose is to check the revocation
- * status for each certificate in it. We validate certs against HPKP and OCSP here.
- * OpenSSL will make other checks before calling this function: cert signature, CRLs, etc.
- * This function should return the value of 'ossl_retval' on success
- * (which retains the result of previous checks made by OpenSSL) and 0 on failure (will override
- * OpenSSL's result, whatever it is).
- */
-static int openssl_revocation_check_fn(int ossl_retval, X509_STORE_CTX *storectx)
-{
-	X509_STORE *store;
-	struct verification_flags *vflags;
-	STACK_OF(X509) *certs = X509_STORE_CTX_get1_chain(storectx);
-
-	if (ossl_retval == 0) {
-		/* ossl_retval == 0 means certificate was revoked by OpenSSL before entering this callback */
-		goto end;
-	}
-
-	store = X509_STORE_CTX_get0_store(storectx);
-	if (!store) {
-		error_printf(_("Could not retrieve certificate store. Will skip HPKP checks.\n"));
-		goto end;
-	}
-
-	vflags = X509_STORE_get_ex_data(store, store_userdata_idx);
-	if (!vflags) {
-		error_printf(_("Could not retrieve saved verification status flags.\n"));
-		goto end;
-	}
-
-	/* Store the certificate chain size */
-	vflags->cert_chain_size = sk_X509_num(certs);
-
-	if (config.hpkp_cache) {
-		/* Check cert chain against HPKP database */
-		if (!check_cert_chain_for_hpkp(certs, vflags->hostname, &vflags->hpkp_stats)) {
-			error_printf(_("Public key pinning mismatch.\n"));
-			ossl_retval = 0;
-			goto end;
-		}
-	}
-
-end:
-	sk_X509_pop_free(certs, X509_free);
-	return ossl_retval;
-}
-
 static int openssl_init(SSL_CTX *ctx)
 {
 	int retval = 0;
@@ -1340,9 +1300,6 @@ static int openssl_init(SSL_CTX *ctx)
 	if (config.ocsp_stapling)
 		SSL_CTX_set_tlsext_status_cb(ctx, ocsp_resp_cb);
 #endif
-
-	/* Set our custom revocation check function, for HPKP validation */
-	X509_STORE_set_verify_cb(store, openssl_revocation_check_fn);
 
 	retval = openssl_set_priorities(ctx, config.secure_protocol);
 
@@ -1736,6 +1693,16 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	/* Success! */
 	debug_printf("Handshake completed%s\n", resumed ? " (resumed session)" : " (full handshake - not resumed)");
+
+	/* Check cert chain against HPKP database */
+	if (config.hpkp_cache) {
+		if (!check_cert_chain_for_hpkp(SSL_get0_verified_chain(ssl), tcp->ssl_hostname,
+					       &vflags->hpkp_stats)) {
+			error_printf(_("Public key pinning mismatch\n"));
+			retval = WGET_E_HANDSHAKE;
+			goto bail;
+		}
+	}
 
 #ifdef WITH_OCSP
 	/*
