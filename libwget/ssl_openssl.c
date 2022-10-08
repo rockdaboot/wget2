@@ -581,7 +581,7 @@ static void _ocsp_stapled_response_destroy_func(void *elem)
 	xfree(elem);
 }
 
-static wget_vector *ocsp_create_stapled_response_vector()
+static wget_vector *ocsp_create_stapled_response_vector(void)
 {
 	wget_vector *vec = wget_vector_create(5, _ocsp_stapled_response_compare_func);
 	if (!vec)
@@ -1196,7 +1196,6 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 				debug_printf("OCSP URI not given and not found in certificate. Skipping OCSP check for cert %u.\n",
 						i);
 				num_ignored++;
-				xfree(fingerprint);
 				continue;
 			}
 		}
