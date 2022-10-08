@@ -677,10 +677,13 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 	const unsigned char *ocsp_resp_raw = NULL;
 	OCSP_RESPONSE *ocspresp;
 	STACK_OF(X509) *certstack;
-	struct verification_flags *ocsp_verif = arg;
+	struct verification_flags *ocsp_verif = NULL;
 
-	if (!arg || !ocsp_verif->certstore || !ocsp_verif->ocsp_stapled_cache)
+	ocsp_verif = SSL_get_ex_data(s, ssl_userdata_idx);
+	if (!ocsp_verif) {
+		error_printf("Could not get user data to verify stapled OCSP.\n");
 		return 0;
+	}
 
 	ocsp_resp_len = SSL_get_tlsext_status_ocsp_resp(s, &ocsp_resp_raw);
 	if (ocsp_resp_len == -1) {
@@ -1604,13 +1607,9 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	vflags->certstore = store;
 
-	if (!X509_STORE_set_ex_data(store, store_userdata_idx, (void *) vflags)) {
-		retval = WGET_E_UNKNOWN;
-		goto bail;
-	}
 #ifdef WITH_OCSP
 	vflags->ocsp_stapled_cache = ocsp_create_stapled_response_vector();
-	SSL_CTX_set_tlsext_status_arg(_ctx, vflags);
+	SSL_set_ex_data(ssl, ssl_userdata_idx, (void *) vflags);
 #endif
 
 
