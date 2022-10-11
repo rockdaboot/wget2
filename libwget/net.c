@@ -780,6 +780,9 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 				else
 					tcp->ip = NULL;
 
+				xfree(tcp->host);
+				tcp->host = wget_strdup(host);
+
 				return WGET_E_SUCCESS;
 			}
 		} else
@@ -1023,6 +1026,7 @@ void wget_tcp_close(wget_tcp *tcp)
 			tcp->sockfd = -1;
 		}
 		wget_dns_freeaddrinfo(tcp->dns, &tcp->addrinfo);
+		xfree(tcp->host);
 	}
 }
 /** @} */
