@@ -125,6 +125,22 @@ static struct wget_tcp_st global_tcp = {
 
 /* for Windows compatibility */
 #include "sockets.h"
+
+#ifdef TCP_FASTOPEN_LINUX
+// helper function to give context for errors
+static inline void print_error(const wget_tcp *tcp, const char *msg)
+{
+	error_printf("%s (hostname='%s', ip=%s, errno=%d)\n",
+		msg, tcp->host ? tcp->host: "", tcp->ip ? tcp->ip : "", errno);
+}
+#endif
+
+static inline void print_error_host(const char *msg, const char *host)
+{
+	error_printf("%s (hostname='%s', errno=%d)\n",
+		msg, host, errno);
+}
+
 /**
  * \return 0 for success, else failure
  *
@@ -682,6 +698,7 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 		return WGET_E_INVALID;
 
 	wget_dns_freeaddrinfo(tcp->dns, &tcp->addrinfo);
+	xfree(tcp->host);
 
 	tcp->addrinfo = wget_dns_resolve(tcp->dns, host, port, tcp->family, tcp->preferred_family);
 
@@ -716,7 +733,7 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 				}
 
 				if (bind(sockfd, tcp->bind_addrinfo->ai_addr, tcp->bind_addrinfo->ai_addrlen) != 0) {
-					error_printf(_("Failed to bind (%d)\n"), errno);
+					print_error_host(_("Failed to bind"), host);
 					close(sockfd);
 
 					return WGET_E_UNKNOWN;
@@ -752,7 +769,7 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 				&& errno != EAGAIN
 				&& errno != EINPROGRESS
 			) {
-				error_printf(_("Failed to connect (%d)\n"), errno);
+				print_error_host(_("Failed to connect"), host);
 				ret = WGET_E_CONNECT;
 				close(sockfd);
 			} else {
@@ -780,13 +797,12 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 				else
 					tcp->ip = NULL;
 
-				xfree(tcp->host);
 				tcp->host = wget_strdup(host);
 
 				return WGET_E_SUCCESS;
 			}
 		} else
-			error_printf(_("Failed to create socket (%d)\n"), errno);
+			print_error_host(_("Failed to create socket"), host);
 	}
 
 	return ret;
@@ -865,7 +881,8 @@ ssize_t wget_tcp_read(wget_tcp *tcp, char *buf, size_t count)
 	}
 
 	if (rc < 0)
-		error_printf(_("Failed to read %zu bytes (%d)\n"), count, errno);
+		error_printf(_("Failed to read %zu bytes (hostname='%s', ip=%s, errno=%d)\n"),
+			count, tcp->host, tcp->ip, errno);
 
 	return rc;
 }
@@ -925,7 +942,7 @@ ssize_t wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count)
 					&& errno != ENOTCONN
 					&& errno != EINPROGRESS)
 				{
-					error_printf(_("Failed to connect (%d)\n"), errno);
+					print_error(_("Failed to connect"));
 					return -1;
 				}
 				errno = EAGAIN;
@@ -947,7 +964,8 @@ ssize_t wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count)
 				&& errno != ENOTCONN
 				&& errno != EINPROGRESS)
 			{
-				error_printf(_("Failed to send %zu bytes (%d)\n"), count, errno);
+				error_printf(_("Failed to send %zu bytes (hostname='%s', ip=%s, errno=%d)\n"),
+					count, tcp->host, tcp->ip, errno);
 				return -1;
 			}
 
