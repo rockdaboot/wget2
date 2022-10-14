@@ -119,7 +119,7 @@ static int init;
 static wget_thread_mutex mutex;
 
 static SSL_CTX *_ctx;
-static int store_userdata_idx, ssl_userdata_idx;
+static int ssl_userdata_idx;
 
 /*
  * Constructor & destructor
@@ -128,13 +128,6 @@ static void __attribute__ ((constructor)) tls_init(void)
 {
 	if (!mutex)
 		wget_thread_mutex_init(&mutex);
-
-	store_userdata_idx = X509_STORE_CTX_get_ex_new_index(
-		0, NULL,  /* argl, argp */
-		NULL,     /* new_func */
-		NULL,     /* dup_func */
-		NULL      /* free_func */
-	);
 
 	ssl_userdata_idx = CRYPTO_get_ex_new_index(
 		CRYPTO_EX_INDEX_APP,
@@ -1593,11 +1586,6 @@ int wget_ssl_open(wget_tcp *tcp)
 	vflags->cert_chain_size = 0;
 	vflags->hostname = tcp->ssl_hostname;
 	vflags->ocsp_stapled_cache = NULL;
-
-	if (store_userdata_idx == -1) {
-		retval = WGET_E_UNKNOWN;
-		goto bail;
-	}
 
 	store = SSL_CTX_get_cert_store(_ctx);
 	if (!store) {
