@@ -991,7 +991,7 @@ wget_iri *wget_iri_parse_base(const wget_iri *base, const char *url, const char 
  * This function uses wget_strcasecmp() to compare the various parts of the IRIs so a non-zero negative return value
  * indicates that \p iri1 is less than \p iri2, whereas a positive value indicates \p iri1 is greater than \p iri2.
  */
-int wget_iri_compare(wget_iri *iri1, wget_iri *iri2)
+int wget_iri_compare(const wget_iri *iri1, const wget_iri *iri2)
 {
 	int n;
 
