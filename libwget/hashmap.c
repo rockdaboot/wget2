@@ -462,8 +462,10 @@ void wget_hashmap_clear(wget_hashmap *h)
 					h->key_destructor(entry->key);
 
 				// free value if different from key
-				if (entry->value != entry->key && h->value_destructor)
-					h->value_destructor(entry->value);
+				if (h->value_destructor) {
+					if (entry->value != entry->key || (entry->value == entry->key && !h->key_destructor))
+						h->value_destructor(entry->value);
+				}
 
 				entry->key = NULL;
 				entry->value = NULL;
