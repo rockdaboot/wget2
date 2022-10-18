@@ -630,7 +630,7 @@ static const struct ocsp_stapled_response *ocsp_stapled_response_get(const X509 
 
 static int ocsp_lookup_in_cache(X509 *cert, X509 *issuer,
 				const wget_vector *ocsp_stapled_cache, const wget_ocsp_db *ocsp_cert_cache,
-				int *revoked, char **cache_origin)
+				int *revoked, const char **cache_origin)
 {
 	const struct ocsp_stapled_response *ocsp_stapled_resp;
 
@@ -671,6 +671,8 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 	OCSP_RESPONSE *ocspresp;
 	STACK_OF(X509) *certstack;
 	struct verification_flags *ocsp_verif = NULL;
+
+	(void) arg;  // Unused
 
 	ocsp_verif = SSL_get_ex_data(s, ssl_userdata_idx);
 	if (!ocsp_verif) {
@@ -1154,7 +1156,7 @@ static int check_cert_chain_for_ocsp(STACK_OF(X509) *certs, X509_STORE *store, c
 {
 	wget_ocsp_stats_data stats;
 	int num_ok = 0, num_revoked = 0, num_ignored = 0, revoked, ocsp_ok, retval;
-	char
+	const char
 		*ocsp_uri = NULL,
 		*fingerprint,
 		*cache_origin;
