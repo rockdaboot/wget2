@@ -545,14 +545,8 @@ static int check_cert_chain_for_hpkp(STACK_OF(X509) *certs, const char *hostname
 }
 
 struct verification_flags {
-	const char
-		*hostname;
 	X509_STORE
 		*certstore;
-	unsigned int
-		cert_chain_size;
-	wget_hpkp_stats_result
-		hpkp_stats;
 	wget_vector
 		*ocsp_stapled_cache;
 };
@@ -1585,8 +1579,6 @@ int wget_ssl_open(wget_tcp *tcp)
 		goto bail;
 	}
 
-	vflags->cert_chain_size = 0;
-	vflags->hostname = tcp->ssl_hostname;
 	vflags->ocsp_stapled_cache = NULL;
 
 	store = SSL_CTX_get_cert_store(_ctx);
@@ -1686,7 +1678,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	/* Check cert chain against HPKP database */
 	if (config.hpkp_cache) {
 		if (!check_cert_chain_for_hpkp(SSL_get0_verified_chain(ssl), tcp->ssl_hostname,
-					       &vflags->hpkp_stats)) {
+					       &tcp->hpkp)) {
 			error_printf(_("Public key pinning mismatch\n"));
 			retval = WGET_E_HANDSHAKE;
 			goto bail;
@@ -1728,9 +1720,9 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	if (stats_p) {
 		stats_p->version = get_tls_version(ssl);
-		stats_p->hostname = vflags->hostname;
+		stats_p->hostname = tcp->ssl_hostname;
 		stats_p->resumed = resumed;
-		stats_p->cert_chain_size = vflags->cert_chain_size;
+		stats_p->cert_chain_size = sk_X509_num(SSL_get0_verified_chain(ssl));
 		tls_stats_callback(stats_p, tls_stats_ctx);
 		xfree(stats_p->alpn_protocol);
 
@@ -1739,7 +1731,6 @@ int wget_ssl_open(wget_tcp *tcp)
 #endif
 	}
 
-	tcp->hpkp = vflags->hpkp_stats;
 	tcp->ssl_session = ssl;
 	xfree(vflags);
 	return WGET_E_SUCCESS;
