@@ -830,6 +830,27 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 			http_fallback = 1;
 	}
 
+	if (config.recursive) {
+		// only download content from given hosts
+		const char *reason = NULL;
+
+		if (!iri->host)
+			reason = _("missing ip/host/domain");
+		else if (job && strcmp(job->iri->host, iri->host)) {
+			if (!config.span_hosts && !in_host_pattern_list(config.domains, iri->host))
+				reason = _("no host-spanning requested");
+			else if (config.span_hosts && in_host_pattern_list(config.exclude_domains, iri->host))
+				reason = _("domain explicitly excluded");
+		}
+
+		if (reason) {
+			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
+			wget_iri_free(&iri);
+			plugin_db_forward_url_verdict_free(&plugin_verdict);
+			return;
+		}
+	}
+
 	wget_thread_mutex_lock(downloader_mutex);
 
 	if (!(blacklistp = blacklist_add(iri))) {
@@ -851,25 +872,6 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		if (dirlen + len > oldlen)
 			blacklistp->local_filename = wget_realloc(blacklistp->local_filename, dirlen + len + 1);
 		memcpy(blacklistp->local_filename + dirlen, download_name, len + 1);
-	}
-
-	if (config.recursive) {
-		// only download content from given hosts
-		const char *reason = NULL;
-
-		if (!iri->host)
-			reason = _("missing ip/host/domain");
-		else if (job && strcmp(job->iri->host, iri->host)) {
-			if (!config.span_hosts && !in_host_pattern_list(config.domains, iri->host))
-				reason = _("no host-spanning requested");
-			else if (config.span_hosts && in_host_pattern_list(config.exclude_domains, iri->host))
-				reason = _("domain explicitly excluded");
-		}
-
-		if (reason) {
-			info_printf(_("URL '%s' not followed (%s)\n"), iri->uri, reason);
-			goto out;
-		}
 	}
 
 	if (config.recursive && !config.parent && !(flags & URL_FLG_REQUISITE)) {
