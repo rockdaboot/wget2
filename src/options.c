@@ -3400,6 +3400,11 @@ int init(int argc, const char **argv)
 
 	log_init();
 
+	if (config.logfile) {
+		// Currently, we do not support mixing progress bar and log output.
+		config.progress = PROGRESS_TYPE_NONE;
+	}
+
 	if (config.https_only && config.https_enforce)
 		// disable https enforce if https-only is enabled
 		config.https_enforce = HTTPS_ENFORCE_NONE;
