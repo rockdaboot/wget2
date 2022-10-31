@@ -1851,8 +1851,9 @@ ssize_t wget_ssl_read_timeout(void *session,
 	int retval = ssl_transfer(WGET_IO_READABLE, session, timeout, buf, (int) count);
 
 	if (retval == WGET_E_HANDSHAKE) {
-		error_printf(_("TLS read error: %s\n"),
-			ERR_reason_error_string(ERR_peek_last_error()));
+		const char *msg = ERR_reason_error_string(ERR_peek_last_error());
+		if (msg)
+			error_printf(_("TLS read error: %s\n"), msg);
 		retval = WGET_E_UNKNOWN;
 	}
 
