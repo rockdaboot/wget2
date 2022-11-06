@@ -607,6 +607,46 @@ static void setup_nghttp2_callbacks(nghttp2_session_callbacks *callbacks)
 }
 #endif
 
+static int establish_proxy_connect(wget_tcp *tcp, const char *host, uint16_t port)
+{
+	char sbuf[1024];
+	wget_buffer buf;
+
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
+
+	// The use of Proxy-Connection has been discouraged in RFC 7230 A.1.2.
+	// wget_buffer_sprintf(buf, "CONNECT %s:%hu HTTP/1.1\r\nHost: %s\r\nProxy-Connection: keep-alive\r\n\r\n",
+
+	wget_buffer_printf(&buf, "CONNECT %s:%hu HTTP/1.1\r\nHost: %s:%hu\r\n\r\n",
+		host, port, host, port);
+
+	if (wget_tcp_write(tcp, buf.data, buf.length) != (ssize_t) buf.length) {
+		wget_buffer_deinit(&buf);
+		return WGET_E_CONNECT;
+	}
+
+	wget_buffer_deinit(&buf);
+
+	ssize_t nbytes;
+	if ((nbytes = wget_tcp_read(tcp, sbuf, sizeof(sbuf) - 1)) < 0) {
+		return WGET_E_CONNECT;
+	}
+	sbuf[nbytes] = 0;
+
+	// strip trailing whitespace
+	while (nbytes > 0 && c_isspace(sbuf[--nbytes]))
+		sbuf[nbytes] = 0;
+
+	if (wget_strncasecmp_ascii(sbuf, "HTTP/1.1 200", 12)) {
+		error_printf("Proxy connection failed with: %s\n", sbuf);
+		return WGET_E_CONNECT;
+	}
+
+	debug_printf("Proxy connection established: %s\n", sbuf);
+
+	return WGET_E_SUCCESS;
+}
+
 int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 {
 	static int next_http_proxy = -1;
@@ -621,6 +661,8 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 	int
 		rc,
 		ssl = iri->scheme == WGET_IRI_SCHEME_HTTPS;
+	bool
+		need_connect = false;
 
 	if (!_conn)
 		return WGET_E_INVALID;
@@ -629,86 +671,107 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 
 	host = iri->host;
 	port = iri->port;
+	conn->tcp = wget_tcp_init();
 
-	wget_thread_mutex_lock(proxy_mutex);
 	if (!wget_http_match_no_proxy(no_proxies, iri->host)) {
-		wget_iri *proxy;
+		if (!ssl && http_proxies) {
+			wget_thread_mutex_lock(proxy_mutex);
+			wget_iri *proxy = wget_vector_get(http_proxies, (++next_http_proxy) % wget_vector_size(http_proxies));
+			wget_thread_mutex_unlock(proxy_mutex);
 
-		if (iri->scheme == WGET_IRI_SCHEME_HTTP && http_proxies) {
-			proxy = wget_vector_get(http_proxies, (++next_http_proxy) % wget_vector_size(http_proxies));
 			host = proxy->host;
 			port = proxy->port;
+			ssl = proxy->scheme == WGET_IRI_SCHEME_HTTPS;
 			conn->proxied = 1;
-		} else if (iri->scheme == WGET_IRI_SCHEME_HTTPS && https_proxies) {
-			proxy = wget_vector_get(https_proxies, (++next_https_proxy) % wget_vector_size(https_proxies));
+		} else if (ssl && https_proxies) {
+			wget_thread_mutex_lock(proxy_mutex);
+			wget_iri *proxy = wget_vector_get(https_proxies, (++next_https_proxy) % wget_vector_size(https_proxies));
+			wget_thread_mutex_unlock(proxy_mutex);
+
 			host = proxy->host;
 			port = proxy->port;
-			conn->proxied = 1;
+			ssl = proxy->scheme == WGET_IRI_SCHEME_HTTPS;
+//			conn->proxied = 1;
+
+			need_connect = true;
 		}
 	}
-	wget_thread_mutex_unlock(proxy_mutex);
 
-	conn->tcp = wget_tcp_init();
 	if (ssl) {
 		wget_tcp_set_ssl(conn->tcp, 1); // switch SSL on
 		wget_tcp_set_ssl_hostname(conn->tcp, host); // enable host name checking
 	}
 
-	if ((rc = wget_tcp_connect(conn->tcp, host, port)) == WGET_E_SUCCESS) {
-		conn->esc_host = iri->host ? wget_strdup(iri->host) : NULL;
-		conn->port = iri->port;
-		conn->scheme = iri->scheme;
-		conn->buf = wget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
-#ifdef WITH_LIBNGHTTP2
-		if ((conn->protocol = (char) wget_tcp_get_protocol(conn->tcp)) == WGET_PROTOCOL_HTTP_2_0) {
-			nghttp2_session_callbacks *callbacks;
-
-			if (nghttp2_session_callbacks_new(&callbacks)) {
-				error_printf(_("Failed to create HTTP2 callbacks\n"));
-				wget_http_close(_conn);
-				return WGET_E_INVALID;
-			}
-
-			setup_nghttp2_callbacks(callbacks);
-			rc = nghttp2_session_client_new(&conn->http2_session, callbacks, conn);
-			nghttp2_session_callbacks_del(callbacks);
-
-			if (rc) {
-				error_printf(_("Failed to create HTTP2 client session (%d)\n"), rc);
-				wget_http_close(_conn);
-				return WGET_E_INVALID;
-			}
-
-			nghttp2_settings_entry iv[] = {
-				// {NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, 100},
-				{NGHTTP2_SETTINGS_INITIAL_WINDOW_SIZE, 1 << 30}, // prevent window size changes
-				{NGHTTP2_SETTINGS_ENABLE_PUSH, 0}, // avoid push messages from server
-			};
-
-			if ((rc = nghttp2_submit_settings(conn->http2_session, NGHTTP2_FLAG_NONE, iv, countof(iv)))) {
-				error_printf(_("Failed to submit HTTP2 client settings (%d)\n"), rc);
-				wget_http_close(_conn);
-				return WGET_E_INVALID;
-			}
-
-#if NGHTTP2_VERSION_NUM >= 0x010c00
-			// without this we experience slow downloads on fast networks
-			if ((rc = nghttp2_session_set_local_window_size(conn->http2_session, NGHTTP2_FLAG_NONE, 0, 1 << 30)))
-				debug_printf("Failed to set HTTP2 connection level window size (%d)\n", rc);
-#endif
-
-			conn->received_http2_responses = wget_vector_create(16, NULL);
-		} else
-			conn->pending_requests = wget_vector_create(16, NULL);
-#else
-		conn->pending_requests = wget_vector_create(16, NULL);
-#endif
-	} else {
+	if ((rc = wget_tcp_connect(conn->tcp, host, port)) != WGET_E_SUCCESS) {
 		if (server_stats_callback && (rc == WGET_E_CERTIFICATE))
 			server_stats_callback(conn, NULL);
 
 		wget_http_close(_conn);
+		return rc;
 	}
+
+	if (need_connect) {
+		if ((rc = establish_proxy_connect(conn->tcp, iri->host, iri->port)) != WGET_E_SUCCESS) {
+			wget_http_close(_conn);
+			return rc;
+		}
+
+		if (iri->scheme == WGET_IRI_SCHEME_HTTPS) {
+			wget_tcp_set_ssl(conn->tcp, 1); // switch SSL on
+			wget_tcp_set_ssl_hostname(conn->tcp, iri->host); // enable host name checking
+			wget_tcp_tls_start(conn->tcp);
+		}
+	}
+
+	conn->esc_host = iri->host ? wget_strdup(iri->host) : NULL;
+	conn->port = iri->port;
+	conn->scheme = iri->scheme;
+	conn->buf = wget_buffer_alloc(102400); // reusable buffer, large enough for most requests and responses
+#ifdef WITH_LIBNGHTTP2
+	if ((conn->protocol = (char) wget_tcp_get_protocol(conn->tcp)) == WGET_PROTOCOL_HTTP_2_0) {
+		nghttp2_session_callbacks *callbacks;
+
+		if (nghttp2_session_callbacks_new(&callbacks)) {
+			error_printf(_("Failed to create HTTP2 callbacks\n"));
+			wget_http_close(_conn);
+			return WGET_E_INVALID;
+		}
+
+		setup_nghttp2_callbacks(callbacks);
+		rc = nghttp2_session_client_new(&conn->http2_session, callbacks, conn);
+		nghttp2_session_callbacks_del(callbacks);
+
+		if (rc) {
+			error_printf(_("Failed to create HTTP2 client session (%d)\n"), rc);
+			wget_http_close(_conn);
+			return WGET_E_INVALID;
+		}
+
+		nghttp2_settings_entry iv[] = {
+			// {NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, 100},
+			{NGHTTP2_SETTINGS_INITIAL_WINDOW_SIZE, 1 << 30}, // prevent window size changes
+			{NGHTTP2_SETTINGS_ENABLE_PUSH, 0}, // avoid push messages from server
+		};
+
+		if ((rc = nghttp2_submit_settings(conn->http2_session, NGHTTP2_FLAG_NONE, iv, countof(iv)))) {
+			error_printf(_("Failed to submit HTTP2 client settings (%d)\n"), rc);
+			wget_http_close(_conn);
+			return WGET_E_INVALID;
+		}
+
+#if NGHTTP2_VERSION_NUM >= 0x010c00
+		// without this we experience slow downloads on fast networks
+		if ((rc = nghttp2_session_set_local_window_size(conn->http2_session, NGHTTP2_FLAG_NONE, 0, 1 << 30)))
+			debug_printf("Failed to set HTTP2 connection level window size (%d)\n", rc);
+#endif
+
+		conn->received_http2_responses = wget_vector_create(16, NULL);
+	} else
+		conn->pending_requests = wget_vector_create(16, NULL);
+
+#else
+	conn->pending_requests = wget_vector_create(16, NULL);
+#endif
 
 	return rc;
 }

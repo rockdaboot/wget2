@@ -1643,8 +1643,10 @@ int wget_ssl_open(wget_tcp *tcp)
 		gnutls_session_enable_compatibility_mode(session);
 
 	// RFC 6066 SNI Server Name Indication
-	if (hostname)
+	if (hostname) {
 		gnutls_server_name_set(session, GNUTLS_NAME_DNS, hostname, strlen(hostname));
+		debug_printf("SNI %s\n", hostname);
+	}
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, credentials);
 
 	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
