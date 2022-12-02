@@ -729,7 +729,14 @@ char *wget_xml_decode_entities_inline(char *src)
 	while (*s) {
 		if (*s == '&') {
 			// entities are case sensitive (RFC1866, 3.2.3)
-			if (!strncmp((char *) s + 1, "amp;", 4)) {
+			if (s[1] == '#') {
+				*d = (unsigned char) strtol((char *) s + 2, (char **) &s, 10);
+				if (*d == ' ') *d = '+'; // hack
+				d++;
+				if (*s == ';') s++;
+				ret = src;
+				continue;
+			} else if (!strncmp((char *) s + 1, "amp;", 4)) {
 				*d++ = '&';
 				s += 5;
 				ret = src;
