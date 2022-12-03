@@ -404,7 +404,7 @@ pages:
     - mv wget2-*.gz public/wget2-latest.tar.gz
 
 # Test suite coverage report
-    - coverage=$(grep -m 1 'headerCovTableEntry[a-zA-Z].*[0-9]*' lcov/index.html|sed 's/^.*>\([0-9]\+\.[0-9]\+\).*/\1/');
+    - coverage=$(grep -m 1 'headerCovTableEntry[a-zA-Z].*[0-9]*' lcov/index.html|sed 's/^.*>\([0-9]\+\.[0-9]\+\).*/\1/')
     - coverage=$(printf %.2f $coverage)
     - inum=$(echo $coverage|cut -d'.' -f1)
     - if [ -z "$inum" ]; then inum="0"; fi
@@ -419,7 +419,7 @@ pages:
 
 # Coverage report for all our fuzz corpora
     - make -j$(nproc) fuzz-coverage
-    - coverage=$(grep -m 1 'headerCovTableEntry[a-zA-Z].*[0-9]*' lcov/index.html|sed 's/^.*>\([0-9]\+\.[0-9]\+\).*/\1/');
+    - coverage=$(grep -m 1 'headerCovTableEntry[a-zA-Z].*[0-9]*' lcov/index.html|sed 's/^.*>\([0-9]\+\.[0-9]\+\).*/\1/')
     - coverage=$(printf %.2f $coverage)
     - inum=$(echo $coverage|cut -d'.' -f1)
     - if [ -z "$inum" ]; then inum="0"; fi
