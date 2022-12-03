@@ -1283,7 +1283,8 @@ struct config config = {
 	.default_https_port = 443,
 	.hyperlink = false,
 	.if_modified_since = 1,
-	.progress = PROGRESS_TYPE_BAR
+	.progress = PROGRESS_TYPE_BAR,
+	.follow_sitemaps = true
 };
 
 static int parse_execute(option_t opt, const char *val, const char invert);
@@ -1596,6 +1597,11 @@ static const struct optionw options[] = {
 		SECTION_DOWNLOAD,
 		{ "Apply the accept and reject filters on the URL\n",
 		  "before starting a download. (default: off)\n"
+		}
+	},
+	{ "follow-sitemaps", &config.follow_sitemaps, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Scan sitemaps found in robots.txt. (default: on)\n"
 		}
 	},
 	{ "follow-tags", &config.follow_tags, parse_taglist, 1, 0,

@@ -1763,6 +1763,8 @@ Go to background immediately after startup. If no output file is specified via t
   Whether enabled or disabled, the `robots.txt` file is downloaded and scanned for sitemaps. These are lists of pages / files
   available for download that not necessarily are available via recursive scanning.
 
+  This behavior can be switched off by `--no-follow-sitemaps`.
+
 ## <a name="Recursive Accept/Reject Options"/>Recursive Accept/Reject Options
 
 ### `-A acclist`, `--accept=acclist`, `-R rejlist`, `--reject=rejlist`
@@ -1792,6 +1794,13 @@ Go to background immediately after startup. If no output file is specified via t
 ### `--exclude-domains=domain-list`
 
   Specify the domains that are not to be followed.
+
+### `--follow-sitemaps`
+
+  Parsing the sitemaps from `robots.txt` and follow the links. (default: on).
+
+  This option is on for recursive downloads whether you specify `--robots` or `-no-robots`.
+  Following the URLs found in sitemaps can be switched off with `--no-follow-sitemaps`.
 
 ### `--follow-tags=list`
 

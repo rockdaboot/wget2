@@ -239,6 +239,7 @@ struct config {
 		https_only,
 		content_disposition,
 		page_requisites,
+		follow_sitemaps,
 		force_rss,
 		force_atom,
 		force_sitemap,

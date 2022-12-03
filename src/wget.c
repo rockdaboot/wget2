@@ -2131,11 +2131,13 @@ static void process_response(wget_http_response *resp)
 			// Sitemaps are not relevant as page requisites
 			!config.page_requisites)
 	{
-		// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
-		for (int it = 0, n = wget_robots_get_sitemap_count(job->host->robots); it < n; it++) {
-			const char *sitemap = wget_robots_get_sitemap(job->host->robots, it);
-			debug_printf("adding sitemap '%s'\n", sitemap);
-			queue_url_from_remote(job, "utf-8", sitemap, URL_FLG_SITEMAP, NULL); // see https://www.sitemaps.org/protocol.html#escaping
+		if (config.follow_sitemaps) {
+			// add sitemaps to be downloaded (format https://www.sitemaps.org/protocol.html)
+			for (int it = 0, n = wget_robots_get_sitemap_count(job->host->robots); it < n; it++) {
+				const char *sitemap = wget_robots_get_sitemap(job->host->robots, it);
+				debug_printf("adding sitemap '%s'\n", sitemap);
+				queue_url_from_remote(job, "utf-8", sitemap, URL_FLG_SITEMAP, NULL); // see https://www.sitemaps.org/protocol.html#escaping
+			}
 		}
 	} else if (resp->code == 200 || resp->code == 206) {
 		if (process_decision && recurse_decision) {
