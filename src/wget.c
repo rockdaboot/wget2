@@ -3579,8 +3579,10 @@ out:
 		}
 
 		if (!wget_strcasecmp_ascii(resp->req->method, "HEAD")) {
-			bar_slot_begin(ctx->progress_slot, name, 0, resp->header->length);
-			bar_set_downloaded(ctx->progress_slot, resp->header->length);
+			if (resp->header) {
+				bar_slot_begin(ctx->progress_slot, name, 0, resp->header->length);
+				bar_set_downloaded(ctx->progress_slot, resp->header->length);
+			}
 		}
 		else if (config.continue_download && resp->code == 206) {
 			long long already_downloaded;
