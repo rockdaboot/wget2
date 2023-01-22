@@ -1752,9 +1752,6 @@ static int process_response_header(wget_http_response *resp)
 		hpkp_changed = 1;
 	}
 
-	if (resp->code == 302 && resp->links && resp->digests)
-		return 0; // 302 with Metalink information
-
 	if (resp->code == 401) { // Unauthorized
 		job->auth_failure_count++;
 
@@ -1806,7 +1803,25 @@ static int process_response_header(wget_http_response *resp)
 
 		wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
 
-		wget_iri_relative_to_abs(iri, resp->location, (size_t) -1, &uri_buf);
+		const char *location = resp->location;
+
+		if (resp->links) {
+			// Download from the link with the highest priority.
+			wget_http_link *top_link = NULL;
+
+			for (int it = 0; it < wget_vector_size(resp->links); it++) {
+				wget_http_link *link = wget_vector_get(resp->links, it);
+				if (link->rel == link_rel_duplicate) {
+					if (!top_link || top_link->pri > link->pri) {
+						// just save the top priority link
+						top_link = link;
+						location = link->uri;
+					}
+				}
+			}
+		}
+
+		wget_iri_relative_to_abs(iri, location, (size_t) -1, &uri_buf);
 
 		if (uri_buf.length)
 			queue_url_from_remote(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION, NULL);
@@ -2020,34 +2035,17 @@ static void process_response(wget_http_response *resp)
 		// Found a Metalink answer (RFC 6249 Metalink/HTTP: Mirrors and Hashes).
 		// We try to find and download the .meta4 file (RFC 5854).
 		// If we can't find the .meta4, download from the link with the highest priority.
-
-		wget_http_link *top_link = NULL, *metalink = NULL;
-
 		for (int it = 0; it < wget_vector_size(resp->links); it++) {
 			wget_http_link *link = wget_vector_get(resp->links, it);
 			if (link->rel == link_rel_describedby) {
 				if (link->type && (!wget_strcasecmp_ascii(link->type, "application/metalink4+xml") ||
 					 !wget_strcasecmp_ascii(link->type, "application/metalink+xml")))
 				{
-					// found a link to a metalink4 description
-					metalink = link;
-					break;
+					// found a link to a metalink3 or metalink4 description, create a new job
+					queue_url_from_remote(job, "utf-8", link->uri, 0, NULL);
+					return;
 				}
-			} else if (link->rel == link_rel_duplicate) {
-				if (!top_link || top_link->pri > link->pri)
-					// just save the top priority link
-					top_link = link;
 			}
-		}
-
-		if (metalink) {
-			// found a link to a metalink3 or metalink4 description, create a new job
-			queue_url_from_remote(job, "utf-8", metalink->uri, 0, NULL);
-			return;
-		} else if (top_link) {
-			// no metalink4 description found, create a new job
-			queue_url_from_remote(job, "utf-8", top_link->uri, 0, NULL);
-			return;
 		}
 	}
 
