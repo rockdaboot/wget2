@@ -1116,6 +1116,7 @@ static void convert_links(void)
 	conversion_t *conversion;
 	wget_buffer buf;
 	char sbuf[1024];
+	bool free_iri = false;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
@@ -1147,6 +1148,7 @@ static void convert_links(void)
 				// buf.data now holds the absolute URL as a string
 				wget_iri *iri = wget_iri_parse(buf.data, conversion->encoding);
 				blacklist_entry *blacklist_entry;
+				free_iri = false;
 
 				if (!iri) {
 					info_printf(_("Cannot resolve URI '%s'\n"), buf.data);
@@ -1155,19 +1157,22 @@ static void convert_links(void)
 
 				if (!(blacklist_entry = blacklist_add(iri))) {
 					blacklist_entry = blacklist_get(iri);
-					wget_iri_free(&iri);
+					free_iri = true;
 				}
 
 				const char *filename = blacklist_entry->local_filename;
 
 				if (config.convert_links) {
 					convert_link_whole(filename, conversion, url, &buf);
-					if (blacklist_entry->iri->fragment) {
+					if (iri->fragment) {
 						wget_buffer_memcat(&buf, "#", 1);
-						wget_buffer_strcat(&buf, blacklist_entry->iri->fragment);
+						wget_buffer_strcat(&buf, iri->fragment);
 					}
 				} else if (config.convert_file_only)
 					convert_link_file_only(filename, url, &buf);
+
+				if (free_iri)
+					wget_iri_free(&iri);
 
 				if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {
 					// conversion takes place, write to disk
