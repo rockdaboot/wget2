@@ -2485,6 +2485,46 @@ static void test_set_proxy(void)
 	}
 }
 
+
+static void test_match_no_proxy(void)
+{
+	static const struct test_data {
+		const char *
+			no_proxy;
+		const char *
+			hostip;
+		const char *
+			encoding;
+		int
+			result;
+	} test_data[] = {
+		{ "10.250.192.78/12", "142.251.33.101", NULL, 0},
+		{ "142.250.192.78/12", "142.251.33.101", NULL, 1},
+		{ "142.250.192.78/50", "142.251.33.101", NULL, 0},
+		{ "10.250.192.78.123/12", "142.251.33.101", NULL, 0},
+		{ "142.250.192.78/32", "142.250.180.101", NULL, 0},
+		{ "142.250.192.78/0", "142.250.180.101", NULL, 1},
+		{ "142.250.192.78/-1", "142.250.180.101", NULL, 0},
+		{ "", "142.250.180.101", NULL, 0},
+		{ "142.251.33.101,10.250.192.78/12", "142.251.33.101", NULL, 1},
+		{ "10.250.192.78/12, 142.251.33.101", "142.251.33.101", NULL, 1},
+	};
+
+	for (unsigned it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+		wget_http_set_no_proxy(t->no_proxy, t->encoding);
+		const wget_vector *no_proxies = http_get_no_proxy();
+		int n = wget_http_match_no_proxy(no_proxies, t->hostip);
+
+		if (n == t->result) {
+			ok++;
+		} else {
+			failed++;
+			info_printf("Failed [%u]: wget_http_match_no_proxy(\"%s\",\"%s\") -> %d (expected %d)\n", it, t->no_proxy, t->hostip, n, t->result);
+		}
+	}
+}
+
 // Add some corner cases here.
 static void test_parse_header_line(void)
 {
@@ -2630,7 +2670,7 @@ int main(int argc, const char **argv)
 	test_iri_relative_to_absolute();
 	test_iri_compare();
 	test_parser();
-
+	test_match_no_proxy();
 	test_cookies();
 	test_hsts();
 	test_hpkp();

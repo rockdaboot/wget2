@@ -40,9 +40,7 @@
 #include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#ifdef WITH_ZLIB
-//#include <zlib.h>
-#endif
+#include <arpa/inet.h>
 #ifdef WITH_LIBNGHTTP2
 	#include <nghttp2/nghttp2.h>
 #endif
@@ -1527,7 +1525,36 @@ int wget_http_set_no_proxy(const char *no_proxy, const char *encoding)
 	return 0;
 }
 
-int wget_http_match_no_proxy(wget_vector *no_proxies_vec, const char *host)
+const wget_vector *http_get_no_proxy(void)
+{
+	return no_proxies;
+}
+
+static bool wget_http_cidr_match(const char *cidr, struct in_addr *addr)
+{
+	const char *slash_pos = strchr(cidr, '/');
+	if (slash_pos == NULL) {
+		return false; // invalid CIDR range
+	}
+	int prefix_len = atoi(slash_pos + 1);
+	if (prefix_len < 0 || prefix_len > 32) {
+		return false; // invalid prefix length
+	}
+	struct in_addr network_addr;
+	const char *prefix = wget_strmemdup(cidr, slash_pos - cidr);
+	if (inet_pton(AF_INET, prefix, &network_addr) != 1) {
+		xfree(prefix);
+		return false; // invalid network address
+	}
+	xfree(prefix);
+
+	uint32_t mask = (uint32_t) ~(0xFFFFFFFFLLU >> prefix_len);
+	uint32_t network = ntohl(network_addr.s_addr) & mask;
+	uint32_t test_addr = ntohl(addr->s_addr);
+	return (test_addr & mask) == network;
+}
+
+int wget_http_match_no_proxy(const wget_vector *no_proxies_vec, const char *host)
 {
 	if (!no_proxies_vec || !host)
 		return 0;
@@ -1541,6 +1568,13 @@ int wget_http_match_no_proxy(wget_vector *no_proxies_vec, const char *host)
 
 		if (!strcmp(no_proxy, host))
 			return 1; // exact match
+
+		struct in_addr addr;
+		if (inet_pton(AF_INET, host, &addr) == 1) {
+			if(wget_http_cidr_match(no_proxy, &addr)) {
+				return 1;
+			}
+		}
 
 		// check for subdomain match
 		if (*no_proxy == '.' && wget_match_tail(host, no_proxy))

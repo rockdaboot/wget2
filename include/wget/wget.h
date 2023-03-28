@@ -2272,8 +2272,10 @@ WGETAPI int
 	wget_http_set_https_proxy(const char *proxy, const char *encoding);
 WGETAPI int
 	wget_http_set_no_proxy(const char *no_proxy, const char *encoding);
+WGETAPI const wget_vector*
+	http_get_no_proxy(void);
 WGETAPI int
-	wget_http_match_no_proxy(wget_vector *no_proxies, const char *host);
+	wget_http_match_no_proxy(const wget_vector *no_proxies, const char *host);
 WGETAPI void
 	wget_http_abort_connection(wget_http_connection *conn);
 
