@@ -1993,10 +1993,11 @@ WGETAPI bool
 #define WGET_SSL_OCSP_CACHE        17
 #define WGET_SSL_ALPN              18
 #define WGET_SSL_SESSION_CACHE     19
-#define WGET_SSL_HPKP_CACHE     20
-#define WGET_SSL_OCSP_NONCE     21
-#define WGET_SSL_OCSP_DATE      22
+#define WGET_SSL_HPKP_CACHE        20
+#define WGET_SSL_OCSP_NONCE        21
+#define WGET_SSL_OCSP_DATE         22
 #define WGET_SSL_REPORT_INVALID_CERT 23
+#define WGET_SSL_DANE              24
 
 WGETAPI void
 	wget_ssl_init(void);

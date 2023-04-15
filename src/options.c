@@ -1501,6 +1501,11 @@ static const struct optionw options[] = {
 		{ "Cut HTTP GET vars from URLs. (default: off)\n"
 		}
 	},
+	{ "dane", &config.dane, parse_bool, -1, 0,
+		SECTION_SSL,
+		{ "Enable DANE certificate checking.(default: off)\n"
+		}
+	},
 	{ "debug", &config.debug, parse_bool, -1, 'd',
 		SECTION_STARTUP,
 		{ "Print debugging messages.(default: off)\n"
@@ -3704,6 +3709,7 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_int(WGET_SSL_REPORT_INVALID_CERT, config.check_certificate != CHECK_CERTIFICATE_LOG_DISABLED);
 	wget_ssl_set_config_int(WGET_SSL_CHECK_HOSTNAME, config.check_hostname);
 	wget_ssl_set_config_int(WGET_SSL_CERT_TYPE, config.cert_type);
+	wget_ssl_set_config_int(WGET_SSL_DANE, config.dane);
 	wget_ssl_set_config_int(WGET_SSL_KEY_TYPE, config.private_key_type);
 	wget_ssl_set_config_int(WGET_SSL_PRINT_INFO, config.debug);
 	wget_ssl_set_config_int(WGET_SSL_OCSP, config.ocsp);

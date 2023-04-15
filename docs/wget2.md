@@ -1598,6 +1598,15 @@ Go to background immediately after startup. If no output file is specified via t
 
   To disable persistent OCSP caching use `--no-ocsp-file`.
 
+### `--dane` (experimental)
+  Enable DANE certificate verification (default: off).
+
+  This check requires DNSSEC to be configured.
+  The check is strict - the connection is dropped on any verification failures.
+  Enable this option only when the host's DNS entries are set up for DANE.
+
+  Warning: This option may change or may be removed without further notice.
+
 ### `--http2`
 
   Enable HTTP/2 protocol (default: on).

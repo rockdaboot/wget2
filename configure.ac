@@ -628,6 +628,25 @@ AS_IF([(test "$with_gnutls" != "yes" || test "$with_gnutls_hash" != "yes") && te
 AM_CONDITIONAL([WITH_LIBNETTLE], [test "$with_libnettle" = "yes"])
 AM_CONDITIONAL([WITH_CRYPT], [test "$with_gcrypt" = "yes"])
 
+AC_ARG_WITH(libdane, AS_HELP_STRING([--without-libdane], [enable support for DANE certificate checking]), with_libdane=$withval, with_libdane=yes)
+AS_IF([test "$with_libdane" != "no"], [
+  PKG_CHECK_MODULES([LIBDANE], [gnutls-dane >= 3.0.0], [
+    with_libdane=yes
+    LIBS="$LIBDANE_LIBS $LIBS"
+    CFLAGS="$LIBDANE_CFLAGS $CFLAGS"
+    AC_DEFINE([WITH_LIBDANE], [1], [DANE support enabled])
+  ], [
+    OLD_LIBS="$LIBS"
+    LIBS=
+    AC_SEARCH_LIBS(dane_verify_crt, gnutls-dane,
+      [with_libdane=yes; AC_DEFINE([WITH_LIBDANE], [1], [DANE support enabled])],
+      [with_libdane=no;  AC_MSG_WARN(*** libgnutls-dane was not found.)])
+    LIBDANE_LIBS="$LIBS"
+    LIBS="$LIBS $OLD_LIBS"
+  ])
+])
+AM_CONDITIONAL([WITH_LIBDANE], [test "$with_libdane" = "yes"])
+
 AC_ARG_WITH(libpsl, AS_HELP_STRING([--without-libpsl], [disable support for libpsl cookie checking]), with_libpsl=$withval, with_libpsl=yes)
 AS_IF([test "$with_libpsl" != "no"], [
   PKG_CHECK_MODULES([LIBPSL], libpsl, [
@@ -1041,6 +1060,7 @@ AC_MSG_NOTICE([Summary of build options:
   Library types:      shared=${enable_shared}, static=${enable_static}
   Small libraries:    $enable_manylibs
   SSL/TLS support:    $ssl_enabled
+  DANE support:       $with_libdane
   GZIP compression:   $with_zlib
   BZIP2 compression:  $with_bzip2
   LZMA compression:   $with_lzma

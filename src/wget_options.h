@@ -295,7 +295,8 @@ struct config {
 		ocsp_nonce,
 		recursive,
 		tls_false_start,
-		tcp_fastopen;
+		tcp_fastopen,
+		dane;
 };
 
 extern struct config

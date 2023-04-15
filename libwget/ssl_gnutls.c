@@ -52,6 +52,9 @@
 #ifdef WITH_OCSP
 #	include <gnutls/ocsp.h>
 #endif
+#ifdef WITH_LIBDANE
+#	include <gnutls/dane.h>
+#endif
 #include <gnutls/crypto.h>
 #include <gnutls/abstract.h>
 
@@ -106,7 +109,8 @@ static struct config {
 		ocsp : 1,
 		ocsp_date : 1,
 		ocsp_stapling : 1,
-		ocsp_nonce : 1;
+		ocsp_nonce : 1,
+		dane : 1;
 } config = {
 	.check_certificate = 1,
 	.report_invalid_cert = 1,
@@ -291,6 +295,7 @@ void wget_ssl_set_config_int(int key, int value)
 	case WGET_SSL_CHECK_HOSTNAME: config.check_hostname = (char)value; break;
 	case WGET_SSL_CA_TYPE: config.ca_type = (char)value; break;
 	case WGET_SSL_CERT_TYPE: config.cert_type = (char)value; break;
+	case WGET_SSL_DANE: config.dane = (char)value; break;
 	case WGET_SSL_KEY_TYPE: config.key_type = (char)value; break;
 	case WGET_SSL_PRINT_INFO: config.print_info = (char)value; break;
 	case WGET_SSL_OCSP: config.ocsp = (char)value; break;
@@ -1754,6 +1759,32 @@ int wget_ssl_open(wget_tcp *tcp)
 		stats.false_start = (gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) != 0;
 #endif
 	}
+
+#ifdef WITH_LIBDANE
+	if (ret == WGET_E_SUCCESS && config.dane) {
+		unsigned verify = 0;
+		rc = dane_verify_session_crt(NULL, session, hostname, "tcp", 443, 0,
+			DANE_VFLAG_FAIL_IF_NOT_CHECKED,
+			&verify);
+		if (rc < 0) {
+			debug_printf("DANE error for %s: %s", hostname, dane_strerror(rc));
+			ret = WGET_E_CERTIFICATE;
+		} else if (verify) {
+			gnutls_datum_t out;
+			rc = dane_verification_status_print(verify, &out, 0);
+			if (rc < 0) {
+				error_printf("DANE error for %s: %s", hostname, dane_strerror(rc));
+			} else {
+				error_printf("DANE verification failed for %s: %s\n", hostname, out.data);
+			}
+			gnutls_free(out.data);
+
+			ret = WGET_E_CERTIFICATE;
+		} else {
+			debug_printf("DANE: %s", dane_strerror(rc));
+		}
+	}
+#endif
 
 #if GNUTLS_VERSION_NUMBER >= 0x030200
 	if (config.alpn) {
