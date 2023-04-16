@@ -934,6 +934,17 @@ out:
 	return ret; // Pubkey not found
 }
 
+static void print_verification_status(gnutls_session_t session, const char *tag, int status) {
+	gnutls_datum_t out;
+
+	if (gnutls_certificate_verification_status_print(
+		status, gnutls_certificate_type_get(session), &out, 0) == GNUTLS_E_SUCCESS)
+	{
+		error_printf_check("%s: %s\n", tag, out.data); // no translation
+		xfree(out.data);
+	}
+}
+
 /* This function will verify the peer's certificate, and check
  * if the hostname matches, as well as the activation, expiration dates.
  */
@@ -989,18 +1000,49 @@ static int verify_certificate_callback(gnutls_session_t session)
 #endif
 
 #if GNUTLS_VERSION_NUMBER >= 0x030104
+#ifdef WITH_LIBDANE
+	// If CA cert verification failed due to missing certificates, we try DANE verification (if requested by the user).
 	if (status) {
-		gnutls_datum_t out;
-
-		if (gnutls_certificate_verification_status_print(
-			status, gnutls_certificate_type_get(session), &out, 0) == GNUTLS_E_SUCCESS)
-		{
-			error_printf_check("%s: %s\n", tag, out.data); // no translation
-			xfree(out.data);
+		if (!config.dane) {
+			print_verification_status(session, tag, status);
+			goto out;
+		}
+		if (status != (GNUTLS_CERT_INVALID | GNUTLS_CERT_SIGNER_NOT_FOUND)) {
+			print_verification_status(session, tag, status);
+			goto out;
 		}
 
+		// GNUTLS_CERT_SIGNER_NOT_FOUND indicates that no matching CA cert exists.
+
+		unsigned verify = 0;
+
+		int rc = dane_verify_session_crt(NULL, session, hostname, "tcp", 443, 0,
+			DANE_VFLAG_FAIL_IF_NOT_CHECKED,
+			&verify);
+
+		if (rc < 0) {
+			debug_printf("DANE verification error for %s: %s", hostname, dane_strerror(rc));
+			goto out;
+		} else if (verify) {
+			gnutls_datum_t out;
+			rc = dane_verification_status_print(verify, &out, 0);
+			if (rc < 0) {
+				error_printf("DANE verification print error for %s: %s", hostname, dane_strerror(rc));
+			} else {
+				error_printf("DANE verification failed for %s: %s\n", hostname, out.data);
+			}
+			gnutls_free(out.data);
+			goto out;
+		} else {
+			debug_printf("DANE verification: %s", dane_strerror(rc));
+		}
+	}
+#else
+	if (status) {
+		print_verification_status(session, tag, status);
 		goto out;
 	}
+#endif
 #else
 	if (status) {
 		if (status & GNUTLS_CERT_INVALID)
@@ -1759,32 +1801,6 @@ int wget_ssl_open(wget_tcp *tcp)
 		stats.false_start = (gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) != 0;
 #endif
 	}
-
-#ifdef WITH_LIBDANE
-	if (ret == WGET_E_SUCCESS && config.dane) {
-		unsigned verify = 0;
-		rc = dane_verify_session_crt(NULL, session, hostname, "tcp", 443, 0,
-			DANE_VFLAG_FAIL_IF_NOT_CHECKED,
-			&verify);
-		if (rc < 0) {
-			debug_printf("DANE error for %s: %s", hostname, dane_strerror(rc));
-			ret = WGET_E_CERTIFICATE;
-		} else if (verify) {
-			gnutls_datum_t out;
-			rc = dane_verification_status_print(verify, &out, 0);
-			if (rc < 0) {
-				error_printf("DANE error for %s: %s", hostname, dane_strerror(rc));
-			} else {
-				error_printf("DANE verification failed for %s: %s\n", hostname, out.data);
-			}
-			gnutls_free(out.data);
-
-			ret = WGET_E_CERTIFICATE;
-		} else {
-			debug_printf("DANE: %s", dane_strerror(rc));
-		}
-	}
-#endif
 
 #if GNUTLS_VERSION_NUMBER >= 0x030200
 	if (config.alpn) {

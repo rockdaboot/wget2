@@ -1601,11 +1601,13 @@ Go to background immediately after startup. If no output file is specified via t
 ### `--dane` (experimental)
   Enable DANE certificate verification (default: off).
 
-  This check requires DNSSEC to be configured.
-  The check is strict - the connection is dropped on any verification failures.
-  Enable this option only when the host's DNS entries are set up for DANE.
+  In case the server verification fails due to missing CA certificates (e.g. empty certification pool),
+  this option enables checking the TLSA DNS entries via DANE.
 
-  Warning: This option may change or may be removed without further notice.
+  You should have DNSSEC set up to avoid MITM attacks.
+  Also, the destination host's DNS entries need to be set up for DANE.
+
+  Warning: This option or its behavior may change or may be removed without further notice.
 
 ### `--http2`
 
