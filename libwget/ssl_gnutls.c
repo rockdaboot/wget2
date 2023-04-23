@@ -134,6 +134,8 @@ struct session_context {
 		hostname;
 	wget_hpkp_stats_result
 		stats_hpkp;
+	uint16_t
+		port;
 	bool
 		ocsp_stapling : 1,
 		valid : 1,
@@ -955,7 +957,6 @@ static int verify_certificate_callback(gnutls_session_t session)
 	unsigned int cert_list_size;
 	int ret = -1, err, ocsp_ok = 0, pinning_ok = 0;
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
-	const char *hostname;
 	const char *tag = config.check_certificate ? _("ERROR") : _("WARNING");
 #ifdef WITH_OCSP
 	unsigned nvalid = 0, nrevoked = 0, nignored = 0;
@@ -963,7 +964,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 
 	// read hostname
 	struct session_context *ctx = gnutls_session_get_ptr(session);
-	hostname = ctx->hostname;
+	const char *hostname = ctx->hostname;
 
 	/* This verification function uses the trusted CAs in the credentials
 	 * structure. So you must have installed one or more CA certificates.
@@ -1016,7 +1017,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 
 		unsigned verify = 0;
 
-		int rc = dane_verify_session_crt(NULL, session, hostname, "tcp", 443, 0,
+		int rc = dane_verify_session_crt(NULL, session, hostname, "tcp", ctx->port, 0,
 			DANE_VFLAG_FAIL_IF_NOT_CHECKED,
 			&verify);
 
@@ -1698,6 +1699,7 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
 	ctx->hostname = wget_strdup(hostname);
+	ctx->port = tcp->remote_port;
 
 #ifdef WITH_OCSP
 	// If we know the cert chain for the hostname being valid at the moment,

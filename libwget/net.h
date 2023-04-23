@@ -60,7 +60,8 @@ struct wget_tcp_st {
 		protocol; // WGET_PROTOCOL_HTTP1_1, WGET_PROTOCOL_HTTP2_0
 	wget_hpkp_stats_result
 		hpkp; // hpkp stats
-
+	uint16_t
+		remote_port; // needed for not yet connected situations (e.g. DANE)
 	bool
 		ssl : 1,
 		tls_false_start : 1,
