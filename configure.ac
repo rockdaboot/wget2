@@ -136,6 +136,7 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wchkp" # gcc-9 says: not supported any more (but emits it via -Q --help=C)"
     nw="$nw -Wc90-c99-compat" # gcc-12, we use C99
     nw="$nw -Wlong-long" # gcc-12, we use C99
+    nw="$nw -Wstrict-flex-arrays" # gcc-13 warns about it
     if test "$cross_compiling" = yes; then
       nw="$nw -Wformat"
     fi
