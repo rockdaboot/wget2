@@ -60,6 +60,7 @@
 #endif
 
 #ifdef WITH_LZIP
+#include <stdint.h>
 #include <lzlib.h>
 #endif
 
