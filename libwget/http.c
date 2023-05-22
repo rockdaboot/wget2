@@ -1468,7 +1468,9 @@ static wget_vector *parse_no_proxies(const char *no_proxy, const char *encoding)
 		if ((p = strchrnul(s, ',')) != s && p - s < 256) {
 			char *host, *hostp;
 
-			if (!(host = wget_strmemdup(s, p - s)))
+			while (c_isspace(*s) && s < p) s++;
+
+			if (s >= p || !(host = wget_strmemdup(s, p - s)))
 				continue;
 
 			// May be a hostname, domainname (optional with leading dot or wildcard), IP address.
