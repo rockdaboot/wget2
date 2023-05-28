@@ -794,7 +794,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	plugin_db_forward_url(iri, &plugin_verdict);
 
 	if (plugin_verdict.reject) {
-		debug_printf("not requesting '%s'. (Plugin Verdict)\n", url);
+		info_printf("not requesting '%s'. (Plugin Verdict)\n", url);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		wget_iri_free(&iri);
 		return;
