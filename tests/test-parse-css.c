@@ -42,6 +42,7 @@ int main(void)
 				"#test1{background:url(/page2.html) no-repeat center}\n"\
 				"#test2{background:url(http://localhost:{{port}}/page3.html)}\n"\
 				"#test3{background:url('page4.html') no-repeat whatever}\n"\
+				"#test4{background:url('data:image/png;base64,iVBORw0KGgoAAAA')}\n"\
 				"",
 		},
 		{	.name = "/page1.html",
