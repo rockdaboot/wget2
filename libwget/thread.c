@@ -289,7 +289,7 @@ int wget_thread_join(wget_thread *thread)
  */
 wget_thread_id wget_thread_self(void)
 {
-	return gl_thread_self();
+	return (wget_thread_id) gl_thread_self();
 }
 
 /**
