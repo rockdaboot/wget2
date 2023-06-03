@@ -211,6 +211,10 @@ if test -n "$WARN_CFLAGS"; then
       WARN_CFLAGS="$WARN_CFLAGS -Wno-declaration-after-statement"
     fi
 
+    if test $CLANG_VERSION -ge 16; then
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-unsafe-buffer-usage -Wno-cast-function-type-strict"
+    fi
+
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
 
