@@ -132,6 +132,7 @@ static struct config
 	.key_type = WGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
+	.ca_file = "system",
 #ifdef WITH_LIBNGHTTP2
 	.alpn = "h2,http/1.1"
 #endif
@@ -492,7 +493,7 @@ static int openssl_load_trust_files(SSL_CTX *ctx, const char *dir)
 			goto end;
 		}
 
-		dir = "/etc/ssl/certs";
+		dir = wget_ssl_default_cert_dir();
 		info_printf(_("OpenSSL: Could not load certificates from default paths. Falling back to '%s'."), dir);
 	}
 
@@ -1304,6 +1305,8 @@ static int openssl_init(SSL_CTX *ctx)
 		SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 	}
 
+	if (config.ca_file && !wget_strcmp(config.ca_file, "system"))
+		config.ca_file = wget_ssl_default_ca_bundle_path();
 	/* Load individual CA file, if requested */
 	if (config.ca_file && *config.ca_file
 		&& !SSL_CTX_load_verify_locations(ctx, config.ca_file, NULL))

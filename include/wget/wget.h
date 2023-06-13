@@ -2666,6 +2666,8 @@ WGETAPI void
 WGETAPI void
 	wget_intercept_action_set_local_filename(wget_intercept_action *action, const char *local_filename) WGET_GCC_NONNULL((1));
 
+WGETAPI const char* wget_ssl_default_cert_dir();
+WGETAPI const char* wget_ssl_default_ca_bundle_path();
 /**
  * \ingroup libwget-plugin
  *
