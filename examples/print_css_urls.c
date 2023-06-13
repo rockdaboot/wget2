@@ -27,7 +27,7 @@
  * We don't care about character encoding in this example.
  *
  */
-
+#include "config.h"
 #include <unistd.h>
 #include <wget.h>
 

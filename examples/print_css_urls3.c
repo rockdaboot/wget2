@@ -26,7 +26,7 @@
  * Demonstrate how to extract URIs from CSS files into a vector.
  *
  */
-
+#include "config.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>

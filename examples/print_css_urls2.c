@@ -30,7 +30,7 @@
  * BOM see: https://www.w3.org/International/questions/qa-byte-order-mark
  *
  */
-
+#include "config.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>

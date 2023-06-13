@@ -26,7 +26,7 @@
  * Simple demonstration how to download an URI.
  *
  */
-
+#include "config.h"
 #include <wget.h>
 
 #define COOKIE_SUPPORT

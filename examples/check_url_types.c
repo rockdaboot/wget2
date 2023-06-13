@@ -21,7 +21,7 @@
  * Input format is Alexa top-x, e.g. <id>,<domain>
  *
  */
-
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #ifndef _WIN32

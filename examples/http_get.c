@@ -26,7 +26,7 @@
  * Simple demonstration how to download an URL with high level API functions.
  *
  */
-
+#include "config.h"
 #include <stdlib.h>
 #include <wget.h>
 

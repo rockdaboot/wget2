@@ -19,7 +19,7 @@
  *
  * Demonstrate how to convert relative URLs into absolute URLs.
  */
-
+#include "config.h"
 #include <stdio.h> // printf
 #include <string.h> // strlen
 #include <wget.h>

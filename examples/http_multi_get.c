@@ -28,7 +28,7 @@
  * With HTTP/2.0: response data comes in parallel streams
  *
  */
-
+#include "config.h"
 #include <stdlib.h>
 #include <wget.h>
 

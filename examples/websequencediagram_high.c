@@ -21,7 +21,7 @@
  * Using high-level API.
  *
  */
-
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
