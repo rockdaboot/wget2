@@ -490,7 +490,7 @@ char *wget_human_readable(char *buf, size_t bufsize, uint64_t n)
 int wget_get_screen_size(int *width, int *height)
 {
 	struct winsize wsz;
-	int fd = fileno(stderr);
+	int fd = fileno(stderr); // TODO: progress bar is output to stdout so we probably should be using that !?
 
 	if (ioctl (fd, TIOCGWINSZ, &wsz) >= 0) {
 		if (width)
@@ -502,6 +502,25 @@ int wget_get_screen_size(int *width, int *height)
 	}
 
 	return -1;
+}
+#elif defined _WIN32
+int wget_get_screen_size(int *width, int *height)
+{
+	static CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
+	static HANDLE consoleHandle = NULL;
+
+	if (consoleHandle == NULL)
+		consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	if (!GetConsoleScreenBufferInfo(consoleHandle, &csbiInfo))
+		return -1;
+
+	if (width)
+		*width = csbiInfo.dwSize.X;
+	if (height)
+		*height = csbiInfo.dwSize.Y;
+
+	return 0;
 }
 #else
 int wget_get_screen_size(WGET_GCC_UNUSED int *width, WGET_GCC_UNUSED int *height)
