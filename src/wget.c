@@ -3550,7 +3550,13 @@ static int get_header(wget_http_response *resp, void *context)
 		};
 		name = dest = name_allocated = get_local_filename(&iri);
 	} else {
-		name = dest = config.output_document ? config.output_document : ctx->job->blacklist_entry->local_filename;
+		if (!config.output_document) {
+			dest = ctx->job->blacklist_entry->local_filename;// the blacklist entry can be freed if it is updated by prepare_file ad then name is pointed to unalloced memory,  instead name should stay null here and we will read it from the blacklist entry(wihhc may be updated) later
+			name = NULL;//should already be nll but to be safe
+		}
+		else
+			dest = name = config.output_document;
+
 	}
 
 	if (dest
