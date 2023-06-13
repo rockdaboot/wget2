@@ -45,7 +45,7 @@
 
 // Rate at which progress thread it updated. This is the amount of time (in ms)
 // for which the thread will sleep before waking up and redrawing the progress
-enum { BAR_THREAD_SLEEP_DURATION = 125 };
+enum { BAR_THREAD_SLEEP_DURATION = 125, BAR_THREAD_WINDOWS_CONSOLE_SIZE_CHANGED_EVERY_X_SLEEPS=1000/BAR_THREAD_SLEEP_DURATION};
 
 static wget_bar
 	*bar;
@@ -56,8 +56,19 @@ static bool
 
 static void *bar_update_thread(void *p WGET_GCC_UNUSED)
 {
+#ifdef _WIN32
+	static BYTE counter=0;
+	int lastWidth = 0;
+	int curWidth = 0;
+#endif // _WIN32
 	while (!terminate_thread) {
 		wget_bar_update(bar);
+#ifdef  _WIN32
+		if (++counter % BAR_THREAD_WINDOWS_CONSOLE_SIZE_CHANGED_EVERY_X_SLEEPS == 0) {
+			if (! wget_get_screen_size(&curWidth, NULL) && curWidth != lastWidth)
+				wget_bar_screen_resized();
+		}
+#endif //  _WIN32
 
 		wget_millisleep(BAR_THREAD_SLEEP_DURATION);
 	}

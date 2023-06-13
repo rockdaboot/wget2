@@ -538,7 +538,21 @@ int wget_get_screen_size(int *width, int *height)
 #else
 int wget_get_screen_size(WGET_GCC_UNUSED int *width, WGET_GCC_UNUSED int *height)
 {
+#ifdef _WIN32
+	static CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
+	static HANDLE consoleHandle = NULL;
+	if (consoleHandle == NULL)
+		consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE); //getscreensize above uses stderr however progress bar is output to stdout so we probably should be using that.....
+	if (!GetConsoleScreenBufferInfo(consoleHandle, &csbiInfo))
 	return -1;
+	if (width)
+		*width = csbiInfo.dwSize.X;
+	if (height)
+		*height = csbiInfo.dwSize.Y;
+	return 0;
+#else
+	return -1;
+#endif
 }
 #endif
 
