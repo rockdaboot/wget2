@@ -30,6 +30,30 @@
  * https://test-sspev.verisign.com:2443/test-SSPEV-revoked-verisign.html
  *
  */
+#include <wolfssl/options.h>
+#ifdef __cplusplus
+#define INITIALIZER(f) \
+        static void f(void); \
+        struct f##_t_ { f##_t_(void) { f(); } }; static f##_t_ f##_; \
+        static void f(void)
+#elif defined(_MSC_VER)
+#pragma section(".CRT$XCU",read)
+#define INITIALIZER2_(f,p) \
+        static void f(void); \
+        __declspec(allocate(".CRT$XCU")) void (*f##_)(void) = f; \
+        __pragma(comment(linker,"/include:" p #f "_")) \
+        static void f(void)
+#ifdef _WIN64
+#define INITIALIZER(f) INITIALIZER2_(f,"")
+#else
+#define INITIALIZER(f) INITIALIZER2_(f,"_")
+#endif
+#else
+#define INITIALIZER(f) \
+        static void f(void) __attribute__((constructor)); \
+        static void f(void)
+#endif
+
 
 #include <config.h>
 
@@ -488,17 +512,23 @@ out:
 static int init;
 static wget_thread_mutex mutex;
 
-static void __attribute__ ((constructor)) tls_init(void)
-{
-	if (!mutex)
-		wget_thread_mutex_init(&mutex);
-}
-
-static void __attribute__ ((destructor)) tls_exit(void)
+static void tls_exit(void)
 {
 	if (mutex)
 		wget_thread_mutex_destroy(&mutex);
 }
+INITIALIZER(tls_init)
+{
+	if (!mutex) {
+		wget_thread_mutex_init(&mutex);
+#ifdef DEBUG_WOLFSSL
+		wolfSSL_Debugging_ON();
+#endif // DEBUG_WOLFSSL
+
+		atexit(tls_exit);
+	}
+}
+
 
 /*
 static void set_credentials(gnutls_certificate_credentials_t *credentials)
