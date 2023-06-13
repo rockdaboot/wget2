@@ -33,10 +33,14 @@
 #include <stdarg.h> // needed for va_list
 
 // gnulib convenience header for libintl.h, turn of annoying warnings
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wundef"
+#endif // __GNUC__
 #include <gettext.h>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif // __GNUC__
 
 #ifdef ENABLE_NLS
 #	define _(STRING) gettext(STRING)
