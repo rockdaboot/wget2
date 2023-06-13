@@ -38,12 +38,20 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef _WIN32
+#  include <w32sock.h>
+#else
+#  define FD_TO_SOCKET(x) (x)
+#  define SOCKET_TO_FD(x) (x)
+#endif
+
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 
 #include <wget.h>
 #include "private.h"
 #include "net.h"
+#include "filename.h"
 
 /**
  * \file
@@ -895,7 +903,7 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	tcp->ssl_session = session;
 //	gnutls_session_set_ptr(session, ctx);
-	wolfSSL_set_fd(session, sockfd);
+	wolfSSL_set_fd(session, FD_TO_SOCKET(sockfd));
 
 	/* make wolfSSL object nonblocking */
 	wolfSSL_set_using_nonblock(session, 1);
@@ -1076,7 +1084,7 @@ void wget_ssl_close(void **session)
  */
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
-	int sockfd = wolfSSL_get_fd(session);
+	int sockfd = SOCKET_TO_FD( wolfSSL_get_fd(session));
 	int rc;
 
 	while ((rc = wolfSSL_read(session, buf, (int) count)) < 0) {
@@ -1149,7 +1157,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
  */
 ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
 {
-	int sockfd = wolfSSL_get_fd(session);
+	int sockfd = SOCKET_TO_FD(wolfSSL_get_fd(session));
 	int rc;
 
 	while ((rc = wolfSSL_write(session, buf, (int) count)) < 0) {
