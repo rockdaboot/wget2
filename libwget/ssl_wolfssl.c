@@ -836,6 +836,8 @@ static void ShowX509(WOLFSSL_X509 *x509, const char *hdr)
 		bio = wolfSSL_BIO_new(wolfSSL_BIO_s_file());
 		if (bio) {
 			wolfSSL_BIO_set_fp(bio, stdout, BIO_NOCLOSE);
+			wget_logger* logger = wget_get_logger(WGET_LOGGER_DEBUG);
+			if (wget_logger_is_active(logger))
 			wolfSSL_X509_print(bio, x509);
 			wolfSSL_BIO_free(bio);
 		}
