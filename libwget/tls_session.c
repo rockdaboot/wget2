@@ -365,12 +365,13 @@ static int tls_session_save(void *_fp, const void *_tls_session, WGET_GCC_UNUSED
 {
 	FILE *fp = _fp;
 	const wget_tls_session *tls_session = _tls_session;
-
-	char session_b64[wget_base64_get_encoded_length(tls_session->data_size)];
+	size_t sessionSize = wget_base64_get_encoded_length(tls_session->data_size);
+	char *session_b64 = malloc(sessionSize);
 
 	wget_base64_encode(session_b64, (const char *) tls_session->data, tls_session->data_size);
 
 	wget_fprintf(fp, "%s %lld %lld %s\n", tls_session->host, (long long)tls_session->created, (long long)tls_session->maxage, session_b64);
+	free(session_b64);
 	return 0;
 }
 

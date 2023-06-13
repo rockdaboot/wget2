@@ -62,11 +62,13 @@ void mkdir_path(const char *_fname, bool is_file)
 				int renamed = 0;
 
 				for (int fnum = 1; fnum <= 999 && !renamed; fnum++) {
-					char dst[strlen(fname) + 1 + 32];
+					size_t dstSize = strlen(fname) + 1 + 32;
+					char * dst = malloc(dstSize*sizeof(char));
 
-					wget_snprintf(dst, sizeof(dst), "%s.%d", fname, fnum);
+					wget_snprintf(dst, dstSize, "%s.%d", fname, fnum);
 					if (access(dst, F_OK) != 0 && rename(fname, dst) == 0)
 						renamed = 1;
+					free(dst);
 				}
 
 				if (renamed) {

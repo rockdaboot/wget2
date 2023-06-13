@@ -64,16 +64,17 @@ void wget_hash_printf_hex(wget_digest_algorithm algorithm, char *out, size_t out
 	va_end(args);
 
 	if (plaintext) {
-		unsigned char digest[wget_hash_get_len(algorithm)];
+		size_t digestLen = wget_hash_get_len(algorithm);
+		unsigned char * digest = malloc(digestLen * sizeof(char));
 		int rc;
 
 		if ((rc = wget_hash_fast(algorithm, plaintext, len, digest)) == 0) {
-			wget_memtohex(digest, sizeof(digest), out, outsize);
+			wget_memtohex(digest, digestLen, out, outsize);
 		} else {
 			*out = 0;
 			error_printf(_("Failed to hash (%d)\n"), rc);
 		}
-
+		free(digest);
 		xfree(plaintext);
 	}
 }

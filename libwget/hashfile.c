@@ -787,14 +787,15 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 	debug_printf("%s hashing pos %llu, length %llu...\n", hashname, (unsigned long long)offset, (unsigned long long)length);
 
 	if ((algorithm = wget_hash_get_algorithm(hashname)) != WGET_DIGTYPE_UNKNOWN) {
-		unsigned char digest[wget_hash_get_len(algorithm)];
+		size_t digestSize = wget_hash_get_len(algorithm);
+		unsigned char *digest = malloc(digestSize);
 
 #ifdef HAVE_MMAP
 		char *buf = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, offset);
 
 		if (buf != MAP_FAILED) {
 			if (wget_hash_fast(algorithm, buf, length, digest) == 0) {
-				wget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
+				wget_memtohex(digest, digestSize, digest_hex, digest_hex_size);
 				ret = WGET_E_SUCCESS;
 			}
 			munmap(buf, length);
@@ -807,12 +808,14 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 
 			if ((ret = wget_hash_init(&dig, algorithm))) {
 				error_printf(_("%s: Hash init failed for type '%s': %s\n"), __func__, hashname, wget_strerror(ret));
+				free(digest);
 				return ret;
 			}
 
 			while (length > 0 && (nbytes = read(fd, tmp, sizeof(tmp))) > 0) {
 				if ((ret = wget_hash(dig, tmp, nbytes))) {
 					error_printf(_("%s: Hash update failed: %s\n"), __func__, wget_strerror(ret));
+					free(digest);
 					return ret;
 				}
 
@@ -824,19 +827,22 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 
 			if ((ret = wget_hash_deinit(&dig, digest))) {
 				error_printf(_("%s: Hash finalization failed: %s\n"), __func__, wget_strerror(ret));
+				free(digest);
 				return ret;
 			}
 
 			if (nbytes < 0) {
 				error_printf(_("%s: Failed to read %llu bytes\n"), __func__, (unsigned long long)length);
+				free(digest);
 				return WGET_E_IO;
 			}
 
-			wget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
+			wget_memtohex(digest, digestSize, digest_hex, digest_hex_size);
 			ret = WGET_E_SUCCESS;
 #ifdef HAVE_MMAP
 		}
 #endif
+		free(digest);
 	}
 
 	return ret;

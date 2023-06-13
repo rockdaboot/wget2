@@ -648,10 +648,12 @@ void wget_bar_print(wget_bar *bar, int slot, const char *display)
  */
 void wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args)
 {
-	char text[bar->max_width + 1];
+	size_t textSize = (bar->max_width + 1);
+	char * text = malloc(sizeof(char) * textSize);
 
-	wget_vsnprintf(text, sizeof(text), fmt, args);
+	wget_vsnprintf(text, textSize, fmt, args);
 	wget_bar_print(bar, slot, text);
+	free(text);
 }
 
 /**

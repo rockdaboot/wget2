@@ -152,7 +152,7 @@ int wget_hpkp_db_check_pubkey(wget_hpkp_db *hpkp_db, const char *host, const voi
 
 	wget_hpkp key;
 	wget_hpkp *hpkp = NULL;
-	char digest[wget_hash_get_len(WGET_DIGTYPE_SHA256)];
+	size_t digestSize = wget_hash_get_len(WGET_DIGTYPE_SHA256);
 	int subdomain = 0;
 
 	for (const char *domain = host; *domain && !hpkp; domain = strchrnul(domain, '.')) {
@@ -170,15 +170,19 @@ int wget_hpkp_db_check_pubkey(wget_hpkp_db *hpkp_db, const char *host, const voi
 
 	if (subdomain && !hpkp->include_subdomains)
 		return 0; // OK, found a matching super domain which isn't responsible for <host>
-
-	if (wget_hash_fast(WGET_DIGTYPE_SHA256, pubkey, pubkeysize, digest))
+	char *digest = malloc(digestSize);
+	if (wget_hash_fast(WGET_DIGTYPE_SHA256, pubkey, pubkeysize, digest)){
+		free(digest);
 		return -1;
+	}
 
-	wget_hpkp_pin pinkey = { .pin = digest, .pinsize = sizeof(digest), .hash_type = "sha256" };
+	wget_hpkp_pin pinkey = { .pin = digest, .pinsize = digestSize, .hash_type = "sha256" };
 
-	if (wget_vector_find(hpkp->pins, &pinkey) != -1)
+	if (wget_vector_find(hpkp->pins, &pinkey) != -1){
+		free(digest);
 		return 1; // OK, pinned pubkey found
-
+	}
+	free(digest);
 	return -2;
 }
 

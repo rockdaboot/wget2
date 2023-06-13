@@ -509,8 +509,9 @@ int wget_ocsp_db_load(wget_ocsp_db *ocsp_db)
 	if (!ocsp_db->fname || !*ocsp_db->fname)
 		return -1;
 
-	char fname_hosts[strlen(ocsp_db->fname) + 6 + 1];
-	wget_snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", ocsp_db->fname);
+	size_t fnameSize = strlen(ocsp_db->fname) + 6 + 1;
+	char * fname_hosts = malloc(fnameSize*sizeof(char));
+	wget_snprintf(fname_hosts, fnameSize, "%s_hosts", ocsp_db->fname);
 
 	if ((ret = wget_update_file(fname_hosts, ocsp_db_load_hosts, NULL, ocsp_db)))
 		error_printf(_("Failed to read OCSP hosts\n"));
@@ -522,7 +523,7 @@ int wget_ocsp_db_load(wget_ocsp_db *ocsp_db)
 		ret = -1;
 	} else
 		debug_printf("Fetched OCSP fingerprints from '%s'\n", ocsp_db->fname);
-
+	free(fname_hosts);
 	return ret;
 }
 
@@ -602,8 +603,9 @@ int wget_ocsp_db_save(wget_ocsp_db *ocsp_db)
 	if (!ocsp_db || !ocsp_db->fname || !*ocsp_db->fname)
 		return -1;
 
-	char fname_hosts[strlen(ocsp_db->fname) + 6 + 1];
-	wget_snprintf(fname_hosts, sizeof(fname_hosts), "%s_hosts", ocsp_db->fname);
+	size_t fnameSize = strlen(ocsp_db->fname) + 6 + 1;
+	char * fname_hosts = malloc(fnameSize*sizeof(char));
+	wget_snprintf(fname_hosts, fnameSize, "%s_hosts", ocsp_db->fname);
 
 	if ((ret = wget_update_file(fname_hosts, ocsp_db_load_hosts, ocsp_db_save_hosts, ocsp_db)))
 		error_printf(_("Failed to write to OCSP hosts to '%s'\n"), fname_hosts);
@@ -615,7 +617,7 @@ int wget_ocsp_db_save(wget_ocsp_db *ocsp_db)
 		ret = -1;
 	} else
 		debug_printf("Saved OCSP fingerprints to '%s'\n", ocsp_db->fname);
-
+	free(fname_hosts);
 	return ret;
 }
 
