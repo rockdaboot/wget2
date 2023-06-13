@@ -30,7 +30,12 @@
  * https://test-sspev.verisign.com:2443/test-SSPEV-revoked-verisign.html
  *
  */
+#ifndef DEBUG_WOLFSSL
 #include <wolfssl/options.h>
+#undef DEBUG_WOLFSSL
+#else
+#include <wolfssl/options.h>
+#endif
 #ifdef __cplusplus
 #define INITIALIZER(f) \
         static void f(void); \
