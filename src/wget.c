@@ -3129,7 +3129,7 @@ static void set_file_mtime(int fd, int64_t modified)
 	timespecs[1].tv_sec = tt;
 	timespecs[1].tv_nsec = 0;
 
-	if (futimens(fd, timespecs) == -1)
+	if (! isatty(fd) && futimens(fd, timespecs) == -1)
 		error_printf (_("Failed to set file date (%d)\n"), errno);
 }
 
