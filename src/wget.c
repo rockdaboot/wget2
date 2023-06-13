@@ -1253,7 +1253,9 @@ static void print_progress_report(long long start_time)
 			);
 	}
 }
-
+#if  defined(_MSC_VER) && defined(_DEBUG)
+#include <crtdbg.h>
+#endif
 int main(int argc, const char **argv)
 {
 	int n, rc;
@@ -1502,6 +1504,9 @@ int main(int argc, const char **argv)
 
 	// Shutdown plugin system
 	plugin_db_finalize(get_exit_status());
+#if  defined(_MSC_VER) && defined(_DEBUG)
+	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+#endif //  defined(_MSC_VER) && defined(_DEBUG)
 
 	return get_exit_status();
 }
