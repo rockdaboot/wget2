@@ -319,7 +319,6 @@ static void bar_update_slot(const wget_bar *bar, int slot)
 		uint64_t max, cur;
 		int ratio;
 		size_t consumed, pad;
-
 		max = slotp->file_size;
 		cur = slotp->bytes_downloaded;
 
@@ -523,6 +522,8 @@ void wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_
 		slotp->numfiles++;
 	if (slotp->numfiles == 1) {
 		slotp->filename = wget_strdup(filename);
+		slotp->file_size = 0;
+		slotp->bytes_downloaded = 0;
 	} else {
 		slotp->filename = wget_aprintf("%d files", slotp->numfiles);
 	}
