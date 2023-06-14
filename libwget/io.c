@@ -191,6 +191,22 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 	return getline_internal(buf, bufsize, (void *)fp, read_fp);
 }
 
+#define MIN_TIMEOUT_FIX_MS 50
+static int poll_retry(struct pollfd* pfd, nfds_t nfd, int timeout, int max_retries) {
+	DWORD startTime;
+	BOOL retryTrack = timeout > 0 && timeout != INFTIM && timeout > MIN_TIMEOUT_FIX_MS;
+	if (retryTrack)
+		startTime = GetTickCount();
+	int rc = 0;
+	for (int x = 0; x < max_retries; x++) {
+		rc = poll(pfd, nfd, timeout);
+		if (rc != 0 || !retryTrack)
+			return rc;
+		int msElapsed = GetTickCount() - startTime;
+		if (msElapsed < 0 || (timeout - MIN_TIMEOUT_FIX_MS) < msElapsed)//if it got the timing within  MIN_TIMEOUT_FIX_MS of the timer consider us good
+			return rc;
+	}
+}
 /**
  * \param[in] fd File descriptor to wait for
  * \param[in] timeout Max. duration in milliseconds to wait
@@ -209,24 +225,24 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 int wget_ready_2_transfer(int fd, int timeout, int mode)
 {
 	int rc = -1;
-	struct pollfd pollfd;
+	struct pollfd poller;
 
-	pollfd.fd = fd;
+	poller.fd = fd;
 
-	pollfd.events = 0;
-	pollfd.revents = 0;
+	poller.events = 0;
+	poller.revents = 0;
 
 	if (mode & WGET_IO_READABLE)
-		pollfd.events |= POLLIN;
+		poller.events |= POLLIN;
 	if (mode & WGET_IO_WRITABLE)
-		pollfd.events |= POLLOUT;
+		poller.events |= POLLOUT;
 
 	// wait for socket to be ready to read or write
-	if ((rc = poll(&pollfd, 1, timeout)) > 0) {
+	if ((rc = poll_retry(&poller, 1, timeout, 20)) > 0) {
 		rc = 0;
-		if (pollfd.revents & POLLIN)
+		if (poller.revents & POLLIN)
 			rc |= WGET_IO_READABLE;
-		if (pollfd.revents & POLLOUT)
+		if (poller.revents & POLLOUT)
 			rc |= WGET_IO_WRITABLE;
 	}
 
