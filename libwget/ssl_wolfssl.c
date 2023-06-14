@@ -570,6 +570,11 @@ void wget_ssl_init(void)
 		int min_version = -1;
 		const char *ciphers = NULL;
 
+#ifdef DEBUG_WOLFSSL
+		if (!wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG)))
+			wolfSSL_Debugging_OFF();
+#endif // DEBUG_WOLFSSL
+
 		debug_printf("WolfSSL init\n");
 		wolfSSL_Init();
 
