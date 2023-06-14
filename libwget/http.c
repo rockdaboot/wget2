@@ -948,7 +948,7 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 	}
 #endif
 
-	if ((nbytes = wget_http_request_to_buffer(req, conn->buf, conn->proxied)) < 0) {
+	if ((nbytes = wget_http_request_to_buffer(req, conn->buf, conn->proxied, conn->port)) < 0) {
 		error_printf(_("Failed to create request buffer\n"));
 		return -1;
 	}
@@ -971,7 +971,7 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 	return 0;
 }
 
-ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied)
+ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied, int port)
 {
 	char have_content_length = 0;
 	char check_content_length = req->body && req->body_length;
@@ -984,6 +984,8 @@ ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, in
 		wget_buffer_strcat(buf, wget_iri_scheme_get_name(req->scheme));
 		wget_buffer_memcat(buf, "://", 3);
 		wget_buffer_bufcat(buf, &req->esc_host);
+		wget_buffer_memcat(buf, ":", 1);
+		wget_buffer_printf_append(buf, "%d", port);
 	}
 	wget_buffer_memcat(buf, "/", 1);
 	wget_buffer_bufcat(buf, &req->esc_resource);
