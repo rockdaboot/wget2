@@ -2345,7 +2345,7 @@ WGETAPI void
 WGETAPI int
 	wget_http_send_request(wget_http_connection *conn, wget_http_request *req) WGET_GCC_NONNULL_ALL;
 WGETAPI ssize_t
-	wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied) WGET_GCC_NONNULL_ALL;
+	wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied, int port) WGET_GCC_NONNULL_ALL;
 
 /*
  * Highlevel HTTP routines
