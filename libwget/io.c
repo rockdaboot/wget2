@@ -191,6 +191,29 @@ ssize_t wget_getline(char **buf, size_t *bufsize, FILE *fp)
 	return getline_internal(buf, bufsize, (void *)fp, read_fp);
 }
 
+#ifdef _WIN32
+#define MIN_TIMEOUT_FIX_MS 50
+static int poll_retry(struct pollfd* pfd, nfds_t nfd, int timeout, int max_retries) {
+	DWORD startTime;
+	BOOL retryTrack = timeout > 0 && timeout != INFTIM && timeout > MIN_TIMEOUT_FIX_MS;
+	if (retryTrack)
+		startTime = GetTickCount();
+	int rc;
+	for (int x = 0; x < max_retries; x++) {
+		rc = poll(pfd, nfd, timeout);
+		if (rc != 0 || !retryTrack)
+			return rc;
+		int msElapsed = GetTickCount() - startTime;
+		if (msElapsed < 0 || (timeout - MIN_TIMEOUT_FIX_MS) < msElapsed)
+			// error or timeout
+			return 0;
+	}
+
+	// max_tries has been reached
+	return 0;
+}
+#endif
+
 /**
  * \param[in] fd File descriptor to wait for
  * \param[in] timeout Max. duration in milliseconds to wait
@@ -222,7 +245,11 @@ int wget_ready_2_transfer(int fd, int timeout, int mode)
 		pollfd.events |= POLLOUT;
 
 	// wait for socket to be ready to read or write
+#ifdef _WIN32
+	if ((rc = poll_retry(&pollfd, 1, timeout, 20)) > 0) {
+#else
 	if ((rc = poll(&pollfd, 1, timeout)) > 0) {
+#endif
 		rc = 0;
 		if (pollfd.revents & POLLIN)
 			rc |= WGET_IO_READABLE;
