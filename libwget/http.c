@@ -1527,12 +1527,12 @@ int wget_http_set_no_proxy(const char *no_proxy, const char *encoding)
 	return 0;
 }
 
-const wget_vector *http_get_no_proxy(void)
+const wget_vector *wget_http_get_no_proxy(void)
 {
 	return no_proxies;
 }
 
-static bool wget_http_cidr_match(const char *cidr, struct in_addr *addr)
+static bool cidr_v4_match(const char *cidr, struct in_addr *addr)
 {
 	const char *slash_pos = strchr(cidr, '/');
 	if (slash_pos == NULL) {
@@ -1556,10 +1556,52 @@ static bool wget_http_cidr_match(const char *cidr, struct in_addr *addr)
 	return (test_addr & mask) == network;
 }
 
+#include <netinet/in.h>
+
+static bool cidr_v6_match(const char *cidr, struct in6_addr *addr)
+{
+	const char *slash_pos = strchr(cidr, '/');
+	if (slash_pos == NULL) {
+		return false; // invalid CIDR range
+	}
+	int prefix_len = atoi(slash_pos + 1);
+	if (prefix_len < 0 || prefix_len > 128) {
+		return false; // invalid prefix length
+	}
+	struct in6_addr network_addr;
+	const char *prefix = wget_strmemdup(cidr, slash_pos - cidr);
+	if (inet_pton(AF_INET6, prefix, &network_addr) != 1) {
+		xfree(prefix);
+		return false; // invalid network address
+	}
+	xfree(prefix);
+
+	int bytes = prefix_len / 8;
+	if (bytes && memcmp(network_addr.s6_addr, addr->s6_addr, bytes))
+		return false;
+
+	int bits = prefix_len & 7;
+	if (!bits)
+		return true;
+
+	uint8_t mask = (uint8_t) ~(0xFF >> bits);
+	return ((network_addr.s6_addr[bytes] ^ addr->s6_addr[bytes]) & mask) == 0;
+}
+
 int wget_http_match_no_proxy(const wget_vector *no_proxies_vec, const char *host)
 {
-	if (!no_proxies_vec || !host)
+	if (wget_vector_size(no_proxies_vec) < 1 || !host)
 		return 0;
+
+	struct in_addr addr;
+	struct in6_addr addr6;
+	bool ipv4 = false, ipv6 = false;
+
+	if (inet_pton(AF_INET, host, &addr) == 1) {
+		ipv4 = true;
+	} else if (inet_pton(AF_INET6, host, &addr6) == 1) {
+		ipv6 = true;
+	}
 
 	// https://www.gnu.org/software/emacs/manual/html_node/url/Proxies.html
 	for (int it = 0; it < wget_vector_size(no_proxies_vec); it++) {
@@ -1571,9 +1613,12 @@ int wget_http_match_no_proxy(const wget_vector *no_proxies_vec, const char *host
 		if (!strcmp(no_proxy, host))
 			return 1; // exact match
 
-		struct in_addr addr;
-		if (inet_pton(AF_INET, host, &addr) == 1) {
-			if(wget_http_cidr_match(no_proxy, &addr)) {
+		if (ipv4) {
+			if (cidr_v4_match(no_proxy, &addr)) {
+				return 1;
+			}
+		} else if (ipv6) {
+			if (cidr_v6_match(no_proxy, &addr6)) {
 				return 1;
 			}
 		}

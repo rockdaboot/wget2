@@ -2508,19 +2508,25 @@ static void test_match_no_proxy(void)
 		{ "", "142.250.180.101", NULL, 0},
 		{ "142.251.33.101,10.250.192.78/12", "142.251.33.101", NULL, 1},
 		{ "10.250.192.78/12, 142.251.33.101", "142.251.33.101", NULL, 1},
+		{ "10.250.192.78/12, 142.251.33.101", "142.251.33.101", NULL, 1},
+		{ "2402:9400:1234:5670::", "2402:9400:1234:5670::", NULL, 1},
+		{ "2402:9400:1234:5670::", "2402:9400:1234:5671::", NULL, 0},
+		{ "2402:9400:1234:5670::/60", "2402:9400:1234:5678::", NULL, 1},
+		{ "2402:9400:1234:5670::/60", "2402:9400:1234:5680::", NULL, 0}
 	};
 
 	for (unsigned it = 0; it < countof(test_data); it++) {
 		const struct test_data *t = &test_data[it];
 		wget_http_set_no_proxy(t->no_proxy, t->encoding);
-		const wget_vector *no_proxies = http_get_no_proxy();
+		const wget_vector *no_proxies = wget_http_get_no_proxy();
 		int n = wget_http_match_no_proxy(no_proxies, t->hostip);
 
 		if (n == t->result) {
 			ok++;
 		} else {
 			failed++;
-			info_printf("Failed [%u]: wget_http_match_no_proxy(\"%s\",\"%s\") -> %d (expected %d)\n", it, t->no_proxy, t->hostip, n, t->result);
+			info_printf("Failed [%u]: wget_http_match_no_proxy(\"%s\",\"%s\") -> %d (expected %d)\n",
+				it, t->no_proxy, t->hostip, n, t->result);
 		}
 	}
 }
