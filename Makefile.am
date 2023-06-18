@@ -82,7 +82,7 @@ fuzz-coverage: clean clean-lcov
 	$(MAKE) -C libwget CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage"
 	$(MAKE) -C src CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage"
 	$(MAKE) -C fuzz check CFLAGS="$(CFLAGS) --coverage" LDFLAGS="$(LDFLAGS) --coverage"
-	lcov --capture --initial --directory libwget/.libs --directory fuzz --directory src --output-file $(LCOV_INFO)
+	lcov --capture --initial --directory fuzz --directory src --directory libwget/.libs --output-file $(LCOV_INFO)
 	lcov --capture --directory libwget/.libs --directory fuzz --directory src --output-file $(LCOV_INFO)
 	lcov --remove $(LCOV_INFO) '*/test_linking.c' '*/css_tokenizer.lex' -o $(LCOV_INFO)
 	genhtml --prefix . --ignore-errors source $(LCOV_INFO) --legend --title "Wget2-fuzz" --output-directory=lcov
