@@ -1598,7 +1598,7 @@ static const struct optionw options[] = {
 		{ "Specify a list of mime types to be saved or ignored\n"
 		}
 	},
-	{ "filter-urls", &config.filter_urls, parse_bool, 0, 0,
+	{ "filter-urls", &config.filter_urls, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
 		{ "Apply the accept and reject filters on the URL\n",
 		  "before starting a download. (default: off)\n"
