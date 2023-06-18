@@ -620,11 +620,12 @@ void wget_ssl_init(void)
 			if (!wget_strcmp(config.ca_directory, "system"))
 				config.ca_directory = "/etc/ssl/certs";
 
-			/* Load client certificates into WOLFSSL_CTX */
+			// Load client certificates into WOLFSSL_CTX
 			if (wolfSSL_CTX_load_verify_locations(ssl_ctx, config.ca_file, config.ca_directory) != SSL_SUCCESS) {
 				error_printf(_("Failed to load %s, please check the file.\n"), config.ca_directory);
 				goto out;
 			}
+			wolfSSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
 		} else {
 			wolfSSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_NONE, NULL);
 		}
