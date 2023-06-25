@@ -702,7 +702,7 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 	gnutls_ocsp_resp_t resp;
 	int ret = -1, rc;
 	unsigned int status, cert_status;
-	time_t rtime, vtime, ntime, now;
+	time_t rtime = 0, vtime = 0, ntime = 0, now;
 	char timebuf[64];
 
 	now = time(NULL);
