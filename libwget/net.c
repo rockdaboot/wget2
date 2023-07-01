@@ -943,7 +943,7 @@ ssize_t wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count)
 					&& errno != ENOTCONN
 					&& errno != EINPROGRESS)
 				{
-					print_error(_("Failed to connect"));
+					print_error(tcp, _("Failed to connect"));
 					return -1;
 				}
 				errno = EAGAIN;
