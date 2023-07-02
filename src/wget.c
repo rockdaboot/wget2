@@ -2874,37 +2874,40 @@ void sitemap_parse_text(JOB *job, const char *data, const char *encoding, const 
 
 static void add_urls(JOB *job, wget_vector *urls, const char *encoding, const wget_iri *base)
 {
-	const char *p;
-	size_t baselen = 0;
+	wget_buffer buf;
+	char sbuf[1024];
 
-	if (base) {
-		if ((p = strrchr(base->uri, '/')))
-			baselen = p - base->uri + 1; // + 1 to include /
-		else
-			baselen = strlen(base->uri);
-	}
+	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
 	info_printf(_("found %d url(s) (base=%s)\n"), wget_vector_size(urls), base ? base->uri : NULL);
 
 	wget_thread_mutex_lock(known_urls_mutex);
+
 	for (int it = 0; it < wget_vector_size(urls); it++) {
 		wget_string *url = wget_vector_get(urls, it);
 
-		if (baselen && (url->len <= baselen || wget_strncasecmp(url->p, base->uri, baselen))) {
-			info_printf(_("URL '%.*s' not followed (not matching base)\n"), (int)url->len, url->p);
+		if (normalize_uri(base, url, encoding, &buf))
+			continue;
+
+		// info_printf("%.*s -> %s\n", (int) url->len, url->p, buf.data);
+		if (!base && !buf.length) {
+			info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int) url->len, url->p);
 			continue;
 		}
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+		if (wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL)) {
 			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
 		}
 
-		queue_url_from_remote(job, encoding, p, 0, NULL);
+		queue_url_from_remote(job, encoding, buf.data, 0, NULL);
 	}
+
 	wget_thread_mutex_unlock(known_urls_mutex);
+
+	wget_buffer_deinit(&buf);
 }
 
 void atom_parse(JOB *job, const char *data, const char *encoding, const wget_iri *base)
