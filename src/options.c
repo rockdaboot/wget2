@@ -1660,7 +1660,7 @@ static const struct optionw options[] = {
 	{ "fsync-policy", &config.fsync_policy, parse_bool, -1, 0,
 		SECTION_STARTUP,
 		{ "Use fsync() to wait for data being written to\n",
-		  "the pysical layer. (default: off) (NEW!)\n"
+		  "the physical layer. (default: off) (NEW!)\n"
 		}
 	},
 #ifdef WITH_GPGME

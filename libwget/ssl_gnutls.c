@@ -834,7 +834,7 @@ static void add_cert_to_ocsp_cache(gnutls_x509_crt_t cert, bool valid)
 }
 
 /* OCSP check for the peer's certificate. Should be called
- * only after the certificate list verication is complete.
+ * only after the certificate list verification is complete.
  * Returns:
  * 0: certificate is revoked
  * 1: certificate is ok
