@@ -69,7 +69,7 @@ static wget_dns default_dns = {
 static bool
 	initialized;
 
-static void __attribute__((constructor)) net_init(void)
+static void __attribute__((constructor)) dns_init(void)
 {
 	if (!initialized) {
 		wget_thread_mutex_init(&default_dns.mutex);
@@ -77,7 +77,7 @@ static void __attribute__((constructor)) net_init(void)
 	}
 }
 
-static void __attribute__((destructor)) net_exit(void)
+static void __attribute__((destructor)) dns_exit(void)
 {
 	if (initialized) {
 		wget_thread_mutex_destroy(&default_dns.mutex);
@@ -91,9 +91,15 @@ static void __attribute__((destructor)) net_exit(void)
  *   if the mutex initialization failed.
  *
  * Allocates and initializes a wget_dns instance.
+ * \p dns may be NULL for the purpose of initializing the global structures.
  */
 int wget_dns_init(wget_dns **dns)
 {
+	dns_init();
+
+	if (!dns)
+		return WGET_E_SUCCESS;
+
 	wget_dns *_dns = wget_calloc(1, sizeof(wget_dns));
 
 	if (!_dns)
@@ -114,10 +120,16 @@ int wget_dns_init(wget_dns **dns)
  * \param[in/out] dns Pointer to wget_dns instance that will be freed and NULLified.
  *
  * Free the resources allocated by wget_dns_init().
+ * \p dns may be NULL for the purpose of freeing the global structures.
  */
 void wget_dns_free(wget_dns **dns)
 {
-	if (dns && *dns) {
+	if (!dns) {
+		dns_exit();
+		return;
+	}
+
+	if (*dns) {
 		wget_thread_mutex_destroy(&(*dns)->mutex);
 		xfree(*dns);
 	}
