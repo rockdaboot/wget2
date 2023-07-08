@@ -1022,20 +1022,20 @@ static int verify_certificate_callback(gnutls_session_t session)
 			&verify);
 
 		if (rc < 0) {
-			debug_printf("DANE verification error for %s: %s", hostname, dane_strerror(rc));
+			debug_printf("DANE verification error for %s: %s\n", hostname, dane_strerror(rc));
 			goto out;
 		} else if (verify) {
 			gnutls_datum_t out;
 			rc = dane_verification_status_print(verify, &out, 0);
 			if (rc < 0) {
-				error_printf("DANE verification print error for %s: %s", hostname, dane_strerror(rc));
+				error_printf(_("DANE verification print error for %s: %s\n"), hostname, dane_strerror(rc));
 			} else {
-				error_printf("DANE verification failed for %s: %s\n", hostname, out.data);
+				error_printf(_("DANE verification failed for %s: %s\n"), hostname, out.data);
 			}
 			gnutls_free(out.data);
 			goto out;
 		} else {
-			debug_printf("DANE verification: %s", dane_strerror(rc));
+			debug_printf("DANE verification: %s\n", dane_strerror(rc));
 		}
 	}
 #else

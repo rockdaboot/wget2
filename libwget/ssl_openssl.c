@@ -670,7 +670,7 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 
 	ocsp_verif = SSL_get_ex_data(s, ssl_userdata_idx);
 	if (!ocsp_verif) {
-		error_printf("Could not get user data to verify stapled OCSP.\n");
+		error_printf(_("Could not get user data to verify stapled OCSP.\n"));
 		return 0;
 	}
 

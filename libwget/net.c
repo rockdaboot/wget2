@@ -130,14 +130,14 @@ static struct wget_tcp_st global_tcp = {
 // helper function to give context for errors
 static inline void print_error(const wget_tcp *tcp, const char *msg)
 {
-	error_printf("%s (hostname='%s', ip=%s, errno=%d)\n",
+	error_printf(_("%s (hostname='%s', ip=%s, errno=%d)\n"),
 		msg, tcp->host ? tcp->host: "", tcp->ip ? tcp->ip : "", errno);
 }
 #endif
 
 static inline void print_error_host(const char *msg, const char *host)
 {
-	error_printf("%s (hostname='%s', errno=%d)\n",
+	error_printf(_("%s (hostname='%s', errno=%d)\n"),
 		msg, host, errno);
 }
 
