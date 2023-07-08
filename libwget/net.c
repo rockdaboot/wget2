@@ -692,7 +692,7 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 	struct addrinfo *ai;
 	int rc, ret = WGET_E_UNKNOWN;
 	char adr[NI_MAXHOST], s_port[NI_MAXSERV];
-	int debug = wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG));
+	bool debug = wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG));
 
 	if (unlikely(!tcp))
 		return WGET_E_INVALID;
