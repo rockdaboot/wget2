@@ -1559,7 +1559,7 @@ void wget_test(int first_key, ...)
 			options_alloc = 0;
 
 		if (!executable) {
-#ifdef _WIN32
+#if defined _WIN32 && !defined __MINGW32__
 			if (proto_pass == H2_PASS)
 				executable = BUILDDIR "\\..\\src\\wget2_noinstall" EXEEXT " -d --no-config --no-local-db --max-threads=1 --prefer-family=ipv4 --no-proxy --timeout 3 --tries=1 --https-enforce=hard --ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem --no-ocsp";
 			else
