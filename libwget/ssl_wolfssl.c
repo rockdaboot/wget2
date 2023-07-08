@@ -771,16 +771,12 @@ static void ShowX509(WOLFSSL_X509 *x509, const char *hdr)
 
 	ret = wolfSSL_X509_get_serial_number(x509, serial, &sz);
 	if (ret == WOLFSSL_SUCCESS) {
-		int i;
-		int strLen;
-		char serialMsg[80];
-
-		/* testsuite has multiple threads writing to stdout, get output
-			message ready to write once */
-		strLen = sprintf(serialMsg, " serial number");
-		for (i = 0; i < sz; i++)
-			sprintf(serialMsg + strLen + (i * 3), ":%02x ", serial[i]);
-		debug_printf("%s\n", serialMsg);
+		char serialMsg[sizeof(serial) * 4 + 1];
+		// testsuite has multiple threads writing to stdout, get output
+		// message ready to write once
+		for (int i = 0; i < sz; i++)
+			sprintf(serialMsg + (i * 4), ":%02x ", serial[i]);
+		debug_printf(" serial number%s\n", serialMsg);
 	}
 
 	XFREE(subject, 0, DYNAMIC_TYPE_OPENSSL)
