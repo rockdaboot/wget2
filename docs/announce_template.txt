@@ -41,8 +41,8 @@ GNU Wget2 is licensed under GPLv3+. Libwget is licensed under LGPLv3+.
 
   https://ftp.gnu.org/gnu/wget/wget2-2.0.1.tar.lz.sig
 
-  Please find the key in the GNU keyring:  
-    wget https://ftp.gnu.org/gnu/gnu-keyring.gpg  
+  Please find the key in the GNU keyring:
+    wget https://ftp.gnu.org/gnu/gnu-keyring.gpg
 
 **Project Website**
 
