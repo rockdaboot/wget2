@@ -36,6 +36,7 @@
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wvla"
 #endif // __GNUC__
 #include <gettext.h>
 #ifdef __GNUC__
