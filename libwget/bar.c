@@ -319,6 +319,10 @@ static void bar_update_slot(const wget_bar *bar, int slot)
 		uint64_t max, cur;
 		int ratio;
 		size_t consumed, pad;
+
+		if (slotp->file_size == 0 && slotp->status == COMPLETE)
+			slotp->file_size = slotp->bytes_downloaded;
+
 		max = slotp->file_size;
 		cur = slotp->bytes_downloaded;
 
