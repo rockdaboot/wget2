@@ -132,13 +132,20 @@ static char * get_local_filename_real(const wget_iri *iri)
 
 	// do the filename escaping here
 	if (config.restrict_file_names) {
-		char fname_esc[buf.length * 3 + 1];
+		char tmp[1024];
+
+		char *fname_esc = (sizeof(tmp) < buf.length * 3 + 1)
+			? tmp
+			: wget_malloc(buf.length * 3 + 1);
 
 		if (wget_restrict_file_name(fname, fname_esc, config.restrict_file_names) != fname) {
 			// escaping was really done, replace fname
 			wget_buffer_strcpy(&buf, fname_esc);
 			fname = buf.data;
 		}
+
+		if (fname_esc != tmp)
+			xfree(fname_esc);
 	}
 
 	// create the complete directory path
