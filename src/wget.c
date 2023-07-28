@@ -1373,8 +1373,14 @@ int main(int argc, const char **argv)
 			config.progress = PROGRESS_TYPE_NONE;
 		}
 	}
+	int is_tty = isatty(STDOUT_FILENO);
+#ifdef _WIN32 //if the windows console doesn't support VT codes treat it as if it wasnt a tty
+	DWORD mode;
+	if (! GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &mode) || (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) == 0)
+		is_tty=0;
+#endif
 
-	if (config.progress != PROGRESS_TYPE_NONE && !isatty(STDOUT_FILENO) && !config.force_progress) {
+	if (config.progress != PROGRESS_TYPE_NONE && !is_tty && !config.force_progress) {
 		config.progress = PROGRESS_TYPE_NONE;
 	}
 
