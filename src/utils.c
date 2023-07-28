@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <string.h>
 #include <glob.h>
+#include <malloca.h>
 
 #include "wget_main.h"
 #include "wget_utils.h"
@@ -62,11 +63,15 @@ void mkdir_path(const char *_fname, bool is_file)
 				int renamed = 0;
 
 				for (int fnum = 1; fnum <= 999 && !renamed; fnum++) {
-					char dst[strlen(fname) + 1 + 32];
+					size_t dstSize = strlen(fname) + 1 + 32;
+					char * dst = malloca(dstSize*sizeof(char));
+					if (! dst)
+						error_printf_exit(_("Allocation failure of malloca\n"));
 
-					wget_snprintf(dst, sizeof(dst), "%s.%d", fname, fnum);
+					wget_snprintf(dst, dstSize, "%s.%d", fname, fnum);
 					if (access(dst, F_OK) != 0 && rename(fname, dst) == 0)
 						renamed = 1;
+					freea(dst);
 				}
 
 				if (renamed) {

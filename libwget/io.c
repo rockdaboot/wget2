@@ -35,6 +35,7 @@
 #include <sys/file.h>
 #include <errno.h>
 #include <poll.h>
+#include <malloca.h>
 #include "dirname.h"
 
 #include <wget.h>
@@ -398,8 +399,7 @@ int wget_update_file(const char *fname,
 	const char *tmpdir, *basename;
 	int lockfd;
 
-	char tmpfile[strlen(fname) + 6 + 1];
-	wget_snprintf(tmpfile, sizeof(tmpfile), "%sXXXXXX", fname);
+	size_t tmpSize = strlen(fname) + 6 + 1;
 
 	// find out system temp directory
 	if (!(tmpdir = getenv("TMPDIR")) && !(tmpdir = getenv("TMP"))
@@ -471,6 +471,10 @@ int wget_update_file(const char *fname,
 		}
 	}
 
+	char * tmpfile = malloca(tmpSize*sizeof(char));
+	if (! tmpfile)
+		error_printf_exit(_("Allocation failure of malloca\n"));
+	wget_snprintf(tmpfile, tmpSize, "%sXXXXXX", fname);
 	if (save_func) {
 		int fd;
 		// create & open temp file to write data into with 0600 - rely on Gnulib to set correct
@@ -478,6 +482,7 @@ int wget_update_file(const char *fname,
 		if ((fd = mkstemp(tmpfile)) == -1) {
 			close(lockfd);
 			error_printf(_("Failed to open tmpfile '%s' (%d)\n"), tmpfile, errno);
+			freea(tmpfile);
 			return WGET_E_OPEN;
 		}
 
@@ -487,6 +492,7 @@ int wget_update_file(const char *fname,
 			close(fd);
 			close(lockfd);
 			error_printf(_("Failed to write open '%s' (%d)\n"), tmpfile, errno);
+			freea(tmpfile);
 			return WGET_E_OPEN;
 		}
 
@@ -495,6 +501,7 @@ int wget_update_file(const char *fname,
 			unlink(tmpfile);
 			fclose(fp);
 			close(lockfd);
+			freea(tmpfile);
 			return WGET_E_UNKNOWN;
 		}
 
@@ -503,6 +510,7 @@ int wget_update_file(const char *fname,
 			unlink(tmpfile);
 			close(lockfd);
 			error_printf(_("Failed to write/close '%s' (%d)\n"), tmpfile, errno);
+			free(tmpfile);
 			return WGET_E_IO;
 		}
 
@@ -511,10 +519,12 @@ int wget_update_file(const char *fname,
 			close(lockfd);
 			error_printf(_("Failed to rename '%s' to '%s' (%d)\n"), tmpfile, fname, errno);
 			error_printf(_("Take manually care for '%s'\n"), tmpfile);
+			freea(tmpfile);
 			return WGET_E_IO;
 		}
 
 		debug_printf("Successfully updated '%s'.\n", fname);
+		freea(tmpfile);
 	}
 
 	close(lockfd);

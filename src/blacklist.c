@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <malloca.h>
 #include <wget.h>
 
 #include "wget_main.h"
@@ -132,13 +133,17 @@ static char * get_local_filename_real(const wget_iri *iri)
 
 	// do the filename escaping here
 	if (config.restrict_file_names) {
-		char fname_esc[buf.length * 3 + 1];
+		size_t fnameSize = buf.length * 3 + 1;
+		char * fname_esc = malloca(fnameSize);
+		if (! fname_esc)
+			error_printf_exit(_("Allocation failure of malloca\n"));
 
 		if (wget_restrict_file_name(fname, fname_esc, config.restrict_file_names) != fname) {
 			// escaping was really done, replace fname
 			wget_buffer_strcpy(&buf, fname_esc);
 			fname = buf.data;
 		}
+		freea(fname_esc);
 	}
 
 	// create the complete directory path

@@ -41,6 +41,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <malloca.h>
 #ifdef WITH_LIBNGHTTP2
 	#include <nghttp2/nghttp2.h>
 #endif
@@ -317,33 +318,37 @@ void wget_http_add_credentials(wget_http_request *req, wget_http_challenge *chal
 			return;
 
 		hashlen = wget_hash_get_len(hashtype);
-		char a1buf[hashlen * 2 + 1], a2buf[hashlen * 2 + 1];
-		char response_digest[hashlen * 2 + 1], cnonce[16] = "";
-
+		size_t abufSize = hashlen * 2 + 1;
+		char * a1buf = malloca(abufSize*sizeof(char));
+		char * a2buf = malloca(abufSize*sizeof(char));
+		char * response_digest = malloca(abufSize*sizeof(char));
+		if (! a1buf || ! a2buf || ! response_digest)
+			error_printf_exit(_("Allocation failure of malloca\n"));
+		char cnonce[16] = "";
 		// A1BUF = H(user ":" realm ":" password)
-		wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", username, realm, password);
+		wget_hash_printf_hex(hashtype, a1buf, abufSize, "%s:%s:%s", username, realm, password);
 
 		if (!wget_strcasecmp_ascii(algorithm, "MD5-sess") || !wget_strcasecmp_ascii(algorithm, "SHA-256-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
 			wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
-			wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", a1buf, nonce, cnonce);
+			wget_hash_printf_hex(hashtype, a1buf, abufSize, "%s:%s:%s", a1buf, nonce, cnonce);
 		}
 
 		// A2BUF = H(method ":" path)
-		wget_hash_printf_hex(hashtype, a2buf, sizeof(a2buf), "%s:/%s", req->method, req->esc_resource.data);
+		wget_hash_printf_hex(hashtype, a2buf, abufSize, "%s:/%s", req->method, req->esc_resource.data);
 
 		if (!qop) {
 			// RFC 2069 Digest Access Authentication
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" A2BUF)
-			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest), "%s:%s:%s", a1buf, nonce, a2buf);
+			wget_hash_printf_hex(hashtype, response_digest, abufSize, "%s:%s:%s", a1buf, nonce, a2buf);
 		} else { // if (!wget_strcasecmp_ascii(qop, "auth") || !wget_strcasecmp_ascii(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
 			if (!*cnonce)
 				wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
-			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest),
+			wget_hash_printf_hex(hashtype, response_digest, abufSize,
 				"%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
 		}
 
@@ -368,6 +373,10 @@ void wget_http_add_credentials(wget_http_request *req, wget_http_challenge *chal
 			wget_http_add_header(req, "Authorization", buf.data);
 
 		wget_buffer_deinit(&buf);
+		freea(response_digest);
+		freea(a1buf);
+		freea(a2buf);
+
 	}
 }
 
@@ -845,8 +854,12 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 	if (wget_tcp_get_protocol(conn->tcp) == WGET_PROTOCOL_HTTP_2_0) {
 		char length_str[32];
 		int n = 4 + wget_vector_size(req->headers);
-		nghttp2_nv nvs[n], *nvp;
-		char resource[req->esc_resource.length + 2];
+		nghttp2_nv *nvs = malloca(sizeof(nghttp2_nv) * n);
+		nghttp2_nv *nvp;
+		size_t resourceSize = req->esc_resource.length + 2;
+		char *resource = malloca(resourceSize);
+		if (! nvs && ! resource)
+			error_printf_exit(_("Allocation failure of malloca\n"));
 
 		resource[0] = '/';
 		memcpy(resource + 1, req->esc_resource.data, req->esc_resource.length + 1);
@@ -899,13 +912,16 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 			error_printf(_("Failed to submit HTTP2 request\n"));
 			wget_http_free_response(&ctx->resp);
 			xfree(ctx);
+			freea(nvs);
+			freea(resource);
 			return -1;
 		}
 
 		conn->pending_http2_requests++;
 
 		debug_printf("HTTP2 stream id %d\n", req->stream_id);
-
+		freea(nvs);
+		freea(resource);
 		return 0;
 	}
 #endif

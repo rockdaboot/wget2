@@ -37,6 +37,7 @@
 #include <signal.h>
 #include <wchar.h>
 
+#include <malloca.h>
 #include <wget.h>
 #include "private.h"
 
@@ -653,10 +654,14 @@ void wget_bar_print(wget_bar *bar, int slot, const char *display)
  */
 void wget_bar_vprintf(wget_bar *bar, int slot, const char *fmt, va_list args)
 {
-	char text[bar->max_width + 1];
+	size_t textSize = (bar->max_width + 1);
+	char * text = malloca(sizeof(char) * textSize);
+	if (! text)
+		error_printf_exit(_("Allocation failure of malloca\n"));
 
-	wget_vsnprintf(text, sizeof(text), fmt, args);
+	wget_vsnprintf(text, textSize, fmt, args);
 	wget_bar_print(bar, slot, text);
+	freea(text);
 }
 
 /**

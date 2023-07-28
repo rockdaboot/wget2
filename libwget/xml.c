@@ -40,6 +40,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <malloca.h>
 #ifdef HAVE_MMAP
 #include <sys/mman.h>
 #endif
@@ -535,10 +536,15 @@ static int parseXML(const char *dir, xml_context *context)
 					if (!(context->hints & XML_HINT_HTML))
 						context->callback(context->user_ctx, XML_FLG_END, directory, NULL, NULL, 0, 0);
 					else {
-						char tag[context->token_len + 1]; // we need to \0 terminate tok
+						size_t tagSize = context->token_len + 1;
+						char *tag = malloca(tagSize); // we need to \0 terminate tok
+						if (! tag)
+							error_printf_exit(_("Allocation failure of malloca\n"));
+
 						memcpy(tag, tok, context->token_len);
 						tag[context->token_len] = 0;
 						context->callback(context->user_ctx, XML_FLG_END, tag, NULL, NULL, 0, 0);
+						freea(tag);
 					}
 				}
 				if (!(tok = getToken(context))) return WGET_E_XML_PARSE_ERR;
