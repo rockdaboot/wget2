@@ -1252,6 +1252,16 @@ static void print_progress_report(long long start_time)
 	}
 }
 
+static bool is_tty(void) {
+#ifdef _WIN32 // If the windows console doesn't support VT codes treat it as if it wasn't a tty.
+	DWORD mode;
+	if (! GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &mode) || (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) == 0)
+		return false;
+#endif
+
+	return isatty(STDOUT_FILENO) == 1;
+}
+
 int main(int argc, const char **argv)
 {
 	int n, rc;
@@ -1374,7 +1384,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	if (config.progress != PROGRESS_TYPE_NONE && !isatty(STDOUT_FILENO) && !config.force_progress) {
+	if (config.progress != PROGRESS_TYPE_NONE && !is_tty() && !config.force_progress) {
 		config.progress = PROGRESS_TYPE_NONE;
 	}
 
@@ -1402,7 +1412,7 @@ int main(int argc, const char **argv)
 			downloaders[nthreads].id = nthreads;
 
 			// The actual number of nthreads is updated in the loop iteration
-			// counter ater the iteration. So we add one already here to
+			// counter after the iteration. So we add one already here to
 			// account for it. The second extra slot is for the stats data that
 			// is printed on the last line.
 			if (config.progress == PROGRESS_TYPE_BAR)

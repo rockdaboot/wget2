@@ -99,7 +99,23 @@ void wget_console_reset_fg_color(void)
 {
 	wget_console_set_fg_color(WGET_CONSOLE_COLOR_RESET);
 }
+#ifdef _WIN32
+static DWORD SetupConsoleHandle(BOOL is_input, HANDLE handle) {
+	DWORD mode = 0;
+	if (handle == INVALID_HANDLE_VALUE)
+		return mode;
+	if (!GetConsoleMode(handle, &mode))
+		return mode;
+	DWORD orig = mode;
+	if (is_input)
+		mode |= ENABLE_VIRTUAL_TERMINAL_INPUT;
+	else
+		mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
+	SetConsoleMode(handle, mode);
+	return orig;
+}
+#endif
 /**
  * \return 0 on success, or -1 on error
  *
@@ -120,7 +136,8 @@ int wget_console_init(void)
 		if (GetFileType(g_stdout_hnd) != FILE_TYPE_CHAR) /* The console is redirected */
 			g_stdout_hnd = INVALID_HANDLE_VALUE;
 	}
-
+	SetupConsoleHandle(true, GetStdHandle(STD_INPUT_HANDLE));
+	SetupConsoleHandle(false, GetStdHandle(STD_OUTPUT_HANDLE));
 	win_init = 1;
 #endif
 
