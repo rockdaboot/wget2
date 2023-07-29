@@ -119,7 +119,6 @@ if test -n "$WARN_CFLAGS"; then
     # Set up list of unwanted warnings
     nw=
     nw="$nw -Wsystem-headers"       # System headers may trigger lot's of useless warnings
-    nw="$nw -Wvla"                  # This project is C99
     nw="$nw -Wstack-protector"
     nw="$nw -Wmissing-field-initializer"
     nw="$nw -Wtraditional"
@@ -180,14 +179,14 @@ if test -n "$WARN_CFLAGS"; then
     # disable options implicitly set by other options
     GNULIB_WARN_CFLAGS="-Wno-error $GNULIB_WARN_CFLAGS"
     GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-sign-compare -Wno-unused-parameter -Wno-alloca"
-    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-float-conversion -Wno-cast-function-type"
+    GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-float-conversion -Wno-cast-function-type -Wno-vla"
     if test "$cross_compiling" = yes; then
       GNULIB_WARN_CFLAGS="$GNULIB_WARN_CFLAGS -Wno-incompatible-pointer-types"
     fi
 
   elif test "$CCNAME" = "clang"; then
     # setup flags for this project
-    WARN_CFLAGS="$WARN_CFLAGS -Wno-system-headers -Wno-vla -Wno-cast-qual -Wno-padded"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-system-headers -Wno-cast-qual -Wno-padded"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-reserved-id-macro -Wno-sign-conversion  -Wno-disabled-macro-expansion"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-documentation -Wno-documentation-unknown-command"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-covered-switch-default -Wno-unused-macros"
