@@ -1178,13 +1178,13 @@ static void convert_links(void)
 					// conversion takes place, write to disk
 					if (!fpout) {
 						if (config.backup_converted) {
-							char dstfile[strlen(conversion->filename) + 5 + 1];
-
-							wget_snprintf(dstfile, sizeof(dstfile), "%s.orig", conversion->filename);
+							char *dstfile = wget_aprintf("%s.orig", conversion->filename);
 
 							if (rename(conversion->filename, dstfile) == -1) {
 								wget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
 							}
+
+							xfree(dstfile);
 						}
 						if (!(fpout = fopen(conversion->filename, "wb")))
 							wget_error_printf(_("Failed to write open %s (%d)"), conversion->filename, errno);
@@ -3379,32 +3379,37 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		flag = O_EXCL;
 
 		if (config.backups) {
-			char src[fname_length + 1], dst[fname_length + 1];
+			size_t src_size = fname_length + 1, dst_size = fname_length + 1;
+			char *src = wget_malloc(src_size), *dst = wget_malloc(dst_size);
 
 			for (int it = config.backups; it > 0; it--) {
 				if (it > 1)
-					wget_snprintf(src, sizeof(src), "%s.%d", fname, it - 1);
+					wget_snprintf(src, src_size, "%s.%d", fname, it - 1);
 				else
-					wget_strscpy(src, fname, sizeof(src));
-				wget_snprintf(dst, sizeof(dst), "%s.%d", fname, it);
+					wget_strscpy(src, fname, src_size);
+				wget_snprintf(dst, dst_size, "%s.%d", fname, it);
 
 				if (rename(src, dst) == -1 && errno != ENOENT)
 					error_printf(_("Failed to rename %s to %s (errno=%d)\n"), src, dst, errno);
 			}
+
+			xfree(src);
+			xfree(dst);
 		}
 	}
 
 	// create the complete directory path
 	mkdir_path((char *) fname, true);
 
-	char unique[fname_length + 1];
+	size_t unique_size = fname_length + 1;
+	char *unique = wget_malloc(unique_size);
 	*unique = 0;
 
 	// Load partial content
 	if (partial_content) {
 		long long size = get_file_size(unique[0] ? unique : fname);
 		if (size >= 0) {
-			fd = open_unique(fname, O_RDONLY | O_BINARY, 0, multiple, unique, sizeof(unique));
+			fd = open_unique(fname, O_RDONLY | O_BINARY, 0, multiple, unique, unique_size);
 			if (fd >= 0) {
 				size_t rc;
 				if ((unsigned long long) size > max_partial_content)
@@ -3429,16 +3434,18 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		if (unlink(fname) < 0 && errno != ENOENT) {
 			error_printf(_("Failed to unlink '%s' (errno=%d)\n"), fname, errno);
 			set_exit_status(EXIT_STATUS_IO);
+			xfree(unique);
 			return -1;
 		}
 	}
 
 	fd = open_unique(fname, O_WRONLY | flag | O_CREAT | O_NONBLOCK | O_BINARY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-		multiple, unique, sizeof(unique));
+		multiple, unique, unique_size);
 	// debug_printf("1 fd=%d flag=%02x (%02x %02x %02x) errno=%d %s\n",fd,flag,O_EXCL,O_TRUNC,O_APPEND,errno,fname);
 
 	// Store the "actual" file name (with any extensions that were added present)
 	*actual_file_name = wget_strdup(unique[0] ? unique : fname);
+	xfree(unique);
 
 	if (fd >= 0) {
 		ssize_t rc;
