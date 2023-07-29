@@ -325,7 +325,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 {
 	const char *name;
 	char dn[128], timebuf[64];
-	unsigned char digest[20];
+	unsigned char digest[64];
 	unsigned char serial[40];
 	size_t dn_size = sizeof(dn);
 	size_t digest_size = sizeof (digest);
@@ -360,7 +360,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 			info_printf(_("  Expires: %s"), safe_ctime(expired, timebuf, sizeof(timebuf)));
 
 			if (!gnutls_fingerprint(GNUTLS_DIG_MD5, &cert_list[ncert], digest, &digest_size)) {
-				char digest_hex[digest_size * 2 + 1];
+				char digest_hex[sizeof(digest) * 2 + 1];
 
 				wget_memtohex(digest, digest_size, digest_hex, sizeof(digest_hex));
 
@@ -368,9 +368,9 @@ static void print_x509_certificate_info(gnutls_session_t session)
 			}
 
 			if (!gnutls_x509_crt_get_serial(cert, serial, &serial_size)) {
-				char serial_hex[digest_size * 2 + 1];
+				char serial_hex[sizeof(serial) * 2 + 1];
 
-				wget_memtohex(digest, digest_size, serial_hex, sizeof(serial_hex));
+				wget_memtohex(serial, serial_size, serial_hex, sizeof(serial_hex));
 
 				info_printf(_("  Serial number: %s\n"), serial_hex);
 			}
@@ -1352,16 +1352,14 @@ void wget_ssl_init(void)
 
 				if ((dir = opendir(config.ca_directory))) {
 					struct dirent *dp;
-					size_t dirlen = strlen(config.ca_directory);
 
 					while ((dp = readdir(dir))) {
 						size_t len = strlen(dp->d_name);
 
 						if (len >= 4 && !wget_strncasecmp_ascii(dp->d_name + len - 4, ".pem", 4)) {
 							struct stat st;
-							char fname[dirlen + 1 + len + 1];
+							char *fname = wget_aprintf("%s/%s", config.ca_directory, dp->d_name);
 
-							wget_snprintf(fname, sizeof(fname), "%s/%s", config.ca_directory, dp->d_name);
 							if (stat(fname, &st) == 0 && S_ISREG(st.st_mode)) {
 								debug_printf("GnuTLS loading %s\n", fname);
 								if ((rc = gnutls_certificate_set_x509_trust_file(credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
@@ -1369,6 +1367,8 @@ void wget_ssl_init(void)
 								else
 									ncerts += rc;
 							}
+
+							xfree(fname);
 						}
 					}
 
