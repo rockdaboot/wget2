@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "wget.h"
 #include "fuzzer.h"
@@ -47,8 +48,7 @@ static int test_all_from(const char *dirname)
 		while ((dp = readdir(dirp))) {
 			if (*dp->d_name == '.') continue;
 
-			char fname[strlen(dirname) + strlen(dp->d_name) + 2];
-			wget_snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+			char *fname = wget_aprintf("%s/%s", dirname, dp->d_name);
 
 			uint8_t *data;
 			size_t size;
@@ -57,6 +57,8 @@ static int test_all_from(const char *dirname)
 				LLVMFuzzerTestOneInput(data, size);
 				wget_free(data);
 			}
+
+			wget_xfree(fname);
 		}
 		closedir(dirp);
 		return 0;
@@ -76,15 +78,15 @@ int main(WGET_GCC_UNUSED int argc, char **argv)
 		// fallthrough
 	}
 	else if (!strcmp(valgrind, "1")) {
-		char cmd[strlen(argv[0]) + 256];
-
-		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" SRCDIR "/valgrind-suppressions --gen-suppressions=all %s", argv[0]);
-		return system(cmd) != 0;
+		char *cmd = wget_aprintf("VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=" SRCDIR "/valgrind-suppressions --gen-suppressions=all %s", argv[0]);
+		int result = system(cmd) != 0;
+		wget_xfree(cmd);
+		return result;
 	} else {
-		char cmd[strlen(valgrind) + strlen(argv[0]) + 32];
-
-		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
-		return system(cmd) != 0;
+		char *cmd = wget_aprintf("VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
+		int result = system(cmd) != 0;
+		wget_xfree(cmd);
+		return result;
 	}
 
 	wget_global_init(
@@ -110,17 +112,18 @@ int main(WGET_GCC_UNUSED int argc, char **argv)
 #endif
 
 	{
-		int rc;
-		char corporadir[sizeof(SRCDIR) + 1 + target_len + 8];
-		wget_snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.in", (int) target_len, target);
+		char *corporadir;
 
-		rc = test_all_from(corporadir);
+		corporadir = wget_aprintf(SRCDIR "/%.*s.in", (int) target_len, target);
+		int rc = test_all_from(corporadir);
 		if (rc)
 			wget_error_printf("Failed to find %s\n", corporadir);
+		wget_xfree(corporadir);
 
-		wget_snprintf(corporadir, sizeof(corporadir), SRCDIR "/%.*s.repro", (int) target_len, target);
-
-		if (test_all_from(corporadir) && rc)
+		corporadir = wget_aprintf(SRCDIR "/%.*s.repro", (int) target_len, target);
+		bool failure = test_all_from(corporadir) && rc;
+		wget_xfree(corporadir);
+		if (failure)
 			return 77;
 	}
 
