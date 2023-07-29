@@ -1080,7 +1080,6 @@ static void _remove_directory(const char *dirname);
 static void _empty_directory(const char *dirname)
 {
 	DIR *dir;
-	size_t dirlen = strlen(dirname);
 
 	if ((dir = opendir(dirname))) {
 		struct dirent *dp;
@@ -1089,8 +1088,7 @@ static void _empty_directory(const char *dirname)
 			if (*dp->d_name == '.' && (dp->d_name[1] == 0 || (dp->d_name[1] == '.' && dp->d_name[2] == 0)))
 				continue;
 
-			char fname[dirlen + 1 + strlen(dp->d_name) + 1];
-			wget_snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+			char *fname = wget_aprintf("%s/%s", dirname, dp->d_name);
 
 			if (unlink(fname) == -1) {
 				// in case fname is a directory glibc returns EISDIR but correct POSIX value would be EPERM.
@@ -1100,6 +1098,8 @@ static void _empty_directory(const char *dirname)
 				else
 					wget_error_printf("Failed to unlink %s (%d)\n", fname, errno);
 			}
+
+			wget_xfree(fname);
 		}
 
 		closedir(dir);
@@ -1419,7 +1419,6 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 {
 	DIR *dir;
 	struct stat st;
-	size_t dirlen = strlen(dirname);
 
 	wget_info_printf("Entering %s\n", dirname);
 
@@ -1427,19 +1426,19 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 		struct dirent *dp;
 
 		while ((dp = readdir(dir))) {
-			char fname[dirlen + 1 + strlen(dp->d_name) + 1];
-
 			if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
 				continue;
 
+			char *fname;
 			if (*dirname == '.' && dirname[1] == 0)
-				wget_snprintf(fname, sizeof(fname), "%s", dp->d_name);
+				fname = wget_strdup(dp->d_name);
 			else
-				wget_snprintf(fname, sizeof(fname), "%s/%s", dirname, dp->d_name);
+				fname = wget_aprintf("%s/%s", dirname, dp->d_name);
 
 			wget_info_printf(" - %s/%s\n", dirname, dp->d_name);
 			if (stat(fname, &st) == 0 && S_ISDIR(st.st_mode)) {
 				_scan_for_unexpected(fname, expected_files);
+				wget_xfree(fname);
 				continue;
 			}
 
@@ -1480,6 +1479,8 @@ static void _scan_for_unexpected(const char *dirname, const wget_test_file_t *ex
 #endif
 			} else
 				wget_error_printf_exit("Unexpected file %s/%s found\n", tmpdir, fname);
+
+			wget_xfree(fname);
 		}
 
 		closedir(dir);
