@@ -99,14 +99,14 @@ int main(WGET_GCC_UNUSED int argc, const char **argv)
 		// fallthrough
 	}
 	else if (!strcmp(valgrind, "1")) {
-		char cmd[strlen(argv[0]) + 256];
+		char cmd[4096];
 
-		snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s", argv[0]);
+		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s", argv[0]);
 		return system(cmd) != 0;
 	} else {
-		char cmd[strlen(valgrind) + strlen(argv[0]) + 32];
+		char cmd[4096];
 
-		snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
+		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
 		return system(cmd) != 0;
 	}
 
