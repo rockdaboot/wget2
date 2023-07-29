@@ -1072,8 +1072,8 @@ static void test_parser(void)
 		while ((dp = readdir(dirp)) != NULL) {
 			if (*dp->d_name == '.') continue;
 			if ((ext = strrchr(dp->d_name, '.'))) {
-				char fname[strlen(SRCDIR) + strlen(dp->d_name) + 8];
-				snprintf(fname, sizeof(fname), "%s/files/%s", SRCDIR, dp->d_name);
+				char fname[4096];
+				wget_snprintf(fname, sizeof(fname), "%s/files/%s", SRCDIR, dp->d_name);
 				if (!wget_strcasecmp_ascii(ext, ".xml")) {
 					info_printf("parsing %s\n", fname);
 					wget_xml_parse_file(fname, NULL, NULL, 0);
@@ -1657,7 +1657,7 @@ static void test_utils(void)
 		for (it = 0; it <= 255; it++) {
 			src[0] = (unsigned char) it;
 			wget_memtohex(src, 1, dst1, ndst);
-			snprintf(dst2, ndst, "%02x", src[0]);
+			wget_snprintf(dst2, ndst, "%02x", src[0]);
 			if (strcmp(dst1, dst2)) {
 				info_printf("buffer_to_hex failed: '%s' instead of '%s' (ndst=%d)\n", dst1, dst2, ndst);
 				failed++;
@@ -1979,7 +1979,7 @@ static void test_stringmap(void)
 
 		// now, remove every single entry
 		for (it = 0; it < 26; it++) {
-			snprintf(keybuf, sizeof(keybuf), "http://www.example.com/subdir/%d.html", it);
+			wget_snprintf(keybuf, sizeof(keybuf), "http://www.example.com/subdir/%d.html", it);
 			wget_stringmap_remove(m, keybuf);
 		}
 
@@ -2631,14 +2631,14 @@ int main(int argc, const char **argv)
 		// fallthrough
 	}
 	else if (!strcmp(valgrind, "1")) {
-		char cmd[strlen(argv[0]) + 256];
+		char cmd[4096];
 
-		snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s", argv[0]);
+		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s", argv[0]);
 		return system(cmd) != 0;
 	} else {
-		char cmd[strlen(valgrind) + strlen(argv[0]) + 32];
+		char cmd[4096];
 
-		snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
+		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
 		return system(cmd) != 0;
 	}
 
