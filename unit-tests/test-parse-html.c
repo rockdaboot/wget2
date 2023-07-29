@@ -165,8 +165,7 @@ static void test_parse_files(void)
 				else
 					continue;
 
-				char fname[strlen(SRCDIR) + strlen(dp->d_name) + 8];
-				wget_snprintf(fname, sizeof(fname), "%s/files/%s", SRCDIR, dp->d_name);
+				char *fname = wget_aprintf("%s/files/%s", SRCDIR, dp->d_name);
 				info_printf("parsing %s\n", fname);
 
 				char *data;
@@ -182,6 +181,8 @@ static void test_parse_files(void)
 
 					xfree(data);
 				}
+
+				xfree(fname);
 			}
 		}
 		closedir(dirp);
