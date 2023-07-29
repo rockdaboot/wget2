@@ -535,10 +535,16 @@ static int parseXML(const char *dir, xml_context *context)
 					if (!(context->hints & XML_HINT_HTML))
 						context->callback(context->user_ctx, XML_FLG_END, directory, NULL, NULL, 0, 0);
 					else {
-						char tag[context->token_len + 1]; // we need to \0 terminate tok
-						memcpy(tag, tok, context->token_len);
-						tag[context->token_len] = 0;
-						context->callback(context->user_ctx, XML_FLG_END, tag, NULL, NULL, 0, 0);
+						char tmp[128], *tag = tmp; // we need to \0 terminate tok
+						if (context->token_len >= sizeof(tmp))
+							tag = wget_malloc(context->token_len + 1);
+						if (tag) {
+							memcpy(tag, tok, context->token_len);
+							tag[context->token_len] = 0;
+							context->callback(context->user_ctx, XML_FLG_END, tag, NULL, NULL, 0, 0);
+							if (tag != tmp)
+								xfree(tag);
+						}
 					}
 				}
 				if (!(tok = getToken(context))) return WGET_E_XML_PARSE_ERR;
