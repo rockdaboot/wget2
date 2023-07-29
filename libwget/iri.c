@@ -874,7 +874,13 @@ const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size
 
 	if (*val == '/') {
 		if (base) {
-			char path[len + 1];
+			char tmp[4096], *path = tmp;
+
+			if (len >= sizeof(tmp)) {
+				path = wget_malloc(len + 1);
+				if (!path)
+					return NULL;
+			}
 
 			// strlcpy or snprintf are ineffective here since they do strlen(val), which might be large
 			wget_strscpy(path, val, len + 1);
@@ -900,6 +906,9 @@ const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size
 				wget_buffer_strcat(buf, path);
 				debug_printf("*2 %s\n", buf->data);
 			}
+
+			if (path != tmp)
+				xfree(path);
 		} else {
 			return NULL;
 		}
