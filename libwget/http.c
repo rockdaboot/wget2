@@ -316,34 +316,38 @@ void wget_http_add_credentials(wget_http_request *req, wget_http_challenge *chal
 		if (!realm || !nonce)
 			return;
 
+		char a1buf[32 * 2 + 1], a2buf[32 * 2 + 1];
+		char response_digest[32 * 2 + 1], cnonce[16] = "";
+
 		hashlen = wget_hash_get_len(hashtype);
-		char a1buf[hashlen * 2 + 1], a2buf[hashlen * 2 + 1];
-		char response_digest[hashlen * 2 + 1], cnonce[16] = "";
+		size_t buflen = hashlen * 2 + 1;
+		if (buflen > sizeof(a1buf))
+			return;
 
 		// A1BUF = H(user ":" realm ":" password)
-		wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", username, realm, password);
+		wget_hash_printf_hex(hashtype, a1buf, buflen, "%s:%s:%s", username, realm, password);
 
 		if (!wget_strcasecmp_ascii(algorithm, "MD5-sess") || !wget_strcasecmp_ascii(algorithm, "SHA-256-sess")) {
 			// A1BUF = H( H(user ":" realm ":" password) ":" nonce ":" cnonce )
 			wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
-			wget_hash_printf_hex(hashtype, a1buf, sizeof(a1buf), "%s:%s:%s", a1buf, nonce, cnonce);
+			wget_hash_printf_hex(hashtype, a1buf, buflen, "%s:%s:%s", a1buf, nonce, cnonce);
 		}
 
 		// A2BUF = H(method ":" path)
-		wget_hash_printf_hex(hashtype, a2buf, sizeof(a2buf), "%s:/%s", req->method, req->esc_resource.data);
+		wget_hash_printf_hex(hashtype, a2buf, buflen, "%s:/%s", req->method, req->esc_resource.data);
 
 		if (!qop) {
 			// RFC 2069 Digest Access Authentication
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" A2BUF)
-			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest), "%s:%s:%s", a1buf, nonce, a2buf);
+			wget_hash_printf_hex(hashtype, response_digest, buflen, "%s:%s:%s", a1buf, nonce, a2buf);
 		} else { // if (!wget_strcasecmp_ascii(qop, "auth") || !wget_strcasecmp_ascii(qop, "auth-int")) {
 			// RFC 2617 Digest Access Authentication
 			if (!*cnonce)
 				wget_snprintf(cnonce, sizeof(cnonce), "%08x", (unsigned) wget_random()); // create random hex string
 
 			// RESPONSE_DIGEST = H(A1BUF ":" nonce ":" nc ":" cnonce ":" qop ": " A2BUF)
-			wget_hash_printf_hex(hashtype, response_digest, sizeof(response_digest),
+			wget_hash_printf_hex(hashtype, response_digest, buflen,
 				"%s:%s:00000001:%s:%s:%s", a1buf, nonce, /* nc, */ cnonce, qop, a2buf);
 		}
 
