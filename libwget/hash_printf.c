@@ -63,19 +63,33 @@ void wget_hash_printf_hex(wget_digest_algorithm algorithm, char *out, size_t out
 	len = wget_vasprintf(&plaintext, fmt, args);
 	va_end(args);
 
-	if (plaintext) {
-		unsigned char digest[wget_hash_get_len(algorithm)];
+	if (!plaintext)
+		return;
+
+	unsigned char tmp[256], *digest = tmp;
+	size_t digestlen = wget_hash_get_len(algorithm);
+
+	if (digestlen > sizeof(tmp)) {
+		digest = wget_malloc(digestlen);
+	}
+
+	if (digest) {
 		int rc;
 
 		if ((rc = wget_hash_fast(algorithm, plaintext, len, digest)) == 0) {
-			wget_memtohex(digest, sizeof(digest), out, outsize);
+			wget_memtohex(digest, digestlen, out, outsize);
 		} else {
 			*out = 0;
 			error_printf(_("Failed to hash (%d)\n"), rc);
 		}
 
-		xfree(plaintext);
+		if (digest != tmp)
+			xfree(digest);
+	} else {
+		error_printf(_("%s: Failed to malloc %zu bytes\n"), __func__, digestlen);
 	}
+
+	xfree(plaintext);
 }
 
 /**@}*/
