@@ -787,14 +787,21 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 	debug_printf("%s hashing pos %llu, length %llu...\n", hashname, (unsigned long long)offset, (unsigned long long)length);
 
 	if ((algorithm = wget_hash_get_algorithm(hashname)) != WGET_DIGTYPE_UNKNOWN) {
-		unsigned char digest[wget_hash_get_len(algorithm)];
+		unsigned char digest[256];
+		size_t digestlen = wget_hash_get_len(algorithm);
+
+		if (digestlen > sizeof(digest)) {
+			error_printf(_("%s: Unexpected hash len %zu > %zu\n"), __func__, digestlen, sizeof(digest));
+			return ret;
+		}
 
 #ifdef HAVE_MMAP
 		char *buf = mmap(NULL, length, PROT_READ, MAP_PRIVATE, fd, offset);
 
 		if (buf != MAP_FAILED) {
 			if (wget_hash_fast(algorithm, buf, length, digest) == 0) {
-				wget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
+				wget_memtohex(digest, digestlen, digest_hex, digest_hex_size);
+				debug_printf("  hash %s", digest_hex);
 				ret = WGET_E_SUCCESS;
 			}
 			munmap(buf, length);
@@ -832,7 +839,7 @@ int wget_hash_file_fd(const char *hashname, int fd, char *digest_hex, size_t dig
 				return WGET_E_IO;
 			}
 
-			wget_memtohex(digest, sizeof(digest), digest_hex, digest_hex_size);
+			wget_memtohex(digest, digestlen, digest_hex, digest_hex_size);
 			ret = WGET_E_SUCCESS;
 #ifdef HAVE_MMAP
 		}
