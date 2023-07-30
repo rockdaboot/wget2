@@ -150,16 +150,21 @@ int wget_hpkp_db_check_pubkey(wget_hpkp_db *hpkp_db, const char *host, const voi
 	if (plugin_vtable)
 		return plugin_vtable->check_pubkey(hpkp_db, host, pubkey, pubkeysize);
 
-	wget_hpkp key;
 	wget_hpkp *hpkp = NULL;
-	char digest[wget_hash_get_len(WGET_DIGTYPE_SHA256)];
 	int subdomain = 0;
+	char digest[32];
+	size_t digestlen = wget_hash_get_len(WGET_DIGTYPE_SHA256);
+
+	if (digestlen > sizeof(digest)) {
+		error_printf(_("%s: Unexpected hash len %zu > %zu\n"), __func__, digestlen, sizeof(digest));
+		return -1;
+	}
 
 	for (const char *domain = host; *domain && !hpkp; domain = strchrnul(domain, '.')) {
 		while (*domain == '.')
 			domain++;
 
-		key.host = domain;
+		wget_hpkp key = { .host = domain };
 
 		if (!wget_hashmap_get(hpkp_db->entries, &key, &hpkp))
 			subdomain = 1;
@@ -174,7 +179,7 @@ int wget_hpkp_db_check_pubkey(wget_hpkp_db *hpkp_db, const char *host, const voi
 	if (wget_hash_fast(WGET_DIGTYPE_SHA256, pubkey, pubkeysize, digest))
 		return -1;
 
-	wget_hpkp_pin pinkey = { .pin = digest, .pinsize = sizeof(digest), .hash_type = "sha256" };
+	wget_hpkp_pin pinkey = { .pin = digest, .pinsize = digestlen, .hash_type = "sha256" };
 
 	if (wget_vector_find(hpkp->pins, &pinkey) != -1)
 		return 1; // OK, pinned pubkey found
