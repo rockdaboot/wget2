@@ -120,9 +120,9 @@ int main(void)
 		},
 	};
 
-	int hashlen = wget_hash_get_len(WGET_DIGTYPE_MD5);
-	char md5hex[hashlen * 2 + 1], md5hex_p1[hashlen * 2 + 1], md5hex_p2[hashlen * 2 + 1];
-	unsigned char digest[hashlen];
+	// int hashlen = wget_hash_get_len(WGET_DIGTYPE_MD5); // 20
+	char md5hex[20 * 2 + 1], md5hex_p1[20 * 2 + 1], md5hex_p2[20 * 2 + 1];
+	unsigned char digest[20];
 	char *body0, *body2, *body4, *body7; // to be freed later
 
 	wget_hash_printf_hex(WGET_DIGTYPE_MD5, md5hex, sizeof(md5hex), "%s", urls[1].body);
