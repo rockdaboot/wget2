@@ -111,9 +111,7 @@ int main(void)
 
 	{
 		// server sends same length content with slightly different content
-		char modified[strlen(urls[0].body) + 1];
-
-		memcpy(modified, urls[0].body, sizeof(modified));
+		char *modified = wget_strdup(urls[0].body);
 		modified[3] = 'x';
 
 		urls[0].modified = 1097310600;
@@ -213,6 +211,7 @@ int main(void)
 				{	NULL } },
 			0);
 		urls[0].body = old_body; // restore body
+		wget_xfree(modified);
 	}
 
 	// test-N
