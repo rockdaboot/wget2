@@ -210,8 +210,7 @@ int main(void)
 			{ NULL } },
 		0);
 
-	char modified[strlen(urls[2].body)+1];
-	memcpy(modified, urls[2].body, sizeof(modified));
+	char *modified = wget_strdup(urls[2].body);
 	modified[0] = '.';
 	wget_test(
 		WGET_TEST_OPTIONS, "--exclude-directories=/firstdir --include-directories=/*/pub -r -nH -N --no-if-modified-since",
@@ -226,6 +225,7 @@ int main(void)
 			{ urls[3].name + 1, urls[3].body, 1097310600 },
 			{ NULL } },
 		0);
+	wget_xfree(modified);
 
 	exit(EXIT_SUCCESS);
 }
