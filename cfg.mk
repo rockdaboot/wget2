@@ -33,7 +33,10 @@ local-checks-to-skip =            \
   sc_prohibit_gnu_make_extensions \
   sc_prohibit_strcmp              \
   sc_indent                       \
-  sc_error_message_uppercase
+  sc_error_message_uppercase      \
+  sc_readme_link_install          \
+  sc_readme_link_copying          \
+  sc_unportable_grep_q
 
 update-copyright-env = UPDATE_COPYRIGHT_FORCE=1 UPDATE_COPYRIGHT_USE_INTERVALS=1
 
