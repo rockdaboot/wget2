@@ -398,22 +398,22 @@ Go to background immediately after startup. If no output file is specified via t
   literally named `-`. To not get Wget2 status messages mixed with file content, use `-q` in combination with `-O-` (This is
   different to how Wget 1.x behaves).
 
-  Using -r or -p with -O may not work as you expect: Wget2 won't just download the first file to file and then
+  Using `-r` or `-p` with `-O` may not work as you expect: Wget2 won't just download the first file to file and then
   download the rest to their normal names: all downloaded content will be placed in file.
 
-  A combination with -nc is only accepted if the given output file does not exist.
+  A combination with `-nc` is only accepted if the given output file does not exist.
 
-  When used along with the -c option, Wget2 will attempt to continue downloading the file whose name is passed to the option,
+  When used along with the `-c` option, Wget2 will attempt to continue downloading the file whose name is passed to the option,
   irrespective of whether the actual file already exists on disk or not. This allows users to download a file with a
   temporary name alongside the actual file.
 
-  Note that a combination with -k is only permitted when downloading a single document, as in that case it will just convert all
-  relative URIs to external ones; -k makes no sense for multiple URIs when they're all being downloaded to a single file; -k can
+  Note that a combination with `-k` is only permitted when downloading a single document, as in that case it will just convert all
+  relative URIs to external ones; `-k` makes no sense for multiple URIs when they're all being downloaded to a single file; `-k` can
   be used only when the output is a regular file.
 
-  Compatibility-Note: Wget 1.x used to treat -O as analogous to shell redirection. Wget2 does not handle the option similarly.
+  Compatibility-Note: Wget 1.x used to treat `-O` as analogous to shell redirection. Wget2 does not handle the option similarly.
   Hence, the file will not always be newly created. The file's timestamps will not be affected unless it is actually written to.
-  As a result, both -c and -N options are now supported in conjunction with this option.
+  As a result, both `-c` and `-N` options are now supported in conjunction with this option.
 
 ### `-nc`, `--no-clobber`
 
@@ -432,16 +432,16 @@ Go to background immediately after startup. If no output file is specified via t
   prevented.
 
   When running Wget2 with `-r` or `-p`, but without `-N`, `-nd`, or `-nc`, re-downloading a file will result in the new copy
-  simply overwriting the old.  Adding -nc will prevent this behavior, instead causing the original version to be
+  simply overwriting the old.  Adding `-nc` will prevent this behavior, instead causing the original version to be
   preserved and any newer copies on the server to be ignored.
 
   When running Wget2 with `-N`, with or without `-r` or `-p`, the decision as to whether or not to download a newer copy
-  of a file depends on the local and remote timestamp and size of the file.  -nc may not be specified at the same
-  time as -N.
+  of a file depends on the local and remote timestamp and size of the file. `-nc` may not be specified at the same
+  time as `-N`.
 
   A combination with `-O`/`--output-document` is only accepted if the given output file does not exist.
 
-  Note that when -nc is specified, files with the suffixes .html or .htm will be loaded from the local disk and
+  Note that when `-nc` is specified, files with the suffixes .html or .htm will be loaded from the local disk and
   parsed as if they had been retrieved from the Web.
 
 ### `--backups=backups`
@@ -461,32 +461,32 @@ Go to background immediately after startup. If no output file is specified via t
   file.
 
   Note that you don't need to specify this option if you just want the current invocation of Wget2 to retry
-  downloading a file should the connection be lost midway through.  This is the default behavior.  -c only affects
+  downloading a file should the connection be lost midway through.  This is the default behavior.  `-c` only affects
   resumption of downloads started prior to this invocation of Wget2, and whose local files are still sitting around.
 
-  Without -c, the previous example would just download the remote file to `tarball.gz.1`, leaving the truncated
+  Without `-c`, the previous example would just download the remote file to `tarball.gz.1`, leaving the truncated
   `tarball.gz` file alone.
 
-  If you use -c on a non-empty file, and it turns out that the server does not support
+  If you use `-c` on a non-empty file, and it turns out that the server does not support
   continued downloading, Wget2 will refuse to start the download from scratch, which would effectively ruin existing
   contents.  If you really want the download to start from scratch, remove the file.
 
-  If you use -c on a file which is of equal size as the one on the server, Wget2 will
+  If you use `-c` on a file which is of equal size as the one on the server, Wget2 will
   refuse to download the file and print an explanatory message.  The same happens when the file is smaller on the
   server than locally (presumably because it was changed on the server since your last download attempt). Because
   "continuing" is not meaningful, no download occurs.
 
-  On the other side of the coin, while using -c, any file that's bigger on the server than locally will be
+  On the other side of the coin, while using `-c`, any file that's bigger on the server than locally will be
   considered an incomplete download and only "(length(remote) - length(local))" bytes will be downloaded and tacked
   onto the end of the local file.  This behavior can be desirable in certain cases. For instance, you can use
   `wget2 -c` to download just the new portion that's been appended to a data collection or log file.
 
   However, if the file is bigger on the server because it's been changed, as opposed to just appended to, you'll
   end up with a garbled file.  Wget2 has no way of verifying that the local file is really a valid prefix of the
-  remote file.  You need to be especially careful of this when using -c in conjunction with -r, since every file
+  remote file.  You need to be especially careful of this when using `-c` in conjunction with `-r`, since every file
   will be considered as an "incomplete download" candidate.
 
-  Another instance where you'll get a garbled file if you try to use -c is if you have a lame HTTP proxy that
+  Another instance where you'll get a garbled file if you try to use `-c` is if you have a lame HTTP proxy that
   inserts a "transfer interrupted" string into the local file.  In the future a "rollback" option may be added to
   deal with this case.
 
@@ -532,8 +532,8 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--no-if-modified-since`
 
-  Do not send If-Modified-Since header in -N mode. Send preliminary HEAD request instead. This has only effect in
-  -N mode.
+  Do not send If-Modified-Since header in `-N` mode. Send preliminary HEAD request instead. This has only effect in
+  `-N` mode.
 
 ### `--no-use-server-timestamps`
 
@@ -1654,7 +1654,7 @@ Go to background immediately after startup. If no output file is specified via t
 
       wget2 -r -nd --delete-after https://example.com/~popular/page/
 
-  The -r option is to retrieve recursively, and -nd to not create directories.
+  The `-r` option is to retrieve recursively, and `-nd` to not create directories.
 
   Note that when --delete-after is specified, `--convert-links` is ignored, so .orig files
   are simply not created in the first place.
@@ -1743,16 +1743,16 @@ Go to background immediately after startup. If no output file is specified via t
 
       wget2 -r -l 0 -p https://<site>/1.html
 
-  would download just 1.html and 1.gif, but unfortunately this is not the case, because -l 0 is equivalent to -l
+  would download just 1.html and 1.gif, but unfortunately this is not the case, because `-l 0` is equivalent to `-l`
   inf, that is, infinite recursion.  To download a single HTML page (or a handful of them, all specified on the
-  command-line or in a -i URL input file) and its (or their) requisites, simply leave off -r and -l:
+  command-line or in a `-i` URL input file) and its (or their) requisites, simply leave off `-r` and `-l`:
 
       wget2 -p https://<site>/1.html
 
-  Note that Wget2 will behave as if -r had been specified, but only that single page and its requisites will be
+  Note that Wget2 will behave as if `-r` had been specified, but only that single page and its requisites will be
   downloaded.  Links from that page to external documents will not be followed.  Actually, to download a single
   page and all its requisites (even if they exist on separate websites), and make sure the lot displays properly
-  locally, this author likes to use a few options in addition to -p:
+  locally, this author likes to use a few options in addition to `-p`:
 
       wget2 -E -H -k -K -p https://<site>/<document>
 
@@ -1800,7 +1800,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `-D domain-list`, `--domains=domain-list`
 
-  Set domains to be followed.  domain-list is a comma-separated list of domains.  Note that it does not turn on -H.
+  Set domains to be followed.  domain-list is a comma-separated list of domains.  Note that it does not turn on `-H`.
 
 ### `--exclude-domains=domain-list`
 
@@ -1836,8 +1836,8 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--ignore-case`
 
-  Ignore case when matching files and directories.  This influences the behavior of -R, -A, -I, and -X options.
-  For example, with this option, -A "*.txt" will match file1.txt, but also file2.TXT, file3.TxT, and so on.
+  Ignore case when matching files and directories.  This influences the behavior of `-R`, `-A`, `-I`, and `-X` options.
+  For example, with this option, `-A` "*.txt" will match file1.txt, but also file2.TXT, file3.TxT, and so on.
   The quotes in the example are to prevent the shell from expanding the pattern.
 
 ### `-H`, `--span-hosts`
@@ -1872,12 +1872,12 @@ Go to background immediately after startup. If no output file is specified via t
 
   If `-I` is given first, the default is 'exclude all'. If `-X` is given first, the default is 'include all'.
 
-  Multiple -I/-X options are processed 'first to last'. The last match is relevant.
+  Multiple `-I`/`-X` options are processed 'first to last'. The last match is relevant.
 
-      Example: -I /pub -X /pub/trash would download all from /pub/ except from /pub/trash.
-      Example: -X /pub -I /pub/important would download all except from /pub where only /pub/important would be downloaded.
+      Example: `-I /pub -X /pub/trash` would download all from /pub/ except from /pub/trash.
+      Example: `-X /pub -I /pub/important` would download all except from /pub where only /pub/important would be downloaded.
 
-  To reset the list (e.g. to ignore -I/-X from `.wget2rc` files) use `--no-include-directories` or `--no-exclude-directories`.
+  To reset the list (e.g. to ignore `-I`/`-X` from `.wget2rc` files) use `--no-include-directories` or `--no-exclude-directories`.
 
 ### `-np`, `--no-parent`
 
@@ -2042,7 +2042,7 @@ that in case of a collision, the user's wget2rc _overrides_ the global wget2rc.
   out of the way.  Only if it turns out that `.wget2rc` settings affect the bug, mail me the relevant parts of the
   file.
 
-  3.  Please start Wget2 with -d option and send us the resulting output (or relevant parts thereof).  If Wget2 was
+  3.  Please start Wget2 with `-d` option and send us the resulting output (or relevant parts thereof).  If Wget2 was
   compiled without debug support, recompile it. It is much easier to trace bugs with debug support on.
 
   Note: please make sure to remove any potentially sensitive information from the debug log before sending it to
