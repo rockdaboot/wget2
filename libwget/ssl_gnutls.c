@@ -1357,9 +1357,14 @@ void wget_ssl_init(void)
 						size_t len = strlen(dp->d_name);
 
 						if (len >= 4 && !wget_strncasecmp_ascii(dp->d_name + len - 4, ".pem", 4)) {
-							struct stat st;
 							char *fname = wget_aprintf("%s/%s", config.ca_directory, dp->d_name);
 
+							if (!fname) {
+								error_printf(_("Failed to allocate file name for cert '%s/%s'\n"), config.ca_directory, dp->d_name);
+								continue;
+							}
+
+							struct stat st;
 							if (stat(fname, &st) == 0 && S_ISREG(st.st_mode)) {
 								debug_printf("GnuTLS loading %s\n", fname);
 								if ((rc = gnutls_certificate_set_x509_trust_file(credentials, fname, GNUTLS_X509_FMT_PEM)) <= 0)
