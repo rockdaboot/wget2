@@ -848,9 +848,19 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 #ifdef WITH_LIBNGHTTP2
 	if (wget_tcp_get_protocol(conn->tcp) == WGET_PROTOCOL_HTTP_2_0) {
 		char length_str[32];
-		int n = 4 + wget_vector_size(req->headers);
-		nghttp2_nv nvs[n], *nvp;
-		char resource[req->esc_resource.length + 2];
+		nghttp2_nv tmp_nv[32], *nvs = tmp_nv, *nvp;
+		char *resource;
+
+		if (!(nvs = wget_malloc(sizeof(nghttp2_nv) * (4 + wget_vector_size(req->headers))))) {
+			error_printf(_("Failed to allocate nvs[%d]\n"), 4 + wget_vector_size(req->headers));
+			return -1;
+		}
+
+		if (!(resource = wget_malloc(req->esc_resource.length + 2))) {
+			xfree(nvs);
+			error_printf(_("Failed to allocate resource[%zu]\n"), req->esc_resource.length + 2);
+			return -1;
+		}
 
 		resource[0] = '/';
 		memcpy(resource + 1, req->esc_resource.data, req->esc_resource.length + 1);
@@ -898,6 +908,9 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 			// nghttp2 does strdup of name+value and lowercase conversion of 'name'
 			req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, ctx);
 		}
+
+		xfree(resource);
+		xfree(nvs);
 
 		if (req->stream_id < 0) {
 			error_printf(_("Failed to submit HTTP2 request\n"));
