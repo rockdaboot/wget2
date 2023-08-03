@@ -40,9 +40,14 @@
 #include <ctype.h>
 #include <time.h>
 #include <fnmatch.h>
-#include <regex.h>
 #include <sys/stat.h>
 #include <locale.h>
+
+// silence warnings in gnulib code
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvla"
+#include <regex.h>
+#pragma GCC diagnostic pop
 
 #ifdef _WIN32
 #include <windows.h> // GetFileAttributes()
