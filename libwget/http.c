@@ -848,7 +848,7 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 #ifdef WITH_LIBNGHTTP2
 	if (wget_tcp_get_protocol(conn->tcp) == WGET_PROTOCOL_HTTP_2_0) {
 		char length_str[32];
-		nghttp2_nv tmp_nv[32], *nvs = tmp_nv, *nvp;
+		nghttp2_nv *nvs, *nvp;
 		char *resource;
 
 		if (!(nvs = wget_malloc(sizeof(nghttp2_nv) * (4 + wget_vector_size(req->headers))))) {
