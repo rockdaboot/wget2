@@ -6,7 +6,6 @@
 stages:
   - tarball
   - stage1-testing
-  - stage2-tarball
 
 cache:
   key: "$CI_JOB_NAME-wget2"
@@ -25,26 +24,26 @@ after_script:
   # somehow after_script looses environment
   - export CCACHE_BASEDIR=${PWD}
   - export CCACHE_DIR=${PWD}/cache
-  - if which ccache >/dev/null; then ccache -s; fi
+  - ccache -s 2>/dev/null
 
 variables:
   BUILD_IMAGES_PROJECT: gnuwget/build-images
-  DEBIAN_BUILD: buildenv-debian-stable
-  DEBIAN_TESTING_BUILD: buildenv-debian-testing
+  DEBIAN_BUILD: buildenv-wget2-debian-stable
+  DEBIAN_TESTING_BUILD: buildenv-wget2-debian-testing
+  DEBIAN_STABLE_BUILD: buildenv-wget2-debian-stable
   DEBIAN_STABLEi386_BUILD: buildenv-debian-stable-i386
-  DEBIAN_UNSTABLE_BUILD: buildenv-debian-unstable
+  DEBIAN_UNSTABLE_BUILD: buildenv-wget2-debian-unstable
   DEBIAN_HTTP2_BUILD: buildenv-mhd-http2
-  FEDORA_BUILD: buildenv-fedora
-  CENTOS7_BUILD: buildenv-centos7
+  FEDORA_BUILD: buildenv-wget2-fedora
   MINGW_BUILD: buildenv-mingw
   MINGW_BUILD_STATIC: buildenv-mingw-static
-  ALPINE_BUILD: buildenv-alpine
+  ALPINE_BUILD: buildenv-wget2-alpine
   ARCH_BUILD: buildenv-arch
-  BASIC_BUILD: buildenv-basic
-  TARBALL_BUILD: buildenv-tarball
+#  BASIC_BUILD: buildenv-wget2-basic
+  TARBALL_BUILD: buildenv-wget2-tarball
   GET_SOURCES_ATTEMPTS: "3"
   GIT_DEPTH: "5"
-  CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
+  CONFIGURE_BASE_FLAGS: --enable-assert --cache-file ../cache/config.cache --enable-manywarnings
   CFLAGS_DEFAULT: -O1 -g -ggdb3
 
 sast:
@@ -55,9 +54,29 @@ sast:
 include:
   - template: Security/SAST.gitlab-ci.yml
 
+.defaults:
+  variables:
+    GIT_STRATEGY: none
+  except:
+    - coverity-scan@gnuwget/wget2
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./**/config.h
+      - ./**/*.log
+  dependencies:
+    - Build-Tarball
+  needs: ["Build-Tarball"]
 
 # We organize the CI runners as thus:
-#   1. Debian Stretch Build:
+# Stage 'tarball' includes:
+#   - commit check
+#   - spell check
+#   - tarball build including docs (on Debian Testing)
+#
+# Stage 'stage1-testing' includes:
+#   1. Debian Testing Build:
 #       * ASan and UBSan builds
 #       * make syntax-check
 #       * make distcheck
@@ -65,10 +84,6 @@ include:
 #   2. Fedora Build
 #       * LLVM/Clang Build
 #       * Valgrind Tests
-#
-#   3. CentOS7 Build
-#       * Build with musl / newlib
-#       * Minimal Build (All features disabled)
 #
 #   This way we split most of the different build options across different
 #   platforms as well. Other builds we would like to have:
@@ -78,120 +93,134 @@ include:
 #   3. Documentation Generation and Gitlab pages
 #   4. Code coverage stats
 
-Full+VPATH/Debian:
-  stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
+CommitCheck:
+  stage: tarball
+  image: alpine:latest
+  before_script:
+    - /bin/true
   script:
+    - apk add git py3-pip
+#    - apk add py3-codespell --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/
+    - pip install --break-system-packages codespell
+    - contrib/commit-check
     - contrib/spell-checker
-    - export CFLAGS="$CFLAGS_DEFAULT"
-    - sed -i 's/dist-lzip//g' configure.ac
-    - ./bootstrap --skip-po && touch .manywarnings
+  after_script:
+    - /bin/true
+  allow_failure: true
+  cache:
+      paths:
+      policy: push
+
+# Create the tarball for further testing.
+# Runs syntax-check, so no need to do this later on.
+Build-Tarball:
+  stage: tarball
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$TARBALL_BUILD
+  extends:
+    - .defaults
+  variables:
+    GIT_STRATEGY: clone
+  script:
+    - rmdir gnulib && mv /gnulib . && git submodule update gnulib
+    - ./bootstrap
     - mkdir vpath && cd vpath
-    - ../configure $CONFIGURE_BASE_FLAGS --enable-manylibs --cache-file ../cache/config.cache
-    - make syntax-check
-    - make -j$(nproc)
-    - make -j$(nproc) distcheck
+    - export CC=gcc
+    - export CFLAGS="-O0"
+    - ../configure $CONFIGURE_BASE_FLAGS --with-ssl=none
+    - make -j$(nproc) syntax-check
+    - make -j$(nproc) -C docs
+    - make -j$(nproc) dist-gzip
     - mv wget2-*.gz ..
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
   artifacts:
     expire_in: 2 weeks
     when: on_success
     paths:
       - wget2-*.gz
-
+  dependencies:
+  needs: []
 
 # Debian Testing
-# - Testing dash to detects bashims in configure.ac
-Debian/Testing:
+# - using dash to detect bashims in configure.ac
+DebianTesting:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po && touch .manywarnings
-    - CONFIG_SHELL=/bin/dash dash ./configure $CONFIGURE_BASE_FLAGS -q 2>&1 >/dev/null |
-        grep -v "libhsts was not found" | grep . && exit 1
-    - make -j$(nproc)
-    - make check -j$(nproc)
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
+    - CONFIG_SHELL=/bin/dash dash ./configure $CONFIGURE_BASE_FLAGS
+      --enable-manylibs -q 2>&1 >/dev/null
+      | grep -v "libhsts was not found" | grep . && exit 1
+    - make -j$(nproc) -C lib
+    - make check -j$(nproc) CFLAGS="$CFLAGS_DEFAULT -Werror"
 
 # Debian Unstable
 Debian/Unstable:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po && touch .manywarnings
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
     - ./configure $CONFIGURE_BASE_FLAGS
-    - make -j$(nproc)
-    - make check -j$(nproc)
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
+    - make -j$(nproc) -C lib
+    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
 
 Debian/WolfSSL:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po && touch .manywarnings
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
     - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=wolfssl
-    - make -j$(nproc)
     - make check -j$(nproc)
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
 
 Debian/OpenSSL:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po && touch .manywarnings
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
     - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=openssl
-    - make -j$(nproc)
     - make check -j$(nproc)
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
+
+Fedora:
+  stage: stage1-testing
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
+  extends:
+    - .defaults
+  script:
+    - export CFLAGS="$CFLAGS_DEFAULT"
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
+    - ./configure $CONFIGURE_BASE_FLAGS --enable-manywarnings
+    - make -j$(nproc) -C lib
+    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
+
+Alpine:
+  stage: stage1-testing
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
+  extends:
+    - .defaults
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - export CFLAGS="$CFLAGS_DEFAULT"
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
+    - ./configure $CONFIGURE_BASE_FLAGS
+    - make -j$(nproc) -C lib
+    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror -Wno-cpp"
 
 # In this build we combine
 #  * gcc
@@ -199,26 +228,18 @@ Debian/OpenSSL:
 Minimal/Debian:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - sed -i 's/dist-lzip//g' configure.ac
-    - ./bootstrap --skip-po && touch .manywarnings
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
     - ./configure $CONFIGURE_BASE_FLAGS --disable-doc
         --disable-xattr --with-ssl=none --without-libpsl --without-libnghttp2 --without-bzip2
         --without-gpgme --without-zlib --without-lzma --without-brotlidec --without-libidn2
         --without-libidn --without-libpcre2 --without-libpcre --without-plugin-support
     - make -j$(nproc) -C lib
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
 
 # In this build we combine
 #  * clang
@@ -226,10 +247,13 @@ Minimal/Debian:
 #  * check, syntax-check
 Sanitizers/Debian:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po && touch .manywarnings
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
     - export CC="ccache clang"
     - export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1
     - export LSAN_OPTIONS=suppressions="$PWD/tests/clang-asan-suppressions"
@@ -237,141 +261,55 @@ Sanitizers/Debian:
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
     - make -j$(nproc) -C lib
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
 
 Scan-Build/Debian:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_UNSTABLE_BUILD
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po && touch .manywarnings
-    - CC=clang ./configure $CONFIGURE_BASE_FLAGS
-    - make -C lib -j$(nproc)
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
+    - export CC=clang
+    - ./configure $CONFIGURE_BASE_FLAGS
+    - make -j$(nproc) -C lib
     - scan-build -v --use-cc=clang --force-analyze-debug-code --show-description -analyzer-config stable-report-filename=true -enable-checker valist,nullability --status-bugs -o scan-build make -j$(nproc)
     - scan-build -v --use-cc=clang --force-analyze-debug-code --show-description -analyzer-config stable-report-filename=true -enable-checker valist,nullability --status-bugs -o scan-build make -j$(nproc) check
-  except:
-    - tags
-    - coverity-scan@gnuwget/wget2
+  tags:
+    - saas-linux-xlarge-amd64
   artifacts:
     expire_in: 2 weeks
     when: on_failure
     paths:
       - scan-build/*
 
-Valgrind/Debian:
+.valgrind:
   stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_BUILD
+  extends:
+    - .defaults
+  variables:
+    GIT_STRATEGY: clone
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po
-    - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
-    - make -j$(nproc)
-    - make check -j$(nproc)
-  tags:
-    - saas-linux-xlarge-amd64
-  except:
-    - tags
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
-
-Valgrind/i386:
-  stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_STABLEi386_BUILD
-  script:
-    - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po
+    - tar xf wget2-*.gz && rm wget2-*.gz
+    - cd wget2-*
+    - mv ../fuzz/*.in fuzz/
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests --without-gpgme
     - make -j$(nproc)
-    - make check -j$(nproc)
+    - make -j$(nproc) check
   tags:
     - saas-linux-xlarge-amd64
-  except:
-    - tags
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
 
-Simple/Fedora:
-  stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
-  script:
-    - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS
-    - make -j$(nproc) -C lib
-    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
-  except:
-    - tags
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
+Valgrind/Debian:
+  extends:
+    - .valgrind
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_STABLE_BUILD
 
-Alpine:
-  stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
-  variables:
-    GIT_STRATEGY: none
-  script:
-    - export CFLAGS="$CFLAGS_DEFAULT"
-    - tar xf wget2-*.gz
-    - cd wget2-*
-    - ./configure $CONFIGURE_BASE_FLAGS
-    - make -j$(nproc) check
-  except:
-    - tags
-    - coverity-scan@gnuwget/wget2
-  dependencies:
-    - Build-Tarball
-  needs: ["Build-Tarball"]
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
-
-#Centos7 build:
-#  stage: stage1-testing
-#  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$CENTOS7_BUILD
-#  script:
-#  - sed -i 's/AM_GNU_GETTEXT_VERSION(0.19.3)/AM_GNU_GETTEXT_VERSION(0.18.2)/g' configure.ac
-#  - ./bootstrap && ./configure --enable-gcc-warnings --disable-doc && make -j$(nproc) check
-#  artifacts:
-#    expire_in: 2 weeks
-#    when: on_failure
-#    paths:
-#      - tests/*.log
-#      - compat_reports/
+Valgrind/i386:
+  extends:
+    - .valgrind
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_STABLEi386_BUILD
 
 pages:
   stage: stage1-testing
@@ -379,14 +317,14 @@ pages:
   script:
     - mkdir -p public
     - apt-get -y install libcapture-tiny-perl libdatetime-perl
-    - ./bootstrap --skip-po
     - export CFLAGS="$CFLAGS_DEFAULT"
+    - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
+    - cd wget2-*.*.?
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check-coverage
 
 # Tarball
-    - make dist
-    - mv wget2-*.gz public/wget2-latest.tar.gz
+    - mv ../wget2-latest.tar.gz ../public/wget2-latest.tar.gz
 
 # Test suite coverage report
     - coverage=$(grep -m 1 'headerCovTableEntry[a-zA-Z].*[0-9]*' lcov/index.html|sed 's/^.*>\([0-9]\+\.[0-9]\+\).*/\1/')
@@ -394,13 +332,13 @@ pages:
     - inum=$(echo $coverage|cut -d'.' -f1)
     - if [ -z "$inum" ]; then inum="0"; fi
     - contrib/make-coverage-badge "coverage" "$coverage%"
-    - mv badge.svg public/coverage.svg
-    - rm -rf public/coverage
-    - mv lcov public/coverage
+    - mv badge.svg ../public/coverage.svg
+    - rm -rf ../public/coverage
+    - mv lcov ../public/coverage
 
 # Online Documentation
-    - rm -rf public/reference
-    - mv docs/html public/reference
+    - rm -rf ../public/reference
+    - mv docs/html ../public/reference
 
 # Coverage report for all our fuzz corpora
     - make -j$(nproc) fuzz-coverage
@@ -409,9 +347,9 @@ pages:
     - inum=$(echo $coverage|cut -d'.' -f1)
     - if [ -z "$inum" ]; then inum="0"; fi
     - contrib/make-coverage-badge "fuzz-coverage" "$coverage%"
-    - mv badge.svg public/fuzz-coverage.svg
-    - rm -rf public/fuzz-coverage
-    - mv lcov public/fuzz-coverage
+    - mv badge.svg ../public/fuzz-coverage.svg
+    - rm -rf ../public/fuzz-coverage
+    - mv lcov ../public/fuzz-coverage
   artifacts:
     when: on_success
     paths:
@@ -422,41 +360,37 @@ pages:
 MinGW64:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD
+  extends:
+    - .defaults
   script:
-    - ./bootstrap --skip-po
-    - - export CFLAGS="$CFLAGS_DEFAULT"
+    - mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc
+    - echo ':DOSWin:M::MZ::/usr/bin/wine:' > /proc/sys/fs/binfmt_misc/register
+    - export CFLAGS="$CFLAGS_DEFAULT"
     - export CC="ccache $PREFIX-gcc"
     - export GCCLIB=$(dirname $(find /usr/lib/gcc/$PREFIX -name libgcc_s_seh-1.dll|grep posix))
     - export WINEPATH="$WINEPATH;/usr/$PREFIX/bin;/usr/$PREFIX/lib;$PWD/libwget/.libs;$GCCLIB"
     - echo "WINEPATH=$WINEPATH"
-    - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
+    - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
+    - cd wget2-*.*.?
+    - ./configure $CONFIGURE_BASE_FLAGS --cache-file cache/config.cache
+      --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
     - make -j$(nproc)
     - make check -j$(nproc) LOG_COMPILER=wine
   tags:
     - saas-linux-xlarge-amd64
-  except:
-    - tags
-    - coverity-scan@gnuwget/wget2
   allow_failure: true
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./config.h
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
 
 MinGW64-static:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$MINGW_BUILD_STATIC
   script:
     - unset CC
-    - ./bootstrap --skip-po
+    - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
+    - cd wget2-*.*.?
     - LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
       CFLAGS="$CFLAGS_DEFAULT -DNGHTTP2_STATICLIB"
-      ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows
+      ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX
+        --disable-shared --enable-static --without-gpgme --enable-threads=windows
     - make -j$(nproc)
     - mv src/wget2.exe .
   tags:
@@ -472,135 +406,30 @@ MinGW64-static:
 Arch:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ARCH_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - sed -i 's/dist-lzip//g' configure.ac
-    - ./bootstrap --skip-po && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS
+    - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
+    - cd wget2-*.*.?
+    - ./configure $CONFIGURE_BASE_FLAGS --cache-file cache/config.cache
     - make -j$(nproc)
     - make check -j$(nproc)
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
-
-
-# Test building from tarball in a non-dev environment
-Tarball:
-  stage: stage2-tarball
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$BASIC_BUILD
-  variables:
-    GIT_STRATEGY: none
-  script:
-    # remove all files from git repo
-    - mv wget2-*.gz /tmp
-    - rm -rf * .git* .travis*
-    - mv /tmp/wget2-*.gz .
-    # unpack and build from tarball
-    - tar xvf wget2-*.gz
-    - cd wget2-*
-    - unset CC
-    - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=none --disable-manywarnings
-    - make -j$(nproc)
-    - make -j$(nproc) check
-    # check if essential files are accidentally cleaned
-    - make clean
-    - make -j$(nproc)
-  dependencies:
-    - Full+VPATH/Debian
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - wget2-*/*.log
-      - wget2-*/tests/*.log
-      - wget2-*/unit-tests/*.log
-      - wget2-*/fuzz/*.log
-
-
-CommitCheck:
-  stage: tarball
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$BASIC_BUILD
-  before_script:
-    - /bin/true
-  script:
-    - ./contrib/commit-check
-  after_script:
-    - /bin/true
-  allow_failure: true
-  cache:
-      paths:
-      policy: push
-
-# Create the tarball for further testing.
-# Runs syntax-check, so no need to do this later on.
-Build-Tarball:
-  stage: tarball
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$TARBALL_BUILD
-  cache:
-    key: "$CI_JOB_NAME"
-    paths:
-      - cache/
-  script:
-    - rmdir gnulib && mv /gnulib . && git submodule update gnulib
-    - ./bootstrap
-    - mkdir vpath && cd vpath
-    - export CC=gcc
-    - export CFLAGS="-O0"
-    - ../configure --cache-file ../cache/config.cache
-      --with-ssl=none
-    - make -j$(nproc) syntax-check
-    - make -j$(nproc) -C docs
-    - make -j$(nproc) dist-gzip
-    - mv wget2-*.gz ..
-  except:
-    - coverity-scan@gnuwget/wget
-  dependencies:
-    - CommitCheck
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - vpath/fuzz/*.log
-      - vpath/tests/*.log
-      - vpath/unit-tests/*.log
-  artifacts:
-    expire_in: 2 weeks
-    when: on_success
-    paths:
-      - wget2-*.gz
-
 
 Debian/HTTP2:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_HTTP2_BUILD
+  extends:
+    - .defaults
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po && touch .manywarnings
-    - ./configure $CONFIGURE_BASE_FLAGS --enable-code-coverage
+    - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
+    - cd wget2-*.*.?
+    - ./configure $CONFIGURE_BASE_FLAGS --enable-code-coverage --cache-file cache/config.cache
     - make -j$(nproc)
     - make check -j$(nproc)
     - make code-coverage-capture
   allow_failure: true
-  except:
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 2 weeks
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - unit-tests/*.log
-      - tests/*.log
   artifacts:
     expire_in: 2 weeks
     when: on_success
@@ -613,7 +442,8 @@ coverity:
   script:
     - wget https://scan.coverity.com/download/linux64 --post-data "token=$COVERITY_SCAN_TOKEN&project=$COVERITY_SCAN_PROJECT_NAME" -O /tmp/coverity_tool.tgz
     - tar xfz /tmp/coverity_tool.tgz
-    - ./bootstrap --skip-po
+    - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
+    - cd wget2-*.*.?
     - CFLAGS="-g -Og" ./configure --cache-file cache/config.cache --disable-doc
     - cov-analysis-linux64-*/bin/cov-build --dir cov-int make -j$(nproc)
     - tar cfz cov-int.tar.gz cov-int
