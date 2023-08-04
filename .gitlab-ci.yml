@@ -4,11 +4,12 @@
 # name to allow expiration of old caches.
 
 stages:
+  - tarball
   - stage1-testing
   - stage2-tarball
 
 cache:
-  key: "$CI_JOB_NAME-ver4"
+  key: "$CI_JOB_NAME-wget2"
   paths:
     - cache/
 
@@ -40,6 +41,7 @@ variables:
   ALPINE_BUILD: buildenv-alpine
   ARCH_BUILD: buildenv-arch
   BASIC_BUILD: buildenv-basic
+  TARBALL_BUILD: buildenv-tarball
   GET_SOURCES_ATTEMPTS: "3"
   GIT_DEPTH: "5"
   CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
@@ -355,9 +357,12 @@ Simple/Fedora:
 Alpine:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$ALPINE_BUILD
+  variables:
+    GIT_STRATEGY: none
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-    - ./bootstrap --skip-po
+    - tar xf wget2-*.gz
+    - cd wget2-*
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
   tags:
@@ -366,6 +371,9 @@ Alpine:
   except:
     - tags
     - coverity-scan@gnuwget/wget2
+  dependencies:
+    - Build-Tarball
+  needs: ["Build-Tarball"]
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -554,7 +562,7 @@ Tarball:
 
 
 CommitCheck:
-  stage: stage1-testing
+  stage: tarball
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$BASIC_BUILD
   before_script:
     - /bin/true
@@ -566,6 +574,48 @@ CommitCheck:
   cache:
       paths:
       policy: push
+
+# Create the tarball for further testing.
+# Runs syntax-check, so no need to do this later on.
+Build-Tarball:
+  stage: tarball
+  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$TARBALL_BUILD
+  cache:
+    key: "$CI_JOB_NAME"
+    paths:
+      - cache/
+  script:
+    - rmdir gnulib && mv /gnulib . && git submodule update gnulib
+    - ./bootstrap
+    - mkdir vpath && cd vpath
+    - export CC=gcc
+    - export CFLAGS="-O0"
+    - ../configure --cache-file ../cache/config.cache
+      --with-ssl=none
+    - make -j$(nproc) syntax-check
+    - make -j$(nproc) -C docs
+    - make -j$(nproc) dist-gzip
+    - mv wget2-*.gz ..
+  tags:
+    - shared
+    - linux
+  except:
+    - coverity-scan@gnuwget/wget
+  dependencies:
+    - CommitCheck
+  artifacts:
+    expire_in: 2 weeks
+    when: on_failure
+    paths:
+      - ./*.log
+      - vpath/fuzz/*.log
+      - vpath/tests/*.log
+      - vpath/unit-tests/*.log
+  artifacts:
+    expire_in: 2 weeks
+    when: on_success
+    paths:
+      - wget2-*.gz
 
 
 Debian/HTTP2:
