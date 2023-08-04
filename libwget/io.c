@@ -422,7 +422,7 @@ int wget_update_file(const char *fname,
 	else
 		lockfile = wget_aprintf("%s_lck_%u", basename, (unsigned) getuid());
 #else
-	if (!tmplen)
+	if (*tmpdir)
 		lockfile = wget_aprintf("%s_lck", basename);
 	else
 		lockfile = wget_aprintf("%s/%s_lck", tmpdir, basename);
