@@ -227,7 +227,7 @@ static int resolve(int family, int flags, const char *host, uint16_t port, struc
 {
 	struct addrinfo hints = {
 		.ai_family = family,
-		.ai_socktype = SOCK_STREAM,
+		.ai_socktype = 0,
 		.ai_flags = AI_ADDRCONFIG | flags
 	};
 
