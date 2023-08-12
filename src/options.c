@@ -144,7 +144,8 @@ static int print_version(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const cha
 {
 #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 	puts("GNU Wget2 " PACKAGE_VERSION " - multithreaded metalink/file/website downloader\n");
-	puts("+digest"
+	const char version_info[] =
+	"+digest"
 
 #if defined WITH_GNUTLS
 	" +https"
@@ -260,10 +261,12 @@ static int print_version(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const cha
 #else
 	" -gpgme"
 #endif
-	);
-#endif // #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+	;
 
+	puts(version_info);
 	puts(version_text);
+
+#endif // #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
 	set_exit_status(EXIT_STATUS_NO_ERROR);
 	return -1; // stop processing & exit
