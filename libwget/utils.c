@@ -34,8 +34,10 @@
 #include <time.h>
 #include <glob.h>
 
+#include <stdbool.h>
 #include "c-ctype.h"
 #include "c-strcase.h"
+#include "filename.h"
 
 #if defined __clang__
   // silence warnings in gnulib code
@@ -62,6 +64,38 @@
  * They may be useful to other developers that is why they are exported.
  */
 
+static const char * ssl_default_path(bool bundleNotDir)
+{
+#ifndef _WIN32
+	return bundleNotDir ? NULL : "/etc/ssl/certs";
+#else
+	static char CERTDIR_PATH[MAX_PATH] = {0};
+	static char CERTBUNDLE_PATH[MAX_PATH] = { 0 };
+	char* buffer = bundleNotDir ? CERTBUNDLE_PATH : CERTDIR_PATH;
+	if (buffer[0]) //we could end up with a partial or incorrect path with multiple threads
+		return buffer;
+	wget_strscpy(buffer, "/etc/ssl/certs", MAX_PATH);
+
+	if (access(buffer, F_OK)) {
+		const char* progData = getenv("ProgramData");
+		if (!progData)
+			progData = "/ProgramData";
+		const char* dir_separator_str = (char[]){ DIR_SEPARATOR, '\0' };
+		sprintf_s(buffer, MAX_PATH, "%s%s%s%c%s%s", progData, ISSLASH(progData[strlen(progData - 1)]) ? "" : dir_separator_str, "ssl", DIR_SEPARATOR, bundleNotDir ? "ca-bundle.pem" : "certs", bundleNotDir ? "" : dir_separator_str);
+	}
+	return buffer;
+#endif
+}
+const char* wget_ssl_default_cert_dir()
+{
+	return ssl_default_path(false);
+}
+
+const char* wget_ssl_default_ca_bundle_path()
+{
+	return ssl_default_path(true);
+
+}
 /**
  * \param[in] s1 String
  * \param[in] s2 String
