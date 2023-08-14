@@ -502,22 +502,28 @@ out:
 static int init;
 static wget_thread_mutex mutex;
 
-static void __attribute__ ((constructor)) tls_init(void)
-{
-	if (!mutex) {
-		wget_thread_mutex_init(&mutex);
-
-		// Initialize paths while in a thread-safe environment (mostly for _WIN32).
-		wget_ssl_default_cert_dir();
-		wget_ssl_default_ca_bundle_path();
-	}
-}
-
-static void __attribute__ ((destructor)) tls_exit(void)
+static void tls_exit(void)
 {
 	if (mutex)
 		wget_thread_mutex_destroy(&mutex);
 }
+
+INITIALIZER(tls_init)
+{
+	if (!mutex) {
+		wget_thread_mutex_init(&mutex);
+#ifdef DEBUG_WOLFSSL
+		wolfSSL_Debugging_ON();
+#endif // DEBUG_WOLFSSL
+
+		// Initialize paths while in a thread-safe environment (mostly for _WIN32).
+		wget_ssl_default_cert_dir();
+		wget_ssl_default_ca_bundle_path();
+
+		atexit(tls_exit);
+	}
+}
+
 
 /*
 static void set_credentials(gnutls_certificate_credentials_t *credentials)

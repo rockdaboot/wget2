@@ -69,19 +69,20 @@ static wget_dns default_dns = {
 static bool
 	initialized;
 
-static void __attribute__((constructor)) dns_init(void)
-{
-	if (!initialized) {
-		wget_thread_mutex_init(&default_dns.mutex);
-		initialized = true;
-	}
-}
-
-static void __attribute__((destructor)) dns_exit(void)
+static void dns_exit(void)
 {
 	if (initialized) {
 		wget_thread_mutex_destroy(&default_dns.mutex);
 		initialized = false;
+	}
+}
+
+INITIALIZER(dns_init)
+{
+	if (!initialized) {
+		wget_thread_mutex_init(&default_dns.mutex);
+		initialized = true;
+		atexit(dns_exit);
 	}
 }
 

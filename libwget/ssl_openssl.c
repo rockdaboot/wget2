@@ -125,7 +125,15 @@ static int ssl_userdata_idx;
 /*
  * Constructor & destructor
  */
-static void __attribute__ ((constructor)) tls_init(void)
+static void tls_exit(void)
+{
+	if (mutex) {
+		wget_thread_mutex_destroy(&mutex);
+		CRYPTO_free_ex_index(CRYPTO_EX_INDEX_APP, ssl_userdata_idx);
+	}
+}
+
+INITIALIZER(tls_init)
 {
 	if (!mutex) {
 		wget_thread_mutex_init(&mutex);
@@ -141,14 +149,8 @@ static void __attribute__ ((constructor)) tls_init(void)
 			NULL,     /* dup_func */
 			NULL      /* free_func */
 		);
-	}
-}
 
-static void __attribute__ ((destructor)) tls_exit(void)
-{
-	if (mutex) {
-		wget_thread_mutex_destroy(&mutex);
-		CRYPTO_free_ex_index(CRYPTO_EX_INDEX_APP, ssl_userdata_idx);
+		atexit(tls_exit);
 	}
 }
 
