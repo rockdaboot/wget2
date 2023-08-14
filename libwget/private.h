@@ -69,4 +69,33 @@
 #define debug_write wget_debug_write
 
 
+
+#ifdef __cplusplus
+    #define INITIALIZER(f) \
+        static void f(void); \
+        struct f##_t_ { f##_t_(void) { f(); } }; static f##_t_ f##_; \
+        static void f(void)
+#elif defined(_MSC_VER)
+#define ___old_read read
+#undef read
+#pragma section(".CRT$XCU",read)
+#define read ___old_read
+    #define INITIALIZER2_(f,p) \
+        static void f(void); \
+        __declspec(allocate(".CRT$XCU")) void (*f##__constructor__)(void) = f; \
+        __pragma(comment(linker,"/include:" p #f "__constructor__")) \
+        static void f(void)
+    #ifdef _WIN64
+        #define INITIALIZER(f) INITIALIZER2_(f,"")
+    #else
+        #define INITIALIZER(f) INITIALIZER2_(f,"_")
+    #endif
+#pragma data_seg()
+#else
+    #define INITIALIZER(f) \
+        static void f(void) __attribute__((constructor)); \
+        static void f(void)
+#endif
+
+
 #endif /* LIBWGET_PRIVATE_H */

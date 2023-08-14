@@ -124,9 +124,16 @@ static int ssl_userdata_idx;
 /*
  * Constructor & destructor
  */
-static void __attribute__ ((constructor)) tls_init(void)
+static void tls_exit(void)
 {
-	if (!mutex)
+	if (mutex){
+	CRYPTO_free_ex_index(CRYPTO_EX_INDEX_APP, ssl_userdata_idx);
+		wget_thread_mutex_destroy(&mutex);
+	}
+}
+INITIALIZER(tls_init)
+{
+	if (!mutex){
 		wget_thread_mutex_init(&mutex);
 
 	ssl_userdata_idx = CRYPTO_get_ex_new_index(
@@ -136,14 +143,10 @@ static void __attribute__ ((constructor)) tls_init(void)
 		NULL,     /* dup_func */
 		NULL      /* free_func */
 	);
+	atexit(tls_exit);
+	}
 }
 
-static void __attribute__ ((destructor)) tls_exit(void)
-{
-	CRYPTO_free_ex_index(CRYPTO_EX_INDEX_APP, ssl_userdata_idx);
-	if (mutex)
-		wget_thread_mutex_destroy(&mutex);
-}
 
 /*
  * SSL/TLS configuration functions

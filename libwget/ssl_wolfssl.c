@@ -496,17 +496,23 @@ out:
 static int init;
 static wget_thread_mutex mutex;
 
-static void __attribute__ ((constructor)) tls_init(void)
-{
-	if (!mutex)
-		wget_thread_mutex_init(&mutex);
-}
-
-static void __attribute__ ((destructor)) tls_exit(void)
+static void tls_exit(void)
 {
 	if (mutex)
 		wget_thread_mutex_destroy(&mutex);
 }
+INITIALIZER(tls_init)
+{
+	if (!mutex) {
+		wget_thread_mutex_init(&mutex);
+#ifdef DEBUG_WOLFSSL
+		wolfSSL_Debugging_ON();
+#endif // DEBUG_WOLFSSL
+
+		atexit(tls_exit);
+	}
+}
+
 
 /*
 static void set_credentials(gnutls_certificate_credentials_t *credentials)

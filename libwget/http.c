@@ -64,17 +64,7 @@ static wget_thread_mutex
 	hosts_mutex;
 static bool
 	initialized;
-
-static void __attribute__ ((constructor)) http_init(void)
-{
-	if (!initialized) {
-		wget_thread_mutex_init(&proxy_mutex);
-		wget_thread_mutex_init(&hosts_mutex);
-		initialized = 1;
-	}
-}
-
-static void __attribute__ ((destructor)) http_exit(void)
+static void http_exit(void)
 {
 	if (initialized) {
 		wget_thread_mutex_destroy(&proxy_mutex);
@@ -82,6 +72,17 @@ static void __attribute__ ((destructor)) http_exit(void)
 		initialized = 0;
 	}
 }
+
+INITIALIZER (http_init)
+{
+	if (!initialized) {
+		wget_thread_mutex_init(&proxy_mutex);
+		wget_thread_mutex_init(&hosts_mutex);
+		initialized = 1;
+		atexit(http_exit);
+	}
+}
+
 
 /**
  * HTTP API initialization, allocating/preparing the internal resources.

@@ -52,20 +52,20 @@ static char statebuf[64];
 static struct random_data state;
 static wget_thread_mutex mutex;
 static bool initialized;
-
-static void __attribute__ ((constructor)) random_init(void)
-{
-	if (!initialized) {
-		wget_thread_mutex_init(&mutex);
-		initialized = 1;
-	}
-}
-
-static void __attribute__ ((destructor)) random_exit(void)
+static void  random_exit(void)
 {
 	if (initialized) {
 		wget_thread_mutex_destroy(&mutex);
 		initialized = 0;
+	}
+}
+
+INITIALIZER(random_init)
+{
+	if (!initialized) {
+		wget_thread_mutex_init(&mutex);
+		initialized = 1;
+		atexit(random_exit);
 	}
 }
 
