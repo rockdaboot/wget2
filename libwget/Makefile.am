@@ -20,13 +20,13 @@ libwget_la_SOURCES = \
  strscpy.c thread.c tls_session.c utils.c vector.c xalloc.c xml.c private.h http_highlevel.c error.c dns.c
 
 if WITH_GNUTLS
-  libwget_la_SOURCES += ssl_gnutls.c
+  libwget_la_SOURCES += ssl_gnutls.c ssl.c
 else
 if WITH_OPENSSL
-  libwget_la_SOURCES += ssl_openssl.c
+  libwget_la_SOURCES += ssl_openssl.c ssl.c
 else
 if WITH_WOLFSSL
-  libwget_la_SOURCES += ssl_wolfssl.c
+  libwget_la_SOURCES += ssl_wolfssl.c ssl.c
 else
   libwget_la_SOURCES += ssl_none.c
 endif

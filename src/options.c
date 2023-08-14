@@ -1226,6 +1226,7 @@ static int print_plugin_help(WGET_GCC_UNUSED option_t opt,
 }
 
 // default values for config options (if not 0 or NULL)
+// WARNING: any constant string used here must be allocated in init as we may call xfree on them later
 struct config config = {
 	.auth_no_challenge = false,
 	.connect_timeout = -1,
@@ -1243,6 +1244,7 @@ struct config config = {
 	.private_key_type = WGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
+	.ca_cert = "system",
 	.cookies = 1,
 	.keep_alive = 1,
 	.use_server_timestamps = 1,
@@ -3317,6 +3319,7 @@ int init(int argc, const char **argv)
 	config.user_agent = wget_strdup(config.user_agent);
 	config.secure_protocol = wget_strdup(config.secure_protocol);
 	config.ca_directory = wget_strdup(config.ca_directory);
+	config.ca_cert = wget_strdup(config.ca_cert);
 	config.default_page = wget_strdup(config.default_page);
 	config.system_config = wget_strdup(config.system_config);
 

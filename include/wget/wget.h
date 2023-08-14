@@ -2009,8 +2009,6 @@ WGETAPI void
 	wget_ssl_set_config_object(int key, void *value);
 WGETAPI void
 	wget_ssl_set_config_int(int key, int value);
-//WGETAPI void *
-//	wget_ssl_open(int sockfd, const char *hostname, int connect_timeout) G_GNUC_WGET_NONNULL((2));
 WGETAPI int
 	wget_ssl_open(wget_tcp *tcp);
 WGETAPI void
@@ -2021,6 +2019,10 @@ WGETAPI ssize_t
 	wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout) WGET_GCC_NONNULL_ALL;
 WGETAPI ssize_t
 	wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout) WGET_GCC_NONNULL_ALL;
+WGETAPI const char *
+	wget_ssl_default_cert_dir(void);
+WGETAPI const char *
+	wget_ssl_default_ca_bundle_path(void);
 
 /*
  * HTTP routines

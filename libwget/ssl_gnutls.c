@@ -124,6 +124,7 @@ static struct config {
 	.key_type = WGET_SSL_X509_FMT_PEM,
 	.secure_protocol = "AUTO",
 	.ca_directory = "system",
+	.ca_file = "system",
 #ifdef WITH_LIBNGHTTP2
 	.alpn = "h2,http/1.1",
 #endif
@@ -1248,8 +1249,13 @@ static wget_thread_mutex mutex;
 
 static void __attribute__ ((constructor)) tls_init(void)
 {
-	if (!mutex)
+	if (!mutex) {
 		wget_thread_mutex_init(&mutex);
+
+		// Initialize paths while in a thread-safe environment (mostly for _WIN32).
+		wget_ssl_default_cert_dir();
+		wget_ssl_default_ca_bundle_path();
+	}
 }
 
 static void __attribute__ ((destructor)) tls_exit(void)
@@ -1291,6 +1297,8 @@ static void set_credentials(gnutls_certificate_credentials_t creds)
 			error_printf(_("No certificates or keys were found\n"));
 	}
 
+	if (config.ca_file && !wget_strcmp(config.ca_file, "system"))
+		config.ca_file = wget_ssl_default_ca_bundle_path();
 	if (config.ca_file) {
 		if (gnutls_certificate_set_x509_trust_file(creds, config.ca_file, key_type(config.ca_type)) <= 0)
 			error_printf(_("No CAs were found in '%s'\n"), config.ca_file);
@@ -1348,7 +1356,7 @@ void wget_ssl_init(void)
 				ncerts = 0;
 
 				if (!strcmp(config.ca_directory, "system"))
-					config.ca_directory = "/etc/ssl/certs";
+					config.ca_directory = wget_ssl_default_cert_dir();
 
 				if ((dir = opendir(config.ca_directory))) {
 					struct dirent *dp;
