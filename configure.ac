@@ -1036,6 +1036,12 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([\
  strlcpy getuid fmemopen])
 
+AM_CONDITIONAL([IS_MSVC], [false])
+#there are other msvc depmodes but msvc7 is 2002 or better, i think thats old enough
+if test "$CCDEPMODE" = "depmode=msvc7" -o "$CCDEPMODE" = "depmode=msvc7msys" ; then
+AM_CONDITIONAL([IS_MSVC], [true])
+fi
+AC_SUBST([IS_MSVC])
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  include/Makefile
