@@ -19,6 +19,10 @@ libwget_la_SOURCES = \
  plugin.c printf.c random.c robots.c rss_url.c sitemap_url.c stringmap.c strlcpy.c \
  strscpy.c thread.c tls_session.c utils.c vector.c xalloc.c xml.c private.h http_highlevel.c error.c dns.c
 
+if WITH_LIBNGHTTP2
+  libwget_la_SOURCES += http2.c
+endif
+
 if WITH_GNUTLS
   libwget_la_SOURCES += ssl_gnutls.c ssl.c
 else
