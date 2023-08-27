@@ -34,7 +34,7 @@ int main(void)
 			.body =
 				"<html><head><title>Main Page</title><base href=\"/subdir1/\"></head><body><p>A link to a" \
 				" <A hreF=\"http://localhost:{{port}}/second\r\npage.html\">second page</a>." \
-				" <a  HreF=\"subpage1.h#116;ml?qu#x65;ry&amp;param#frag\">page in subdir1</a>." \
+				" <a  HreF=\"subpage1.h&#116;ml?qu&#x65;ry&amp;param#frag\">page in subdir1</a>." \
 				" <a href=\"./subpage2.html\">page in subdir1</a>." \
 				" <a href=\"http://localhost:{{port}}/page+with&#32spaces.html\">page with spaces</a>." \
 				" <a href=\"http://localhost:{{port}}/css?query+with+spaces&param=bla+blubb\">query with spaces</a>." \

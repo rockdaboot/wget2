@@ -736,7 +736,10 @@ char *wget_xml_decode_entities_inline(char *src)
 		if (*s == '&') {
 			// entities are case sensitive (RFC1866, 3.2.3)
 			if (s[1] == '#') {
-				*d = (unsigned char) strtol((char *) s + 2, (char **) &s, 10);
+				if (s[2] == 'x')
+					*d = (unsigned char) strtol((char *) s + 3, (char **) &s, 16);
+				else
+					*d = (unsigned char) strtol((char *) s + 2, (char **) &s, 10);
 				if (*d == ' ') *d = '+'; // hack
 				d++;
 				if (*s == ';') s++;
