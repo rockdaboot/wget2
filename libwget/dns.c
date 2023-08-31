@@ -227,7 +227,15 @@ static int resolve(int family, int flags, const char *host, uint16_t port, struc
 {
 	struct addrinfo hints = {
 		.ai_family = family,
+#ifdef _WIN32
+		// It looks like on Windows 0 is not a valid option here.
+		// see https://learn.microsoft.com/en-us/windows/win32/api/ws2def/ns-ws2def-addrinfoa
+		// TODO: On Windows, do two calls to getaddrinfo (for TCP and UDP) and merge the results.
+		//       Alternatively, consider splitting caches by TCP and UDP addresses.
+		.ai_socktype = SOCK_STREAM,
+#else
 		.ai_socktype = 0,
+#endif
 		.ai_flags = AI_ADDRCONFIG | flags
 	};
 
