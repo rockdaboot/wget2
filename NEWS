@@ -23,7 +23,7 @@ Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
   * New function wget_xml_decode_entities_inline()
   * Support compilation of wget.h from C++
   * Handle comments in robots.txt correctly
-  * Fix parsing HTMP/XML entities in URLs from HTML/XML
+  * Fix parsing HTML/XML entities in URLs from HTML/XML
   * Fix use-after-free when updating blacklist entries
   * Don't try setting file timestamps on ttys
   * Fix arguments parsing for --filter-urls
