@@ -81,7 +81,7 @@ for ext in $extensions; do
   make -s -j$(nproc) dist-$ext >/dev/null
 done
 
-x=$(gpg --list-secret-keys 2>/dev/null|grep ^sec|awk '{ print $2 }')
+x=$(gpg --list-secret-keys --with-colons 2>/dev/null|grep ^sec|cut -d':' -f5)
 echo $x
 if [ "$x" = "" ]; then
   echo No signing key found - please check with 'gpg --list-secret-keys'
