@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Copyright (c) 2017-2022 Free Software Foundation, Inc.
+# Copyright (c) 2017-2023 Free Software Foundation, Inc.
 #
 # This file is part of libwget.
 #

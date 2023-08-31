@@ -2065,7 +2065,7 @@ that in case of a collision, the user's wget2rc _overrides_ the global wget2rc.
 
   Copyright (C) 2012-2015 Tim Rühsen
 
-  Copyright (C) 2015-2022 Free Software Foundation, Inc.
+  Copyright (C) 2015-2023 Free Software Foundation, Inc.
 
   Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation
   License, Version 1.3 or any later version published by the Free Software Foundation; with no Invariant Sections, with
