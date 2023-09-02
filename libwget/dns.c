@@ -222,35 +222,64 @@ static struct addrinfo *sort_preferred(struct addrinfo *addrinfo, int preferred_
 	}
 }
 
+static int getaddrinfo_merging(const char *host, const char *s_port, struct addrinfo *hints, struct addrinfo **out_addr)
+{
+	struct addrinfo *ai_tail;
+
+	if (!*out_addr)
+		return getaddrinfo(host, s_port, hints, out_addr);
+
+	// Get to the tail of the list
+	ai_tail = *out_addr;
+	while (ai_tail->ai_next)
+		ai_tail = ai_tail->ai_next;
+
+	return getaddrinfo(host, s_port, hints, &ai_tail->ai_next);
+}
+
 // we can't provide a portable way of respecting a DNS timeout
 static int resolve(int family, int flags, const char *host, uint16_t port, struct addrinfo **out_addr)
 {
 	struct addrinfo hints = {
 		.ai_family = family,
-#ifdef _WIN32
-		// It looks like on Windows 0 is not a valid option here.
-		// see https://learn.microsoft.com/en-us/windows/win32/api/ws2def/ns-ws2def-addrinfoa
-		// TODO: On Windows, do two calls to getaddrinfo (for TCP and UDP) and merge the results.
-		//       Alternatively, consider splitting caches by TCP and UDP addresses.
-		.ai_socktype = SOCK_STREAM,
-#else
 		.ai_socktype = 0,
-#endif
 		.ai_flags = AI_ADDRCONFIG | flags
 	};
+	int ret;
+	char s_port[NI_MAXSERV];
+
+
+	*out_addr = NULL;
 
 	if (port) {
-		char s_port[NI_MAXSERV];
-
 		hints.ai_flags |= AI_NUMERICSERV;
 
 		wget_snprintf(s_port, sizeof(s_port), "%hu", port);
 		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
-		return getaddrinfo(host, s_port, &hints, out_addr);
 	} else {
 		debug_printf("resolving %s...\n", host);
-		return getaddrinfo(host, NULL, &hints, out_addr);
 	}
+
+	/*
+	 * .ai_socktype = 0, which would give us all the available socket types,
+	 * is not a valid option on Windows. Hence, we call getaddrinfo() twice with SOCK_STREAM
+	 * and SOCK_DGRAM, and merge the two lists.
+	 * See: https://learn.microsoft.com/en-us/windows/win32/api/ws2def/ns-ws2def-addrinfoa
+	 */
+	hints.ai_socktype = SOCK_STREAM;
+	if ((ret = getaddrinfo_merging(host, port ? s_port : NULL, &hints, out_addr)) != 0)
+		goto end;
+
+	hints.ai_socktype = SOCK_DGRAM;
+	if ((ret = getaddrinfo_merging(host, port ? s_port : NULL, &hints, out_addr)) != 0)
+		goto end;
+
+	return 0;
+
+end:
+	if (*out_addr)
+		freeaddrinfo(*out_addr);
+	return ret;
 }
 
 /**
