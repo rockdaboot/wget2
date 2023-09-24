@@ -59,6 +59,9 @@ exclude_file_name_regexp--sc_copyright_check = .*gnulib/.*\.c$$
 # same copyright convention
 exclude_file_name_regexp--update-copyright = ^(contrib/assignment_template\.txt|m4/(ax_ac_append_to_file|ax_ac_print_to_file|ax_add_am_macro_static|ax_am_macros_static|ax_check_gnu_make|ax_code_coverage|ax_file_escapes).m4|contrib/make-coverage-badge)$$
 
+# We don't care for trailing spaces in announcements.
+exclude_file_name_regexp--sc_trailing_blank = docs/announce.*\.txt$$
+
 update-version-year:
 	$(AM_V_at)$(SED) -i "s/(C) 2015-.... Free Software Foundation/(C) 2015-`date +%Y` Free Software Foundation/g" src/options.c
 
