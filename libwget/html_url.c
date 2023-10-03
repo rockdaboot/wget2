@@ -249,7 +249,8 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 				if (ctx->uri_index >= 0) {
 					// href= came before rel=
 					wget_html_parsed_url *url = wget_vector_get(res->uris, ctx->uri_index);
-					url->link_inline = ctx->link_inline;
+					if (url)
+						url->link_inline = ctx->link_inline;
 				}
 				return;
 			}
