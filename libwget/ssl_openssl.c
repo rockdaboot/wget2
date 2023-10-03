@@ -129,7 +129,7 @@ static void tls_exit(void)
 {
 	if (mutex) {
 		wget_thread_mutex_destroy(&mutex);
-#if !defined(LIBRESSL_VERSION_NUMBER)
+#if !defined LIBRESSL_VERSION_NUMBER
 		// LibreSSL 3.8.1 doesn't know this function (latest version as of 30.09.2023).
 		CRYPTO_free_ex_index(CRYPTO_EX_INDEX_APP, ssl_userdata_idx);
 #endif
