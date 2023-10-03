@@ -221,6 +221,8 @@ char *wget_cookie_create_request_header(wget_cookie_db *cookie_db, const wget_ir
 
 	for (it = 0; it < wget_vector_size(cookie_db->cookies); it++) {
 		wget_cookie *cookie = wget_vector_get(cookie_db->cookies, it);
+		if (!cookie)
+			continue;
 
 		if (cookie->host_only && strcmp(cookie->domain, iri->host)) {
 			debug_printf("cookie host match failed (%s,%s)\n", cookie->domain, iri->host);
@@ -262,6 +264,8 @@ char *wget_cookie_create_request_header(wget_cookie_db *cookie_db, const wget_ir
 	// now create cookie header value
 	for (it = 0; it < wget_vector_size(cookies); it++) {
 		wget_cookie *cookie = wget_vector_get(cookies, it);
+		if (!cookie)
+			continue;
 
 		if (!init) {
 			wget_buffer_init(&buf, NULL, 128);
@@ -458,6 +462,8 @@ static int cookie_db_save(wget_cookie_db *cookie_db, FILE *fp)
 
 		for (it = 0; it < wget_vector_size(cookie_db->cookies); it++) {
 			wget_cookie *cookie = wget_vector_get(cookie_db->cookies, it);
+			if (!cookie)
+				continue;
 
 			if (cookie->persistent) {
 				if (cookie->expires <= now)
