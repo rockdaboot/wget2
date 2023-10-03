@@ -47,6 +47,14 @@ variables:
   CONFIGURE_BASE_FLAGS: --enable-assert --cache-file cache/config.cache
   CFLAGS_DEFAULT: -O1 -g -ggdb3
 
+sast:
+  stage: tarball
+  # SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
+  variables:
+    SAST_EXCLUDED_PATHS: examples, fuzz, tests, unit-tests
+include:
+  - template: Security/SAST.gitlab-ci.yml
+
 
 # We organize the CI runners as thus:
 #   1. Debian Stretch Build:
