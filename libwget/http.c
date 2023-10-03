@@ -671,8 +671,11 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 	if (!_conn)
 		return WGET_E_INVALID;
 
-	conn = *_conn = wget_calloc(1, sizeof(wget_http_connection)); // convenience assignment
+	conn = wget_calloc(1, sizeof(wget_http_connection)); // convenience assignment
+	if (!conn)
+		return WGET_E_MEMORY;
 
+	*_conn = conn;
 	host = iri->host;
 	port = iri->port;
 	conn->tcp = wget_tcp_init();
@@ -683,6 +686,13 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 			wget_iri *proxy = wget_vector_get(http_proxies, (++next_http_proxy) % wget_vector_size(http_proxies));
 			wget_thread_mutex_unlock(proxy_mutex);
 
+			if (!proxy) {
+				// this practically can't happen
+				xfree(conn);
+				*_conn = NULL;
+				return WGET_E_UNKNOWN;
+			}
+
 			host = proxy->host;
 			port = proxy->port;
 			ssl = proxy->scheme == WGET_IRI_SCHEME_HTTPS;
@@ -692,10 +702,17 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 			wget_iri *proxy = wget_vector_get(https_proxies, (++next_https_proxy) % wget_vector_size(https_proxies));
 			wget_thread_mutex_unlock(proxy_mutex);
 
+			if (!proxy) {
+				// this practically can't happen
+				xfree(conn);
+				*_conn = NULL;
+				return WGET_E_UNKNOWN;
+			}
+
 			host = proxy->host;
 			port = proxy->port;
 			ssl = proxy->scheme == WGET_IRI_SCHEME_HTTPS;
-//			conn->proxied = 1;
+			// conn->proxied = 1;
 
 			need_connect = true;
 		}
@@ -874,6 +891,9 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 
 		for (int it = 0; it < wget_vector_size(req->headers); it++) {
 			wget_http_header_param *param = wget_vector_get(req->headers, it);
+			if (!param)
+				continue;
+
 			if (!wget_strcasecmp_ascii(param->name, "Connection"))
 				continue;
 			if (!wget_strcasecmp_ascii(param->name, "Transfer-Encoding"))
@@ -892,8 +912,15 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 		}
 
 		struct http2_stream_context *ctx = wget_calloc(1, sizeof(struct http2_stream_context));
+		if (!ctx) {
+			return -1;
+		}
 		// HTTP/2.0 has the streamid as link between
 		ctx->resp = wget_calloc(1, sizeof(wget_http_response));
+		if (!ctx->resp) {
+			xfree(ctx);
+			return -1;
+		}
 		ctx->resp->req = req;
 		ctx->resp->major = 2;
 		// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open
@@ -973,6 +1000,8 @@ ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, in
 
 	for (int it = 0; it < wget_vector_size(req->headers); it++) {
 		wget_http_header_param *param = wget_vector_get(req->headers, it);
+		if (!param)
+			continue;
 
 		wget_buffer_strcat(buf, param->name);
 		wget_buffer_memcat(buf, ": ", 2);
