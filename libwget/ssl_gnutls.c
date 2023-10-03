@@ -1662,6 +1662,10 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (!tcp)
 		return WGET_E_INVALID;
 
+	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
+	if (!ctx)
+		return WGET_E_MEMORY;
+
 	if (!init)
 		wget_ssl_init();
 
@@ -1712,7 +1716,6 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 	gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, credentials);
 
-	struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
 	ctx->hostname = wget_strdup(hostname);
 	ctx->port = tcp->remote_port;
 
