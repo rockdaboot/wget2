@@ -82,11 +82,14 @@ static void hpkp_pin_free(void *pin)
 void wget_hpkp_pin_add(wget_hpkp *hpkp, const char *pin_type, const char *pin_b64)
 {
 	wget_hpkp_pin *pin = wget_calloc(1, sizeof(wget_hpkp_pin));
+	if (!pin)
+		return;
+
 	size_t len_b64 = strlen(pin_b64);
 
 	pin->hash_type = wget_strdup(pin_type);
 	pin->pin_b64 = wget_strdup(pin_b64);
-	pin->pin = (unsigned char *)wget_base64_decode_alloc(pin_b64, len_b64, &pin->pinsize);
+	pin->pin = (unsigned char *) wget_base64_decode_alloc(pin_b64, len_b64, &pin->pinsize);
 
 	if (!hpkp->pins) {
 		hpkp->pins = wget_vector_create(5, (wget_vector_compare_fn *) compare_pin);
@@ -127,7 +130,8 @@ wget_hpkp *wget_hpkp_new(void)
 {
 	wget_hpkp *hpkp = wget_calloc(1, sizeof(wget_hpkp));
 
-	hpkp->created = time(NULL);
+	if (hpkp)
+		hpkp->created = time(NULL);
 
 	return hpkp;
 }
@@ -205,6 +209,8 @@ void wget_hpkp_get_pins_b64(wget_hpkp *hpkp, const char **pin_types, const char 
 
 	for (i = 0; i < n_pins; i++) {
 		wget_hpkp_pin *pin = (wget_hpkp_pin *) wget_vector_get(hpkp->pins, i);
+		if (!pin)
+			continue;
 		pin_types[i] = pin->hash_type;
 		pins_b64[i] = pin->pin_b64;
 	}
@@ -228,6 +234,8 @@ void wget_hpkp_get_pins(wget_hpkp *hpkp, const char **pin_types, size_t *sizes, 
 
 	for (i = 0; i < n_pins; i++) {
 		wget_hpkp_pin *pin = (wget_hpkp_pin *) wget_vector_get(hpkp->pins, i);
+		if (!pin)
+			continue;
 		pin_types[i] = pin->hash_type;
 		sizes[i] = pin->pinsize;
 		pins[i] = pin->pin;
