@@ -153,15 +153,17 @@ static void add_mirror(metalink_context *ctx, const char *value)
 	wget_metalink *metalink = ctx->metalink;
 	wget_metalink_mirror *mirror = wget_calloc(1, sizeof(wget_metalink_mirror));
 
-	wget_strscpy(mirror->location, ctx->location, sizeof(mirror->location));
-	mirror->priority = ctx->priority;
-	mirror->iri = iri;
+	if (mirror) {
+		wget_strscpy(mirror->location, ctx->location, sizeof(mirror->location));
+		mirror->priority = ctx->priority;
+		mirror->iri = iri;
 
-	if (!metalink->mirrors) {
-		metalink->mirrors = wget_vector_create(4, NULL);
-		wget_vector_set_destructor(metalink->mirrors, mirror_free);
+		if (!metalink->mirrors) {
+			metalink->mirrors = wget_vector_create(4, NULL);
+			wget_vector_set_destructor(metalink->mirrors, mirror_free);
+		}
+		wget_vector_add(metalink->mirrors, mirror);
 	}
-	wget_vector_add(metalink->mirrors, mirror);
 
 	*ctx->location = 0;
 	ctx->priority = 999999;
