@@ -482,9 +482,11 @@ wget_hpkp_db *wget_hpkp_db_init(wget_hpkp_db *hpkp_db, const char *fname)
 	if (plugin_vtable)
 		return plugin_vtable->init(hpkp_db, fname);
 
-	if (!hpkp_db)
+	if (!hpkp_db) {
 		hpkp_db = wget_calloc(1, sizeof(struct wget_hpkp_db_st));
-	else
+		if (!hpkp_db)
+			return NULL;
+	} else
 		memset(hpkp_db, 0, sizeof(*hpkp_db));
 
 	if (fname)
@@ -502,7 +504,7 @@ wget_hpkp_db *wget_hpkp_db_init(wget_hpkp_db *hpkp_db, const char *fname)
 
 	wget_thread_mutex_init(&hpkp_db->mutex);
 
-	return (wget_hpkp_db *) hpkp_db;
+	return hpkp_db;
 }
 
 /**
