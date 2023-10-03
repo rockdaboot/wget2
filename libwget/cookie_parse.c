@@ -126,9 +126,11 @@ bool cookie_path_match(const char *cookie_path, const char *request_path)
 
 wget_cookie *wget_cookie_init(wget_cookie *cookie)
 {
-	if (!cookie)
+	if (!cookie) {
 		cookie = wget_calloc(1, sizeof(wget_cookie));
-	else
+		if (!cookie)
+			return NULL;
+	} else
 		memset(cookie, 0, sizeof(*cookie));
 
 	cookie->last_access = cookie->creation = time(NULL);
@@ -383,6 +385,9 @@ static int cookie_normalize_cookie(const wget_iri *iri, wget_cookie *cookie)
 	debug_printf("<  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
 		cookie->normalized, cookie->persistent, cookie->host_only, cookie->secure_only, cookie->http_only);
 */
+	if (!cookie)
+		return -1;
+
 	cookie->normalized = 0;
 
 	if (cookie->maxage)
