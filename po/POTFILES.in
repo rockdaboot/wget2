@@ -19,6 +19,7 @@ libwget/hashfile.c
 libwget/hpkp_db.c
 libwget/hsts.c
 libwget/http.c
+libwget/http2.c
 libwget/http_highlevel.c
 libwget/http_parse.c
 libwget/init.c
