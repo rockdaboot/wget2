@@ -9,6 +9,19 @@ Solaris OpenCSW [![Build Status Solaris amd64](https://buildfarm.opencsw.org/bui
 [![Build Status Solaris Sparc](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-sparc)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-sparc)
 [![Build Status Solaris SparcV9](https://buildfarm.opencsw.org/buildbot/png?builder=wget2-solaris10-sparcv9)](https://buildfarm.opencsw.org/buildbot/builders/wget2-solaris10-sparcv9)
 
+# Table of Content
+- [GNU Wget2 - Introduction](#GNU-Wget2---Introduction-)
+- [Features](#Features-)
+- [Links](#Links-)
+- [Build Requirements](#Build-Requirements-)
+- [Downloading and building from tarball](#Downloading-and-building-from-tarball-)
+- [Building from git](#Building-from-git-)
+  - [Download project and prepare sources with](#Download-project-and-prepare-sources-with-)
+  - [Build Wget2 with](#Build-Wget2-with-)
+  - [In Haiku build Wget2 with](#In-Haiku-build-Wget2-with-)
+  - [Test the functionality](#Test-the-functionality-)
+  - [Install Wget2 and libwget](#Install-Wget2-and-libwget-)
+- [License](#License-)
 
 # GNU Wget2 - Introduction
 
