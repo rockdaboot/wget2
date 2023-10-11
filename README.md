@@ -17,7 +17,7 @@ Solaris OpenCSW [![Build Status Solaris amd64](https://buildfarm.opencsw.org/bui
 - [Downloading and building from tarball](#Downloading-and-building-from-tarball)
 - [Building from git](#Building-from-git)
   - [Download project and prepare sources with](#Download-project-and-prepare-sources-with)
-  - [Build Wget2 with](Build-Wget2-with)
+  - [Build Wget2 with](.Build-Wget2-with)
   - [In Haiku build Wget2 with](#In-Haiku-build-Wget2-with)
   - [Test the functionality](#Test-the-functionality)
   - [Install Wget2 and libwget](#Install-Wget2-and-libwget)
