@@ -296,6 +296,8 @@ int wget_http2_send_request(wget_http_connection *conn, wget_http_request *req)
 
 	for (int it = 0; it < wget_vector_size(req->headers); it++) {
 		wget_http_header_param *param = wget_vector_get(req->headers, it);
+		if (!param)
+			continue;
 		if (!wget_strcasecmp_ascii(param->name, "Connection"))
 			continue;
 		if (!wget_strcasecmp_ascii(param->name, "Transfer-Encoding"))
@@ -314,8 +316,15 @@ int wget_http2_send_request(wget_http_connection *conn, wget_http_request *req)
 	}
 
 	struct http2_stream_context *ctx = wget_calloc(1, sizeof(struct http2_stream_context));
+	if (!ctx) {
+		return -1;
+	}
 	// HTTP/2.0 has the streamid as link between
 	ctx->resp = wget_calloc(1, sizeof(wget_http_response));
+	if (!ctx->resp) {
+		xfree(ctx);
+		return -1;
+	}
 	ctx->resp->req = req;
 	ctx->resp->major = 2;
 	// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open
