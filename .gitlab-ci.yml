@@ -492,7 +492,7 @@ MinGW64-static:
     - ./bootstrap --skip-po
     - LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
       CFLAGS="$CFLAGS_DEFAULT -DNGHTTP2_STATICLIB"
-      ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme
+      ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows
     - make -j$(nproc)
     - mv src/wget2.exe .
   tags:
