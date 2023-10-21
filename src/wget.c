@@ -3893,7 +3893,12 @@ static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 		wget_http_add_header(req, "Accept-Encoding", buf.data);
 	}
 
-	wget_http_add_header(req, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+	if (config.recursive || config.page_requisites) {
+		wget_http_add_header(req, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+	} else {
+		// Let's not set a preferred mime type for single file downloads.
+		wget_http_add_header(req, "Accept", "*/*");
+	}
 
 //	if (config.spider && !config.recursive)
 //		http_add_header_if_modified_since(time(NULL));
