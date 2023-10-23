@@ -979,6 +979,21 @@ AS_IF([test "$with_libmicrohttpd" != "no"], [
 
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "$with_libmicrohttpd" = "yes"])
 
+
+# libproxy support
+with_libproxy=no
+AC_ARG_ENABLE(libproxy,
+  [  --enable-libproxy       libproxy support for system wide proxy configuration])
+AS_IF([test "${enable_libproxy}" = "yes"], [
+  with_libproxy=yes
+  PKG_CHECK_MODULES([LIBPROXY], [libproxy-1.0], [
+    LIBS="$LIBPROXY_LIBS $LIBS"
+    CFLAGS="$LIBPROXY_CFLAGS $CFLAGS"
+    AC_DEFINE([HAVE_LIBPROXY], [1], [Define if using libproxy.])
+  ])
+])
+
+
 # Check for plugin support
 AC_CANONICAL_HOST
 case "$host_os" in
@@ -1085,4 +1100,5 @@ AC_MSG_NOTICE([Summary of build options:
   Microhttpd support: $with_libmicrohttpd (CFLAGS: ${TEST_CFLAGS}. LIBS: ${TEST_LIBS})
   Fuzzing build:      $enable_fuzzing, $LIB_FUZZING_ENGINE
   GPGME:              $with_gpgme
+  libproxy:           $with_libproxy
 ])

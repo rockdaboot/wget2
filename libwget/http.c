@@ -44,6 +44,9 @@
 #ifdef WITH_LIBNGHTTP2
 	#include <nghttp2/nghttp2.h>
 #endif
+#ifdef HAVE_LIBPROXY
+#include "proxy.h"
+#endif
 
 #include <wget.h>
 #include "private.h"
@@ -680,6 +683,37 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 	port = iri->port;
 	conn->tcp = wget_tcp_init();
 
+#ifdef HAVE_LIBPROXY
+{
+	pxProxyFactory *pf = px_proxy_factory_new();
+	if (pf) {
+		char **proxies = px_proxy_factory_get_proxies(pf, iri->uri);
+
+		if (proxies) {
+			if (proxies[0]) {
+				if (strcmp (proxies[0], "direct://") != 0) {
+					wget_iri *proxy_iri = wget_iri_parse(proxies[0], "utf-8");
+					host = strdup(proxy_iri->host);
+					port = proxy_iri->port;
+
+					if (proxy_iri->scheme == WGET_IRI_SCHEME_HTTP) {
+						ssl = false;
+						conn->proxied = 1;
+					} else {
+						ssl = true;
+						need_connect = true;
+					}
+					wget_iri_free(&proxy_iri);
+				}
+			}
+
+			px_proxy_factory_free_proxies(proxies);
+		}
+
+		px_proxy_factory_free (pf);
+	}
+}
+#else
 	if (!wget_http_match_no_proxy(no_proxies, iri->host)) {
 		if (!ssl && http_proxies) {
 			wget_thread_mutex_lock(proxy_mutex);
@@ -717,6 +751,7 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 			need_connect = true;
 		}
 	}
+#endif
 
 	if (ssl) {
 		wget_tcp_set_ssl(conn->tcp, 1); // switch SSL on
