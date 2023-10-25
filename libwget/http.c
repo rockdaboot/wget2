@@ -645,9 +645,6 @@ void wget_http_close(wget_http_connection **conn)
 	}
 }
 
-#ifdef WITH_LIBNGHTTP2
-#endif
-
 int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 {
 	ssize_t nbytes;
