@@ -53,6 +53,8 @@ exclude_file_name_regexp--sc_require_config_h = examples/.*\.c|fuzz/main\.c$$
 exclude_file_name_regexp--sc_require_config_h_first = examples/.*\.c|fuzz/main\.c$$
 # do not remove, takes care for dependency subdirs (e.g. when using contrib/mingw script)
 exclude_file_name_regexp--sc_copyright_check = .*gnulib/.*\.c$$
+# do not complain about Dockerfiles
+exclude_file_name_regexp--sc_two_space_separator_in_usage = contrib/Dockerfile.*
 
 # The assignment_template is copies as-is into an email. Don't add any headers
 # there. The m4/* files are copied from autoconf-archive and don't follow the
