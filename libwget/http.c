@@ -401,7 +401,7 @@ void http_set_config_int(int key, int value)
 }
 */
 
-int wget_decompress_error_handler_cb(wget_decompressor *dc, int err WGET_GCC_UNUSED)
+int http_decompress_error_handler_cb(wget_decompressor *dc, int err WGET_GCC_UNUSED)
 {
 	wget_http_response *resp = (wget_http_response *) wget_decompress_get_context(dc);
 
@@ -412,14 +412,14 @@ int wget_decompress_error_handler_cb(wget_decompressor *dc, int err WGET_GCC_UNU
 	return 0;
 }
 
-int wget_decompress_get_body_cb(void *userdata, const char *data, size_t length)
+int http_decompress_get_body_cb(void *userdata, const char *data, size_t length)
 {
 	wget_http_response *resp = (wget_http_response *) userdata;
 
 	return resp->req->body_callback(resp, resp->req->body_user_data, data, length);
 }
 
-void wget_http_fix_broken_server_encoding(wget_http_response *resp)
+void http_fix_broken_server_encoding(wget_http_response *resp)
 {
 	// a workaround for broken server configurations
 	// see https://mail-archives.apache.org/mod_mbox/httpd-dev/200207.mbox/<3D2D4E76.4010502@talex.com.pl>
@@ -810,7 +810,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			if (req && !wget_strcasecmp_ascii(req->method, "HEAD"))
 				goto cleanup; // a HEAD response won't have a body
 
-			wget_http_fix_broken_server_encoding(resp);
+			http_fix_broken_server_encoding(resp);
 
 			p += 4; // skip \r\n\r\n to point to body
 			break;
@@ -851,8 +851,8 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 		goto cleanup;
 	}
 
-	dc = wget_decompress_open(resp->content_encoding, wget_decompress_get_body_cb, resp);
-	wget_decompress_set_error_handler(dc, wget_decompress_error_handler_cb);
+	dc = wget_decompress_open(resp->content_encoding, http_decompress_get_body_cb, resp);
+	wget_decompress_set_error_handler(dc, http_decompress_error_handler_cb);
 
 	// calculate number of body bytes so far read
 	body_len = nread - (p - buf);
@@ -907,7 +907,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 		for (;;) {
 			// read: chunk-size [ chunk-extension ] CRLF
 			while ((!(end = strchr(p, '\r')) || end[1] != '\n')) {
-				if (wget_http_connection_is_aborted(conn))
+				if (http_connection_is_aborted(conn))
 					goto cleanup;
 
 				if (body_len + 1024 > bufsize) {
@@ -955,7 +955,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 						body_len = 3;
 					}
 
-					if (wget_http_connection_is_aborted(conn))
+					if (http_connection_is_aborted(conn))
 						goto cleanup;
 
 					if ((nbytes = wget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
@@ -1003,7 +1003,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			debug_printf("need at least %zu more bytes\n", chunk_size);
 
 			while (chunk_size > 0) {
-				if (wget_http_connection_is_aborted(conn))
+				if (http_connection_is_aborted(conn))
 					goto cleanup;
 
 				if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0)
@@ -1051,7 +1051,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 			wget_decompress(dc, buf, body_len);
 
 		while (body_len < resp->content_length) {
-			if (wget_http_connection_is_aborted(conn))
+			if (http_connection_is_aborted(conn))
 				break;
 
 			if (((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0))
@@ -1086,7 +1086,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 		if (body_len)
 			wget_decompress(dc, buf, body_len);
 
-		while (!wget_http_connection_is_aborted(conn) && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
+		while (!http_connection_is_aborted(conn) && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
 			// debug_printf("nbytes %zd total %zu\n", nbytes, body_len);
 			resp->cur_downloaded += nbytes;
@@ -1344,7 +1344,7 @@ void wget_http_abort_connection(wget_http_connection *conn)
 		abort_indicator = 1; // stop all connections
 }
 
-int wget_http_connection_is_aborted(wget_http_connection *conn)
+int http_connection_is_aborted(wget_http_connection *conn)
 {
 	return conn->abort_indicator || abort_indicator;
 }

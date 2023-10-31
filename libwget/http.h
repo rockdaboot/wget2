@@ -82,12 +82,12 @@ struct wget_http_connection_st {
 #define HTTP_STATUS_NOT_FOUND             404
 #define HTTP_STATUS_RANGE_NOT_SATISFIABLE 416
 
-int wget_http_connection_is_aborted(wget_http_connection *conn);
+int http_connection_is_aborted(wget_http_connection *conn);
 
-void wget_http_fix_broken_server_encoding(wget_http_response *resp);
+void http_fix_broken_server_encoding(wget_http_response *resp);
 
-int wget_decompress_get_body_cb(void *context, const char *data, size_t length);
-int wget_decompress_error_handler_cb(wget_decompressor *dc, int err);
+int http_decompress_get_body_cb(void *context, const char *data, size_t length);
+int http_decompress_error_handler_cb(wget_decompressor *dc, int err);
 
 int wget_http2_open(wget_http_connection *conn);
 void wget_http2_close(wget_http_connection **conn);

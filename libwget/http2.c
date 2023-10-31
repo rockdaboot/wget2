@@ -84,12 +84,12 @@ static int on_frame_recv_callback(nghttp2_session *session,
 				resp->req->header_callback(resp, resp->req->header_user_data);
 			}
 
-			wget_http_fix_broken_server_encoding(resp);
+			http_fix_broken_server_encoding(resp);
 
 			if (!ctx->decompressor) {
 				ctx->decompressor = wget_decompress_open(resp->content_encoding,
-									 wget_decompress_get_body_cb, resp);
-				wget_decompress_set_error_handler(ctx->decompressor, wget_decompress_error_handler_cb);
+									 http_decompress_get_body_cb, resp);
+				wget_decompress_set_error_handler(ctx->decompressor, http_decompress_error_handler_cb);
 			}
 		}
 	}
@@ -376,7 +376,7 @@ wget_http_response *wget_http2_get_response_cb(wget_http_connection *conn, wget_
 	buf = conn->buf->data;
 	bufsize = conn->buf->size;
 
-	while (!wget_vector_size(conn->received_http2_responses) && !wget_http_connection_is_aborted(conn)) {
+	while (!wget_vector_size(conn->received_http2_responses) && !http_connection_is_aborted(conn)) {
 		int rc;
 
 		while (nghttp2_session_want_write(conn->http2_session) && nghttp2_session_send(conn->http2_session) == 0)
