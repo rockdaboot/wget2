@@ -21,6 +21,7 @@ Solaris OpenCSW [![Build Status Solaris amd64](https://buildfarm.opencsw.org/bui
   - [In Haiku build Wget2 with](#In-Haiku-build-Wget2-with)
   - [Test the functionality](#Test-the-functionality)
   - [Install Wget2 and libwget](#Install-Wget2-and-libwget)
+  - [Build static wget2.exe on GNU/Linux for Windows](#build-static-wget2exe-on-gnulinux-for-windows)
 - [License](#License)
 
 # GNU Wget2 - Introduction
@@ -185,6 +186,16 @@ The versions are recommended, but older versions may also work.
 ### Install Wget2 and libwget
 
 		sudo make install (or su -c "make install")
+
+### Build static wget2.exe on GNU/Linux for Windows
+
+		(cd contrib; docker build -t wget2/static -f Dockerfile.win32.static .)
+		docker run --rm -v $PWD:/tmp wget2/static cp /usr/local/wget2/src/wget2.exe /tmp
+		# now you have `wget2.exe` with debug symbols in your current directory
+		# optional: remove debug symbols with
+		strip wget2.exe
+		# optional: pack executable
+		upx wget2.exe
 
 # License
 
