@@ -1275,7 +1275,7 @@ int main(int argc, const char **argv)
 
 	program_init(); // initialize any resources belonging to this object file
 
-	set_exit_status(EXIT_STATUS_PARSE_INIT); // --version, --help etc might set the status to OK
+	set_exit_status(EXIT_STATUS_PARSE_INIT); // --version, --help etc. might set the status to OK
 	n = init(argc, argv);
 	if (n < 0) {
 		goto out;
@@ -1549,7 +1549,7 @@ void *input_thread(void *p WGET_GCC_UNUSED)
 	}
 	xfree(buf);
 
-	// input closed, don't read from it any more
+	// input closed, don't read from it anymore
 	debug_printf("input closed\n");
 
 	// wake up main thread to take control (e.g. checking if we are done)
@@ -3987,7 +3987,7 @@ static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 			wget_http_header_param *param = wget_vector_get(config.headers, i);
 			char replaced = 0;
 
-			// replace wget's HTTP headers by user-provided headers, except Cookie (which will just be added))
+			// replace wget's HTTP headers by user-provided headers, except Cookie (which will just be added)
 			if (wget_strcasecmp_ascii(param->name, "Cookie")) {
 				for (int j = 0; j < wget_vector_size(req->headers); j++) {
 					wget_http_header_param *h = wget_vector_get(req->headers, j);
