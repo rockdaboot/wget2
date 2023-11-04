@@ -3584,7 +3584,7 @@ static int get_header(wget_http_response *resp, void *context)
 		|| (!config.save_content_on
 			&& (resp->code == 200 || resp->code == 206 || config.content_on_error)))) {
 
-		// Job re-use?
+		// Job reuse?
 		xfree(ctx->job->sig_filename);
 
 		ctx->outfd = prepare_file(resp, dest,
