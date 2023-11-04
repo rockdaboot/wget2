@@ -574,7 +574,7 @@ wget_tcp *wget_tcp_init(void)
  *
  * If \p _tcp is NULL, the SNI field will be cleared.
  *
- * Does not free the internal DNS cache, so that other connections can re-use it.
+ * Does not free the internal DNS cache, so that other connections can reuse it.
  * Call wget_dns_cache_free() if you want to free it.
  */
 void wget_tcp_deinit(wget_tcp **_tcp)

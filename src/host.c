@@ -23,7 +23,7 @@
  * Changelog
  * 28.09.2013  Tim Ruehsen  created, moved from wget.c
  *
- * Each entry in hosts has it's own job queue. This allows to re-use
+ * Each entry in hosts has it's own job queue. This allows to reuse
  * a connection for subsequent requests without expensive searching.
  */
 
