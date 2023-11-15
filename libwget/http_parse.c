@@ -856,6 +856,9 @@ int64_t wget_http_parse_full_date(const char *s)
 		// ANSI C's asctime(): Wed Jun 09 10:18:14 2021
 	} else if (sscanf(s, " %d %3s %4d %2d:%2d:%2d", &day, mname, &year, &hour, &min, &sec) == 6) {
 		// non-standard: 1 Mar 2027 09:23:12 GMT
+	} else if (sscanf(s, " %*s %3s %2d %4d %2d:%2d:%2d",
+		// non-standard: Sun Nov 26 2023 21:24:47
+			mname, &day, &year, &hour, &min, &sec) == 6) {
 	} else {
 		error_printf(_("Failed to parse date '%s'\n"), s);
 		return 0; // return as session cookie
