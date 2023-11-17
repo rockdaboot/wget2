@@ -412,7 +412,7 @@ int http_decompress_error_handler_cb(wget_decompressor *dc, int err WGET_GCC_UNU
 	return 0;
 }
 
-int http_decompress_get_body_cb(void *userdata, const char *data, size_t length)
+int http_get_body_cb(void *userdata, const char *data, size_t length)
 {
 	wget_http_response *resp = (wget_http_response *) userdata;
 
@@ -851,7 +851,7 @@ wget_http_response *wget_http_get_response_cb(wget_http_connection *conn)
 		goto cleanup;
 	}
 
-	dc = wget_decompress_open(resp->content_encoding, http_decompress_get_body_cb, resp);
+	dc = wget_decompress_open(resp->content_encoding, http_get_body_cb, resp);
 	wget_decompress_set_error_handler(dc, http_decompress_error_handler_cb);
 
 	// calculate number of body bytes so far read

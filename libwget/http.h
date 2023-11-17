@@ -86,7 +86,7 @@ int http_connection_is_aborted(wget_http_connection *conn);
 
 void http_fix_broken_server_encoding(wget_http_response *resp);
 
-int http_decompress_get_body_cb(void *context, const char *data, size_t length);
+int http_get_body_cb(void *context, const char *data, size_t length);
 int http_decompress_error_handler_cb(wget_decompressor *dc, int err);
 
 int wget_http2_open(wget_http_connection *conn);

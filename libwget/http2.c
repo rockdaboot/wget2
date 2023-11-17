@@ -88,7 +88,7 @@ static int on_frame_recv_callback(nghttp2_session *session,
 
 			if (!ctx->decompressor) {
 				ctx->decompressor = wget_decompress_open(resp->content_encoding,
-									 http_decompress_get_body_cb, resp);
+									 http_get_body_cb, resp);
 				wget_decompress_set_error_handler(ctx->decompressor, http_decompress_error_handler_cb);
 			}
 		}
