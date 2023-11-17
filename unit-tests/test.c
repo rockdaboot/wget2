@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <c-ctype.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include <wget.h>
 #include "../libwget/private.h"
@@ -2531,6 +2532,36 @@ static void test_match_no_proxy(void)
 	}
 }
 
+static void test_http_parse_full_date(void) {
+	static const struct test_data {
+		const char *
+				date;
+		uint64_t
+				result;
+	} test_data[] = {
+		{"Sun, 25 May 2003 16:55:12 GMT", 1053881712},
+		{"Wed, 09 Jun 2021 10:18:14 GMT", 1623233894}, // RFC 822 / 1123
+		{"Wednesday, 09-Jun-21 10:18:14", 1623233894}, // RFC 850 / 1036 or Netscape
+		{"Wed, 09-Jun-21 10:18:14", 1623233894}, // RFC 850 / 1036 or Netscape
+		{"Wed Jun 09 10:18:14 2021", 1623233894}, // ANSI C's asctime()
+		{"1 Mar 2027 09:23:12 GMT", 1803892992}, // non-standard
+		{"Sun Nov 26 2023 21:24:47", 1701033887}, // non-standard
+	};
+
+	for (unsigned it = 0; it < countof(test_data); it++) {
+		const struct test_data *t = &test_data[it];
+		uint64_t ts = wget_http_parse_full_date(t->date);
+
+		if (ts == t->result) {
+			ok++;
+		} else {
+			failed++;
+			info_printf("Failed [%u]: wget_http_parse_full_date(\"%s\") -> %"PRIu64" (expected %"PRIu64")\n",
+						it, t->date, ts, t->result);
+		}
+	}
+}
+
 // Add some corner cases here.
 static void test_parse_header_line(void)
 {
@@ -2687,6 +2718,7 @@ int main(int argc, const char **argv)
 	test_set_proxy();
 	test_parse_response_header();
 	test_parse_header_line();
+	test_http_parse_full_date();
 
 	selftest_options() ? failed++ : ok++;
 
