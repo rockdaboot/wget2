@@ -40,7 +40,6 @@
 #include "http.h"
 
 #define HTTP_CTYPE_SEPARATOR (1<<0)
-#define _http_isseparator(c) (http_ctype[(unsigned char)(c)]&HTTP_CTYPE_SEPARATOR)
 
 static const unsigned char
 	http_ctype[256] = {
@@ -64,6 +63,11 @@ static const unsigned char
 		[' '] = HTTP_CTYPE_SEPARATOR,
 		['\t'] = HTTP_CTYPE_SEPARATOR
 	};
+
+static inline bool http_isseparator(char c)
+{
+	return (http_ctype[(unsigned char)(c)]&HTTP_CTYPE_SEPARATOR) != 0;
+}
 
 /**Gets the hostname of the remote endpoint.
  * \param conn a wget_http_connection
@@ -105,8 +109,7 @@ int wget_http_get_protocol(const wget_http_connection *conn)
 
 bool wget_http_isseparator(char c)
 {
-	// return strchr("()<>@,;:\\\"/[]?={} \t", c) != NULL;
-	return _http_isseparator(c);
+	return http_isseparator(c);
 }
 
 // TEXT           = <any OCTET except CTLs, but including LWS>
@@ -119,7 +122,7 @@ bool wget_http_isseparator(char c)
 
 bool wget_http_istoken(char c)
 {
-	return c > 32 && c <= 126 && !_http_isseparator(c);
+	return c > 32 && c <= 126 && !http_isseparator(c);
 }
 
 const char *wget_http_parse_token(const char *s, const char **token)
