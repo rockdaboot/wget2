@@ -270,10 +270,12 @@ int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 			if (!strcmp(key, "machine")) {
 				if (!netrc.host)
 					netrc.host = wget_strmemdup(p, linep - p);
-			} else if (!strcmp(key, "login")) {
+			} else if (!strcmp(key, "login") || !strcmp(key, "user")) {
+            // "user" is for fetchmail compatibility
 				if (!netrc.login)
 					netrc.login = wget_strmemdup(p, linep - p);
-			} else if (!strcmp(key, "password")) {
+			} else if (!strcmp(key, "password") || !strcmp(key, "passwd")) {
+            // "passwd" is for fetchmail compatibility
 				if (!netrc.password) {
 					if (!escaped)
 						 netrc.password = wget_strmemdup(p, linep - p);
