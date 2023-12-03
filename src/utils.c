@@ -150,7 +150,6 @@ char *wget_restrict_file_name(const char *fname, char *esc, int mode)
 	bool nocontrol = mode & WGET_RESTRICT_NAMES_NOCONTROL;
 	bool ascii = mode & WGET_RESTRICT_NAMES_ASCII;
 
-	info_printf("uppercase %d, lowercase %d", uppercase, lowercase);
 	for (dst = esc, s = fname; *s; s++) {
 		char c = *s;
 
