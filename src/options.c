@@ -818,26 +818,60 @@ static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_progress_type(option_t opt,
 // legacy option, needed to succeed test suite
 static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_restrict_names(option_t opt, const char *val, WGET_GCC_UNUSED const char invert)
 {
-	if (!val || !*val || !wget_strcasecmp_ascii(val, "none"))
-		*((int *)opt->var) = WGET_RESTRICT_NAMES_NONE;
-	else if (!wget_strcasecmp_ascii(val, "unix"))
-		*((int *)opt->var) = WGET_RESTRICT_NAMES_UNIX;
-	else if (!wget_strcasecmp_ascii(val, "windows"))
-		*((int *)opt->var) = WGET_RESTRICT_NAMES_WINDOWS;
-	else if (!wget_strcasecmp_ascii(val, "nocontrol"))
-		*((int *)opt->var) = WGET_RESTRICT_NAMES_NOCONTROL;
-	else if (!wget_strcasecmp_ascii(val, "ascii"))
-		*((int *)opt->var) = WGET_RESTRICT_NAMES_ASCII;
-	else if (!wget_strcasecmp_ascii(val, "uppercase"))
-		*((int *)opt->var) = WGET_RESTRICT_NAMES_UPPERCASE;
-	else if (!wget_strcasecmp_ascii(val, "lowercase"))
-		*((int *)opt->var) = WGET_RESTRICT_NAMES_LOWERCASE;
-	else {
-		error_printf(_("Unknown restrict-file-name type '%s'\n"), val);
-		return -1;
+	if (!val || !*val) {
+		error_printf(_("Missing restrict-file-name type\n"));
+		goto error;
 	}
 
+	// Reset restrictions to default
+	if (!wget_strcasecmp_ascii(val, "none")) {
+		*((int *)opt->var) = WGET_RESTRICT_NAMES_NONE;
+		return 0;
+	}
+
+	int flags = WGET_RESTRICT_NAMES_NONE;
+	const char *s, *p;
+	for (s = p = val; *p; s = p + 1) {
+		if ((p = strchrnul(s, ',')) == s)
+			continue;
+
+		size_t len = p - s;
+
+		if (!wget_strncasecmp_ascii(s, "unix", len))
+			flags |= WGET_RESTRICT_NAMES_UNIX;
+		else if (!wget_strncasecmp_ascii(s, "windows", len))
+			flags |= WGET_RESTRICT_NAMES_WINDOWS;
+		else if (!wget_strncasecmp_ascii(s, "nocontrol", len))
+			flags |= WGET_RESTRICT_NAMES_NOCONTROL;
+		else if (!wget_strncasecmp_ascii(s, "ascii", len))
+			flags |= WGET_RESTRICT_NAMES_ASCII;
+		else if (!wget_strncasecmp_ascii(s, "uppercase", len))
+			flags |= WGET_RESTRICT_NAMES_UPPERCASE;
+		else if (!wget_strncasecmp_ascii(s, "lowercase", len))
+			flags |= WGET_RESTRICT_NAMES_LOWERCASE;
+		else {
+			error_printf(_("Unknown restrict-file-name type '%s'\n"), val);
+			goto error;
+		}
+	}
+
+	if ((flags & WGET_RESTRICT_NAMES_UNIX) && (flags & WGET_RESTRICT_NAMES_WINDOWS)) {
+		error_printf(_("Restrict file names to either 'unix' or 'windows'\n"));
+		goto error;
+	}
+
+	if ((flags & WGET_RESTRICT_NAMES_UPPERCASE) && (flags & WGET_RESTRICT_NAMES_LOWERCASE)) {
+		error_printf(_("Restrict file names to either 'uppercase' or 'lowercase'\n"));
+		goto error;
+	}
+
+	*((int *)opt->var) = flags;
+
 	return 0;
+
+error:
+	error_printf(_("    use [none]|[unix|windows],[lowercase|uppercase],[nocontrol][,ascii].\n"));
+	return -1;
 }
 
 // Wget compatibility: support -nv, -nc, -nd, -nH and -np

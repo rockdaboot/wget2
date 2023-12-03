@@ -130,81 +130,56 @@ char *shell_expand(const char *fname)
  * \param[in]  mode  Mode of operation
  * \return Either \p fname if no escaping took place, else \p esc.
  *
- * This functions exists to pass the Wget test suite.
- * All we really need (Wget is targeted for Unix/Linux), is UNIX restriction (`NUL` and `/`)
- *  with escaping of control characters.
+ * This functions aims to be Wget1 compatible (--restrict-file-names).
  * See https://en.wikipedia.org/wiki/Comparison_of_file_systems
  *
  * Sanitizes file names by percent-escaping platform-specific illegal characters.
  */
 char *wget_restrict_file_name(const char *fname, char *esc, int mode)
 {
-	signed char *s;
-	char *dst, c;
-	int escaped;
-
-	if (!fname || !esc)
+	if (!fname || !esc || mode == WGET_RESTRICT_NAMES_NONE)
 		return (char *) fname;
 
-	switch (mode) {
-	case WGET_RESTRICT_NAMES_WINDOWS:
-		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
-			if (*s < 32 || strchr("\\<>:\"|?*", *s)) {
-				*dst++ = '%';
-				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
-				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
-				escaped = 1;
-			} else
-				*dst++ = *s;
-		}
-		*dst = 0;
+	const char *s;
+	char *dst;
+	bool escaped = false;
+	bool lowercase = mode & WGET_RESTRICT_NAMES_LOWERCASE;
+	bool uppercase = mode & WGET_RESTRICT_NAMES_UPPERCASE;
+	bool mode_unix = mode & WGET_RESTRICT_NAMES_UNIX;
+	bool windows = mode & WGET_RESTRICT_NAMES_WINDOWS;
+	bool nocontrol = mode & WGET_RESTRICT_NAMES_NOCONTROL;
+	bool ascii = mode & WGET_RESTRICT_NAMES_ASCII;
 
-		if (escaped)
-			return esc;
-		break;
-	case WGET_RESTRICT_NAMES_NOCONTROL:
-		break;
-	case WGET_RESTRICT_NAMES_ASCII:
-		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
-			if (*s < 32) {
-				*dst++ = '%';
-				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
-				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
-				escaped = 1;
-			} else
-				*dst++ = *s;
-		}
-		*dst = 0;
+	info_printf("uppercase %d, lowercase %d", uppercase, lowercase);
+	for (dst = esc, s = fname; *s; s++) {
+		char c = *s;
 
-		if (escaped)
-			return esc;
-		break;
-	case WGET_RESTRICT_NAMES_UPPERCASE:
-		for (s = (signed char *) fname; *s; s++)
-			if (*s >= 'a' && *s <= 'z') // islower() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
-				*s &= ~0x20;
-		break;
-	case WGET_RESTRICT_NAMES_LOWERCASE:
-		for (s = (signed char *) fname; *s; s++)
-			if (*s >= 'A' && *s <= 'Z') // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
-				*s |= 0x20;
-		break;
-	case WGET_RESTRICT_NAMES_UNIX:
-	default:
-		for (escaped = 0, dst = esc, s = (signed char *) fname; *s; s++) {
-			if (*s >= 1 && *s <= 31) {
-				*dst++ = '%';
-				*dst++ = (c = ((unsigned char)*s >> 4)) >= 10 ? c + 'A' - 10 : c + '0';
-				*dst++ = (c = (*s & 0xf)) >= 10 ? c + 'A' - 10 : c + '0';
-				escaped = 1;
-			} else
-				*dst++ = *s;
+		if (lowercase && c >= 'A' && c <= 'Z') { // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+			c |= 0x20;
+			escaped = true;
+		} else if (uppercase && c >= 'a' && c <= 'z') { // islower() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
+			c &= ~0x20;
+			escaped = true;
 		}
-		*dst = 0;
 
-		if (escaped)
-			return esc;
-		break;
+		if ((mode_unix && (c >= 1 && c <= 31))
+			|| (windows && (c < 32 || strchr("\\<>:\"|?*", c)))
+			|| (!nocontrol && ((c >= 1 && c <= 31) || c == 127))
+			|| (ascii && c <= 31))
+		{
+			char nibble;
+			*dst++ = '%';
+			*dst++ = (nibble = ((unsigned char) c >> 4)) >= 10 ? nibble + 'A' - 10 : nibble + '0';
+			*dst++ = (nibble = (c & 0xf)) >= 10 ? nibble + 'A' - 10 : nibble + '0';
+			escaped = true;
+		} else {
+			*dst++ = c;
+		}
+	}
+
+	if (escaped) {
+		*dst = 0;
+		return esc;
 	}
 
 	return (char *)fname;
