@@ -818,6 +818,8 @@ static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_progress_type(option_t opt,
 // legacy option, needed to succeed test suite
 static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_restrict_names(option_t opt, const char *val, WGET_GCC_UNUSED const char invert)
 {
+	int flags = WGET_RESTRICT_NAMES_NONE;
+
 	if (!val || !*val) {
 		error_printf(_("Missing restrict-file-name type\n"));
 		goto error;
@@ -829,7 +831,6 @@ static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_restrict_names(option_t opt
 		return 0;
 	}
 
-	int flags = WGET_RESTRICT_NAMES_NONE;
 	const char *s, *p;
 	for (s = p = val; *p; s = p + 1) {
 		if ((p = strchrnul(s, ',')) == s)
