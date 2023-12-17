@@ -151,7 +151,10 @@ wget_http_request *wget_http_create_request(const wget_iri *iri, const char *met
 	req->scheme = iri->scheme;
 	wget_strscpy(req->method, method, sizeof(req->method));
 	wget_iri_get_escaped_resource(iri, &req->esc_resource);
-	wget_iri_get_escaped_host(iri, &req->esc_host);
+	if (wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV6))
+		wget_buffer_printf(&req->esc_host, "[%s]", iri->host);
+	else
+		wget_iri_get_escaped_host(iri, &req->esc_host);
 	req->headers = wget_vector_create(8, NULL);
 	wget_vector_set_destructor(req->headers, (wget_vector_destructor *) wget_http_free_param);
 
@@ -450,8 +453,12 @@ static int establish_proxy_connect(wget_tcp *tcp, const char *host, uint16_t por
 	// The use of Proxy-Connection has been discouraged in RFC 7230 A.1.2.
 	// wget_buffer_sprintf(buf, "CONNECT %s:%hu HTTP/1.1\r\nHost: %s\r\nProxy-Connection: keep-alive\r\n\r\n",
 
-	wget_buffer_printf(&buf, "CONNECT %s:%hu HTTP/1.1\r\nHost: %s:%hu\r\n\r\n",
-		host, port, host, port);
+	if (wget_ip_is_family(host, WGET_NET_FAMILY_IPV6))
+		wget_buffer_printf(&buf, "CONNECT [%s]:%hu HTTP/1.1\r\nHost: [%s]:%hu\r\n\r\n",
+			host, port, host, port);
+	else
+		wget_buffer_printf(&buf, "CONNECT %s:%hu HTTP/1.1\r\nHost: %s:%hu\r\n\r\n",
+			host, port, host, port);
 
 	if (wget_tcp_write(tcp, buf.data, buf.length) != (ssize_t) buf.length) {
 		wget_buffer_deinit(&buf);

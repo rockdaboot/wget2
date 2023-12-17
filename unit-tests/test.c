@@ -551,6 +551,8 @@ static void test_iri_parse(void)
 	} test_data[] = {
 		{ "1.2.3.4", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", 80, NULL, NULL, NULL},
 		{ "1.2.3.4:987", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", 987, NULL, NULL, NULL},
+		{ "[2a02:2e0:3fe:1001:302::]", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "2a02:2e0:3fe:1001:302::", 80, NULL, NULL, NULL},
+		{ "[2a02:2e0:3fe:1001:302::]:987", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "2a02:2e0:3fe:1001:302::", 987, NULL, NULL, NULL},
 		{ "//example.com/thepath", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "thepath", NULL, NULL},
 		// { "///thepath", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, NULL, 0, "thepath", NULL, NULL},
 		{ "example.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, NULL},

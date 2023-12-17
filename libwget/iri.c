@@ -755,11 +755,13 @@ wget_iri *wget_iri_clone(const wget_iri *iri)
 const char *wget_iri_get_connection_part(const wget_iri *iri, wget_buffer *buf)
 {
 	if (iri) {
-		if (iri->port_given) {
-			wget_buffer_printf_append(buf, "%s://%s:%hu", schemes[iri->scheme].name, iri->host, iri->port);
-		} else {
+		if (wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV6))
+			wget_buffer_printf_append(buf, "%s://[%s]", schemes[iri->scheme].name, iri->host);
+		else
 			wget_buffer_printf_append(buf, "%s://%s", schemes[iri->scheme].name, iri->host);
-		}
+
+		if (iri->port_given)
+			wget_buffer_printf_append(buf, ":%hu", iri->port);
 	}
 
 	return buf->data;

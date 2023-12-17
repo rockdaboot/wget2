@@ -131,7 +131,7 @@ libwget_hpkp_db_la_LDFLAGS = $(libwget_la_LDFLAGS)
 lib_LTLIBRARIES += libwget_hsts.la
 libwget_hsts_la_SOURCES = hsts.c
 libwget_hsts_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
-libwget_hsts_la_LIBADD = libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la $(libwget_libadd)
+libwget_hsts_la_LIBADD = libwget_ip.la libwget_io.la libwget_thread.la libwget_common.la libwget_alloc.la $(libwget_libadd)
 libwget_hsts_la_LDFLAGS = $(libwget_la_LDFLAGS)
 
 ######## libwget ocsp ########
@@ -166,7 +166,7 @@ libwget_logger_la_LDFLAGS = $(libwget_la_LDFLAGS)
 lib_LTLIBRARIES += libwget_dnscache.la
 libwget_dnscache_la_SOURCES = dns_cache.c
 libwget_dnscache_la_CPPFLAGS = $(libwget_la_CPPFLAGS)
-libwget_dnscache_la_LIBADD = libwget_thread.la libwget_common.la libwget_alloc.la $(libwget_libadd)
+libwget_dnscache_la_LIBADD = libwget_ip.la libwget_thread.la libwget_common.la libwget_alloc.la $(libwget_libadd)
 libwget_dnscache_la_LDFLAGS = $(libwget_la_LDFLAGS)
 
 ######## libwget dns ########

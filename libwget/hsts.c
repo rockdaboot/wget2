@@ -264,8 +264,12 @@ static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
 	wget_thread_mutex_lock(hsts_db->mutex);
 
 	if (hsts->maxage == 0) {
-		if (wget_hashmap_remove(hsts_db->entries, hsts))
-			debug_printf("removed HSTS %s:%hu\n", hsts->host, hsts->port);
+		if (wget_hashmap_remove(hsts_db->entries, hsts)) {
+			if (wget_ip_is_family(hsts->host, WGET_NET_FAMILY_IPV6))
+				debug_printf("removed HSTS [%s]:%hu\n", hsts->host, hsts->port);
+			else
+				debug_printf("removed HSTS %s:%hu\n", hsts->host, hsts->port);
+		}
 		free_hsts(hsts);
 		hsts = NULL;
 	} else {
@@ -277,7 +281,10 @@ static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
 				old->expires = hsts->expires;
 				old->maxage = hsts->maxage;
 				old->include_subdomains = hsts->include_subdomains;
-				debug_printf("update HSTS %s:%hu (maxage=%lld, includeSubDomains=%d)\n", old->host, old->port, (long long)old->maxage, old->include_subdomains);
+				if (wget_ip_is_family(old->host, WGET_NET_FAMILY_IPV6))
+					debug_printf("update HSTS [%s]:%hu (maxage=%lld, includeSubDomains=%d)\n", old->host, old->port, (long long) old->maxage, old->include_subdomains);
+				else
+					debug_printf("update HSTS %s:%hu (maxage=%lld, includeSubDomains=%d)\n", old->host, old->port, (long long) old->maxage, old->include_subdomains);
 			}
 			free_hsts(hsts);
 			hsts = NULL;

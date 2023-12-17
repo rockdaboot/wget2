@@ -596,7 +596,10 @@ static void test_modify_hsts(wget_iri *iri)
 #endif
 
 	if (match) {
-		info_printf(_("HSTS in effect for %s:%hu\n"), iri->host, iri->port);
+		if (wget_ip_is_family(iri->host, WGET_NET_FAMILY_IPV6))
+			info_printf(_("HSTS in effect for [%s]:%hu\n"), iri->host, iri->port);
+		else
+			info_printf(_("HSTS in effect for %s:%hu\n"), iri->host, iri->port);
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 	}
 }
@@ -3925,7 +3928,12 @@ static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 
 		wget_buffer_strcpy(&buf, wget_iri_scheme_get_name(referer->scheme));
 		wget_buffer_memcat(&buf, "://", 3);
-		wget_buffer_strcat(&buf, referer->host);
+		if (wget_ip_is_family(referer->host, WGET_NET_FAMILY_IPV6)) {
+			wget_buffer_memcat(&buf, "[", 1);
+			wget_buffer_strcat(&buf, referer->host);
+			wget_buffer_memcat(&buf, "]", 1);
+		} else
+			wget_buffer_strcat(&buf, referer->host);
 		if (referer->port_given)
 			wget_buffer_printf_append(&buf, ":%hu", referer->port);
 		wget_buffer_memcat(&buf, "/", 1);

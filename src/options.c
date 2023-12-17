@@ -3249,11 +3249,19 @@ static void stats_callback_dns(wget_dns *_dns, wget_dns_stats_data *stats, void 
 	FILE *fp = (FILE *) ctx;
 
 	if (config.stats_dns_args->format == WGET_STATS_FORMAT_HUMAN) {
-		wget_fprintf(fp, "  %4lld %s:%hu (%s)\n",
-			stats->dns_secs,
-			stats->hostname ? stats->hostname : "-",
-			stats->port,
-			stats->ip ? stats->ip : "-");
+		if (wget_ip_is_family(stats->hostname, WGET_NET_FAMILY_IPV6)) {
+			wget_fprintf(fp, "  %4lld [%s]:%hu (%s)\n",
+				stats->dns_secs,
+				stats->hostname ? stats->hostname : "-",
+				stats->port,
+				stats->ip ? stats->ip : "-");
+		} else {
+			wget_fprintf(fp, "  %4lld %s:%hu (%s)\n",
+				stats->dns_secs,
+				stats->hostname ? stats->hostname : "-",
+				stats->port,
+				stats->ip ? stats->ip : "-");
+		}
 	} else {
 		wget_fprintf(fp, "%s,%s,%hu,%lld\n",
 			stats->hostname,

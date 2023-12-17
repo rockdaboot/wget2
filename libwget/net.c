@@ -671,9 +671,12 @@ static void debug_addr(const char *caption, const struct sockaddr *ai_addr, sock
 			 adr, sizeof(adr),
 			 s_port, sizeof(s_port),
 			 NI_NUMERICHOST | NI_NUMERICSERV);
-	if (rc == 0)
-		debug_printf("%s %s:%s...\n", caption, adr, s_port);
-	else
+	if (rc == 0) {
+		if (ai_addr->sa_family == AF_INET6)
+			debug_printf("%s [%s]:%s...\n", caption, adr, s_port);
+		else
+			debug_printf("%s %s:%s...\n", caption, adr, s_port);
+	} else
 		debug_printf("%s ???:%s (%s)...\n", caption, s_port, gai_strerror(rc));
 }
 

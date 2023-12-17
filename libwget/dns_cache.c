@@ -151,7 +151,10 @@ struct addrinfo *wget_dns_cache_get(wget_dns_cache *cache, const char *host, uin
 
 		if (entryp) {
 			// DNS cache entry found
-			debug_printf("Found dns cache entry %s:%d\n", entryp->host, entryp->port);
+			if (wget_ip_is_family(entryp->host, WGET_NET_FAMILY_IPV6))
+				debug_printf("Found dns cache entry [%s]:%d\n", entryp->host, entryp->port);
+			else
+				debug_printf("Found dns cache entry %s:%d\n", entryp->host, entryp->port);
 			return entryp->addrinfo;
 		}
 	}

@@ -52,15 +52,15 @@ bool wget_ip_is_family(const char *host, int family)
 	struct sockaddr_storage dst;
 
 	if (!host)
-		return 0;
+		return false;
 
 	switch (family) {
 	case WGET_NET_FAMILY_IPV4:
-		return inet_pton(AF_INET, host, (struct in_addr *) &dst);
+		return inet_pton(AF_INET, host, (struct in_addr *) &dst) == 1;
 	case WGET_NET_FAMILY_IPV6:
-		return inet_pton(AF_INET6, host, (struct in6_addr *) &dst);
+		return inet_pton(AF_INET6, host, (struct in6_addr *) &dst) == 1;
 	default:
-		return 0;
+		return false;
 	}
 }
 

@@ -255,7 +255,13 @@ static int resolve(int family, int flags, const char *host, uint16_t port, struc
 		hints.ai_flags |= AI_NUMERICSERV;
 
 		wget_snprintf(s_port, sizeof(s_port), "%hu", port);
-		debug_printf("resolving %s:%s...\n", host ? host : "", s_port);
+		if (host) {
+			if (family == AF_INET6)
+				debug_printf("resolving [%s]:%s...\n", host, s_port);
+			else
+				debug_printf("resolving %s:%s...\n", host, s_port);
+		} else
+			debug_printf("resolving :%s...\n", s_port);
 	} else {
 		debug_printf("resolving %s...\n", host);
 	}
@@ -308,7 +314,10 @@ int wget_dns_cache_ip(wget_dns *dns, const char *ip, const char *name, uint16_t 
 		return WGET_E_INVALID;
 
 	if ((rc = resolve(family, AI_NUMERICHOST, ip, port, &ai)) != 0) {
-		error_printf(_("Failed to resolve '%s:%d': %s\n"), ip, port, gai_strerror(rc));
+		if (family == AF_INET6)
+			error_printf(_("Failed to resolve '[%s]:%d': %s\n"), ip, port, gai_strerror(rc));
+		else
+			error_printf(_("Failed to resolve '%s:%d': %s\n"), ip, port, gai_strerror(rc));
 		return WGET_E_UNKNOWN;
 	}
 
@@ -420,9 +429,12 @@ struct addrinfo *wget_dns_resolve(wget_dns *dns, const char *host, uint16_t port
 	/* Finally, print the address list to the debug pipe if enabled */
 	if (wget_logger_is_active(wget_get_logger(WGET_LOGGER_DEBUG))) {
 		for (struct addrinfo *ai = addrinfo; ai; ai = ai->ai_next) {
-			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0)
-				debug_printf("has %s:%s\n", adr, sport);
-			else
+			if ((rc = getnameinfo(ai->ai_addr, ai->ai_addrlen, adr, sizeof(adr), sport, sizeof(sport), NI_NUMERICHOST | NI_NUMERICSERV)) == 0) {
+				if (ai->ai_family == AF_INET6)
+					debug_printf("has [%s]:%s\n", adr, sport);
+				else
+					debug_printf("has %s:%s\n", adr, sport);
+			} else
 				debug_printf("has ??? (%s)\n", gai_strerror(rc));
 		}
 	}
