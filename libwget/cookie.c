@@ -347,13 +347,13 @@ static int cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 	ssize_t buflen;
 	int64_t now = time(NULL);
 
-	wget_cookie_init(&cookie);
-
 	while ((buflen = wget_getline(&buf, &bufsize, fp)) >= 0) {
 		linep = buf;
 
 		while (isspace(*linep)) linep++; // ignore leading whitespace
 		if (!*linep) continue; // skip empty lines
+
+		wget_cookie_init(&cookie);
 
 		if (*linep == '#') {
 			if (strncmp(linep, "#HttpOnly_", 10))
@@ -421,7 +421,10 @@ static int cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 
 		if (wget_cookie_normalize(NULL, &cookie) == 0 && wget_cookie_check_psl(cookie_db, &cookie) == 0) {
 			ncookies++;
-			wget_cookie_store_cookie(cookie_db, wget_memdup(&cookie, sizeof(cookie))); // takes ownership of cookie
+			// The following wget_memdup copies pointers to allocated memory to take ownership of the cookie contents.
+			// Thus it needs to be accomplished by wget_cookie_init(&cookie), which is done
+			// near the top of the loop.
+			wget_cookie_store_cookie(cookie_db, wget_memdup(&cookie, sizeof(cookie)));
 		} else
 			wget_cookie_deinit(&cookie);
 	}
