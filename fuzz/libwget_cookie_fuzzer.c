@@ -59,7 +59,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	wget_cookie_create_request_header(NULL, NULL);
 
 	db = wget_cookie_db_init(NULL);
-	wget_cookie_set_keep_session_cookies(db, 1);
+	wget_cookie_set_keep_session_cookies(db, (size&1) == 0);
 
 	wget_cookie_parse_setcookie(in, &cookie);
 	wget_free(wget_cookie_to_setcookie(cookie));
