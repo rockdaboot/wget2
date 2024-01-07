@@ -667,16 +667,16 @@ void wget_ssl_init(void)
 			const char *file = config.ca_file;
 			debug_printf("Certificates %s %s\n", dir, file);
 
-			if (config.ca_directory && !system_certs_loaded && !wget_strcmp(config.ca_directory, "system")) {
+			if (dir && !system_certs_loaded && !wget_strcmp(dir, "system")) {
 				dir = wget_ssl_default_cert_dir();
 			}
-			if (config.ca_file && !system_certs_loaded && !wget_strcmp(config.ca_file, "system")) {
+			if (file && !system_certs_loaded && !wget_strcmp(file, "system")) {
 				file = wget_ssl_default_ca_bundle_path();
 			}
 
 			if (dir && access(dir, F_OK))
 				dir = NULL;
-			else if (file && access(file, F_OK)) //yes else if, good to throw an error if neither are there, just don't want to do it if at least one exists
+			if (file && access(file, F_OK))
 				file = NULL;
 
 			if (dir == NULL && file == NULL) {
