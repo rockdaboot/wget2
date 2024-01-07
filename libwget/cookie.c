@@ -366,7 +366,7 @@ static int cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 		}
 
 		// strip off \r\n
-		while (buflen > 0 && (buf[buflen] == '\n' || buf[buflen] == '\r'))
+		while (buflen > 0 && (buf[buflen-1] == '\n' || buf[buflen-1] == '\r'))
 			buf[--buflen] = 0;
 
 		// parse domain
