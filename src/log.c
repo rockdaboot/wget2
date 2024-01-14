@@ -226,7 +226,7 @@ void log_init(void)
 
 	// set info logging
 	wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO),
-		config.verbose && !config.quiet ? (fileno(stdout) == fileno(stderr) ? write_info_stderr : write_info_stdout) : NULL);
+		config.verbose && !config.quiet ? ((fileno(stdout) == fileno(stderr) || !wget_strcmp(config.output_document, "-")) ? write_info_stderr : write_info_stdout) : NULL);
 //	wget_logger_set_stream(wget_get_logger(WGET_LOGGER_INFO), config.verbose && !config.quiet ? stdout : NULL);
 #endif
 }
