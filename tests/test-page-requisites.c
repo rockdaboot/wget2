@@ -38,8 +38,10 @@ int main(void)
 			.body =
 				"<html><head><title>Main Page</title></head><body><p>A link to a" \
 				" <a href=\"http://localhost:{{port}}/secondpage.html\">second page</a>." \
-				" Hey, a picture <img src=\"picture.png\"/>." \
-				" Hey, a srcset <img srcset=\"picture1.png, picture2.png 150w,picture3.png 100x\"/>." \
+				"<picture>" \
+				"  Hey, a source <source type=\"image/svg+xml\" srcset=\"logo.svg\"/>." \
+				"  Hey, a srcset <img src=\"picture.png\" srcset=\"picture1.png, picture2.png 150w,picture3.png 100x\"/>." \
+				" </picture>" \
 				"<link rel=\"stylesheet\" href=\"test1.css\" />"
 				"<link href=\"test2.css\" rel=\"stylesheet\" />"
 				"<link rel=\"shortcut icon\" href=\"myfavicon.ico\" />"
@@ -217,6 +219,13 @@ int main(void)
 				"Content-Type: image/x-icon",
 			}
 		},
+		{	.name = "/logo.svg",
+			.code = "200 Dontcare",
+			.body = "LOGOSVG",
+			.headers = {
+				"Content-Type: image/svg+xml",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -249,6 +258,7 @@ int main(void)
 			{ urls[18].name + 1, urls[18].body }, // icon2.ico
 			{ urls[19].name + 1, urls[19].body }, // icon3.ico
 			{ urls[20].name + 1, urls[20].body }, // icon4.ico
+			{ urls[21].name + 1, urls[21].body }, // logo.svg
 			{	NULL } },
 		0);
 
