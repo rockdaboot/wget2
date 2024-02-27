@@ -1192,6 +1192,12 @@ struct wget_iri_st {
 	 */
 	const char *
 		uri;
+
+	/**
+	 * Pointer to the URI which does not contain credentials.
+	*/
+	const char *
+		safe_uri;
 	/**
 	 * Display part, if present.
 	 */

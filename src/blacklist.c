@@ -200,7 +200,7 @@ static int WGET_GCC_NONNULL_ALL blacklist_print_entry(void *ctx, const void *key
 	(void) ctx; (void) value;
 
 	const wget_iri *iri = (wget_iri *) key;
-	debug_printf("blacklist %s\n", iri->uri);
+	debug_printf("blacklist %s\n", iri->safe_uri);
 	return 0;
 }
 
@@ -263,7 +263,7 @@ blacklist_entry *blacklist_add(const wget_iri *iri)
 
 	wget_thread_mutex_unlock(mutex);
 
-	debug_printf("not requesting '%s'. (Already Seen)\n", iri->uri);
+	debug_printf("not requesting '%s'. (Already Seen)\n", iri->safe_uri);
 
 	return NULL;
 }

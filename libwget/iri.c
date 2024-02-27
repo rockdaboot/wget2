@@ -38,6 +38,8 @@
 #include <wget.h>
 #include "private.h"
 
+static char *create_safe_uri(wget_iri *iri);
+
 /**
  * \file
  * \brief Functions to work with URIs and IRIs
@@ -390,6 +392,10 @@ char *wget_iri_unescape_url_inline(char *src)
 void wget_iri_free_content(wget_iri *iri)
 {
 	if (iri) {
+		if (iri->userinfo)
+			xfree(iri->safe_uri);
+		else
+			iri->safe_uri = NULL;
 		if (iri->uri_allocated)
 			xfree(iri->uri);
 		if (iri->host_allocated)
@@ -677,6 +683,12 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		}
 	}
 
+	if (iri->userinfo) {
+		iri->safe_uri = create_safe_uri(iri);
+	} else {
+		iri->safe_uri = iri->uri;
+	}
+
 /*
 	debug_printf("scheme=%s\n",iri->scheme);
 	debug_printf("host=%s\n",iri->host);
@@ -684,7 +696,6 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 	debug_printf("query=%s\n",iri->query);
 	debug_printf("fragment=%s\n",iri->fragment);
 */
-
 	return iri;
 }
 
@@ -708,6 +719,11 @@ wget_iri *wget_iri_clone(const wget_iri *iri)
 	memcpy(clone, iri, sizeof(wget_iri));
 	clone->uri = memcpy(clone + 1, iri->uri, (slen + 1) + iri->msize);
 	clone->uri_allocated = 0;
+
+	if (iri->userinfo)
+		clone->safe_uri = wget_strdup(iri->safe_uri);
+	else
+		clone->safe_uri = clone->uri;
 
 	clone->connection_part = wget_strdup(iri->connection_part);
 
@@ -872,8 +888,6 @@ static size_t WGET_GCC_NONNULL_ALL normalize_path(char *path)
  */
 const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size_t len, wget_buffer *buf)
 {
-	debug_printf("*url = %.*s\n", (int)len, val);
-
 	if (len == (size_t) -1)
 		len = strlen(val);
 
@@ -900,7 +914,6 @@ const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size
 				wget_buffer_strcpy(buf, schemes[base->scheme].name);
 				wget_buffer_strcat(buf, ":");
 				wget_buffer_strcat(buf, path);
-				debug_printf("*1 %s\n", buf->data);
 			} else {
 				// absolute path
 				normalize_path(path);
@@ -909,7 +922,6 @@ const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size
 				wget_iri_get_connection_part(base, buf);
 				wget_buffer_strcat(buf, "/");
 				wget_buffer_strcat(buf, path);
-				debug_printf("*2 %s\n", buf->data);
 			}
 
 			if (path != tmp)
@@ -923,9 +935,7 @@ const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size
 			// absolute URI
 			if (buf) {
 				wget_buffer_memcpy(buf, val, len);
-				debug_printf("*3 %s\n", buf->data);
 			} else {
-				debug_printf("*3 %s\n", val);
 				return val;
 			}
 		} else if (base) {
@@ -944,8 +954,6 @@ const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size
 				wget_buffer_memcat(buf, val, len);
 
 			buf->length = normalize_path(buf->data + tmp_len) + tmp_len;
-
-			debug_printf("*4 %s %zu\n", buf->data, buf->length);
 		} else if (val[len] == 0) {
 			return val;
 		} else {
@@ -1443,7 +1451,44 @@ wget_iri_scheme wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme)
 		}
 	}
 
+	if (iri->userinfo) {
+		xfree(iri->safe_uri);
+		iri->safe_uri = create_safe_uri(iri);
+	} else {
+		iri->safe_uri = iri->uri;
+	}
 	return old_scheme;
+}
+
+static char *create_safe_uri(wget_iri *iri)
+{
+	if (!iri || !iri->uri)
+		return NULL;
+
+	wget_buffer *buf = wget_buffer_alloc(strlen(iri->uri));
+	if (!buf)
+		return NULL;
+
+	wget_buffer_printf(buf, "%s://%s", schemes[iri->scheme].name, iri->host);
+
+	if (iri->path) {
+		wget_buffer_strcat(buf, "/");
+		wget_buffer_strcat(buf, iri->path);
+	}
+	if (iri->query) {
+		wget_buffer_strcat(buf, "?");
+		wget_buffer_strcat(buf, iri->query);
+	}
+	if (iri->fragment) {
+		wget_buffer_strcat(buf, "#");
+		wget_buffer_strcat(buf, iri->fragment);
+	}
+
+	char *safe_uri = buf->data;
+	buf->data = NULL;
+	wget_buffer_free(&buf);
+
+	return safe_uri;
 }
 
 /** @} */

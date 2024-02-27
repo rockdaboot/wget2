@@ -192,9 +192,8 @@ void stats_site_add(wget_http_response *resp, wget_gpg_info_t *gpg_info)
 static int print_human_entry(FILE *_fp, site_stats_data *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
-
 	wget_fprintf(_fp, "  %6d %5lld %6lld %s\n",
-		doc->status, transfer_time, doc->size_downloaded, doc->iri->uri);
+		doc->status, transfer_time, doc->size_downloaded, doc->iri->safe_uri);
 
 	return 0;
 }
@@ -202,7 +201,6 @@ static int print_human_entry(FILE *_fp, site_stats_data *doc)
 static int print_csv_entry(FILE *_fp, site_stats_data *doc)
 {
 	long long transfer_time = doc->response_end - doc->request_start;
-
 	wget_fprintf(_fp, "%llu,%llu,%s,%d,%d,%d,%lld,%lld,%lld,%lld,%d,%d,%lld,%s\n",
 		doc->id, doc->parent_id, doc->iri->uri, doc->status, !doc->redirect, doc->method,
 		doc->size_downloaded, doc->size_decompressed, transfer_time,

@@ -2628,8 +2628,6 @@ static int WGET_GCC_NONNULL((1)) set_long_option(const char *name, const char *v
 		return -1;
 	}
 
-	debug_printf("name=%s value=%s invert=%d\n", opt->long_name, value, invert);
-
 	if (value_present) {
 		// "option=*"
 		if (invert) {

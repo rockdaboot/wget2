@@ -541,7 +541,8 @@ static void test_iri_parse(void)
 		const char
 			*userinfo,
 			*password,
-			*host;
+			*host,
+			*safe_uri;
 		uint16_t
 			port;
 		const char
@@ -549,42 +550,48 @@ static void test_iri_parse(void)
 			*query,
 			*fragment;
 	} test_data[] = {
-		{ "1.2.3.4", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", 80, NULL, NULL, NULL},
-		{ "1.2.3.4:987", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", 987, NULL, NULL, NULL},
-		{ "[2a02:2e0:3fe:1001:302::]", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "2a02:2e0:3fe:1001:302::", 80, NULL, NULL, NULL},
-		{ "[2a02:2e0:3fe:1001:302::]:987", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "2a02:2e0:3fe:1001:302::", 987, NULL, NULL, NULL},
-		{ "//example.com/thepath", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "thepath", NULL, NULL},
+		{ "1.2.3.4", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", "http://1.2.3.4", 80, NULL, NULL, NULL},
+		{ "1.2.3.4:987", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "1.2.3.4", "http://1.2.3.4:987", 987, NULL, NULL, NULL},
+		{ "[2a02:2e0:3fe:1001:302::]", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "2a02:2e0:3fe:1001:302::", "http://[2a02:2e0:3fe:1001:302::]", 80, NULL, NULL, NULL},
+		{ "[2a02:2e0:3fe:1001:302::]:987", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "2a02:2e0:3fe:1001:302::", "http://[2a02:2e0:3fe:1001:302::]:987", 987, NULL, NULL, NULL},
+		{ "//example.com/thepath", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http:////example.com/thepath", 80, "thepath", NULL, NULL},
 		// { "///thepath", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, NULL, 0, "thepath", NULL, NULL},
-		{ "example.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, NULL},
-		{ "example.com:555", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 555, NULL, NULL, NULL},
-		{ "http://example.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, NULL},
-		{ "http://example.com:", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, NULL},
-		{ "http://example.com:/", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "", NULL, NULL},
-		{ "http://example.com:80/", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "", NULL, NULL},
-		{ "https://example.com", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", 443, NULL, NULL, NULL},
-		{ "https://example.com:443", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", 443, NULL, NULL, NULL},
-		{ "https://example.com:444", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", 444, NULL, NULL, NULL},
-		{ "http://example.com:80", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, NULL},
-		{ "http://example.com:81", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 81, NULL, NULL, NULL},
-		{ "http://example.com/index.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "index.html", NULL, NULL},
-		{ "http://example.com/index.html?query#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "index.html", "query", "frag"},
-		{ "http://example.com/index.html?query&param#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "index.html", "query&param", "frag"},
-		{ "http://example.com/index.html?query&par%26am%61x=1#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "index.html", "query&par%26am%61x=1", "frag"},
-		{ "http://example.com/index.html?#", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "index.html", "", ""},
+		{ "example.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com", 80, NULL, NULL, NULL},
+		{ "example.com:555", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com:555", 555, NULL, NULL, NULL},
+		{ "http://example.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com", 80, NULL, NULL, NULL},
+		{ "http://example.com:", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com:", 80, NULL, NULL, NULL},
+		{ "http://example.com:/", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com:/", 80, "", NULL, NULL},
+		{ "http://example.com:80/", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com:80/", 80, "", NULL, NULL},
+		{ "https://example.com", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", "https://example.com", 443, NULL, NULL, NULL},
+		{ "https://example.com:443", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", "https://example.com:443", 443, NULL, NULL, NULL},
+		{ "https://example.com:444", NULL, WGET_IRI_SCHEME_HTTPS, NULL, NULL, "example.com", "https://example.com:444", 444, NULL, NULL, NULL},
+		{ "http://example.com:80", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com:80", 80, NULL, NULL, NULL},
+		{ "http://example.com:81", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com:81", 81, NULL, NULL, NULL},
+		{ "http://example.com/index.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com/index.html", 80, "index.html", NULL, NULL},
+		{ "http://example.com/index.html?query#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com/index.html?query#frag", 80, "index.html", "query", "frag"},
+		{ "http://example.com/index.html?query&param#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com/index.html?query&param#frag", 80, "index.html", "query&param", "frag"},
+		{ "http://example.com/index.html?query&par%26am%61x=1#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com/index.html?query&par%26am%61x=1#frag", 80, "index.html", "query&par%26am%61x=1", "frag"},
+		{ "http://example.com/index.html?#", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com/index.html?#", 80, "index.html", "", ""},
 #if defined WITH_LIBIDN || defined WITH_LIBIDN2
-		{ "碼標準萬國碼.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "xn--9cs565brid46mda086o.com", 80, NULL, NULL, NULL},
+		{ "碼標準萬國碼.com", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "xn--9cs565brid46mda086o.com", "http://碼標準萬國碼.com", 80, NULL, NULL, NULL},
 #endif
 		//		{ "ftp://cnn.example.com&story=breaking_news@10.0.0.1/top_story.htm", NULL,"ftp",NULL,NULL,"cnn.example.com",0,NULL,"story=breaking_news@10.0.0.1/top_story.htm",NULL }
 //		{ "ftp://cnn.example.com?story=breaking_news@10.0.0.1/top_story.htm", NULL, "ftp", NULL, NULL, "cnn.example.com", 0, NULL, "story=breaking_news@10.0.0.1/top_story.htm", NULL},
 //		{ "site;sub:.html", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "site", 0, ";sub:.html", NULL, NULL},
 //		{ "mailto:info@example.com", NULL, "mailto", "info", NULL, "example.com", 0, NULL, NULL, NULL},
-		{ "http://example.com?query#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, "query", "frag"},
-		{ "http://example.com#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, "frag"},
-		{ "http://example.com?#", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, "", ""},
-		{ "http://example+.com/pa+th?qu+ery#fr+ag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example+.com", 80, "pa+th", "qu ery", "fr+ag"},
-		{ "http://example.com#frag?x", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, "frag?x"},
-		{ "http://user:pw@example.com", NULL, WGET_IRI_SCHEME_HTTP, "user", "pw", "example.com", 80, NULL, NULL, NULL},
-		{ "http://example.com//path//file", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "path/file", NULL, NULL},
+		{ "http://example.com?query#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com?query#frag", 80, NULL, "query", "frag"},
+		{ "http://example.com#frag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com#frag", 80, NULL, NULL, "frag"},
+		{ "http://example.com?#", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com?#", 80, NULL, "", ""},
+		{ "http://example+.com/pa+th?qu+ery#fr+ag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example+.com", "http://example+.com/pa+th?qu+ery#fr+ag", 80, "pa+th", "qu ery", "fr+ag"},
+		{ "http://example.com#frag?x", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com#frag?x", 80, NULL, NULL, "frag?x"},
+		{ "http://user:pw@example.com", NULL, WGET_IRI_SCHEME_HTTP, "user", "pw", "example.com", "http://example.com", 80, NULL, NULL, NULL},
+		{ "http://:@example.com", NULL, WGET_IRI_SCHEME_HTTP, "", "", "example.com", "http://example.com", 80, NULL, NULL, NULL},
+		{ "http://user:@example.com", NULL, WGET_IRI_SCHEME_HTTP, "user", "", "example.com", "http://example.com", 80, NULL, NULL, NULL},
+		{ "http://user@example.com", NULL, WGET_IRI_SCHEME_HTTP, "user", NULL, "example.com", "http://example.com", 80, NULL, NULL, NULL},
+		{ "http://:pw@example.com", NULL, WGET_IRI_SCHEME_HTTP, "", "pw", "example.com", "http://example.com", 80, NULL, NULL, NULL},
+		{ "http://user:pw@example@.com", NULL, WGET_IRI_SCHEME_HTTP, "user", "pw", "example@.com", "http://example@.com", 80, NULL, NULL, NULL},
+		{ "http://user:pw@example.com/index.html?query&par%26am%61x=1#frag", NULL, WGET_IRI_SCHEME_HTTP, "user", "pw", "example.com", "http://example.com/index.html?query&par%26am%61x=1#frag", 80, "index.html", "query&par%26am%61x=1", "frag"},
+		{ "http://example.com//path//file", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", "http://example.com//path//file", 80, "path/file", NULL, NULL},
 	};
 	unsigned it;
 
@@ -597,6 +604,7 @@ static void test_iri_parse(void)
 			|| wget_strcmp(iri->userinfo, t->userinfo)
 			|| wget_strcmp(iri->password, t->password)
 			|| wget_strcmp(iri->host, t->host)
+			|| wget_strcmp(iri->safe_uri, t->safe_uri)
 			|| iri->port != t->port
 			|| wget_strcmp(iri->path, t->path)
 			|| wget_strcmp(iri->query, t->query)
@@ -608,7 +616,9 @@ static void test_iri_parse(void)
 			printf("  display %s (expected %s)\n", iri->display, t->display);
 			printf("  scheme %s (expected %s)\n", wget_iri_scheme_get_name(iri->scheme), wget_iri_scheme_get_name(t->scheme));
 			printf("  user %s (expected %s)\n", iri->userinfo, t->userinfo);
+			printf("  password %s (expected %s)\n", iri->password, t->password);
 			printf("  host %s (expected %s)\n", iri->host, t->host);
+			printf("  safe uri %s (expected %s)\n", iri->safe_uri, t->safe_uri);
 			printf("  port %hu (expected %hu)\n", iri->port, t->port);
 			printf("  path %s (expected %s)\n", iri->path, t->path);
 			printf("  query %s (expected %s)\n", iri->query, t->query);

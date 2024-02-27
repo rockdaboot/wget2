@@ -173,7 +173,7 @@ static int _search_queue_for_free_job(struct _find_free_job_context *ctx, JOB *j
 		job->used_by = wget_thread_self();
 		job->part = NULL;
 		ctx->job = job;
-		debug_printf("dequeue job %s\n", job->iri->uri);
+		debug_printf("dequeue job %s\n", job->iri->safe_uri);
 		return 1;
 	}
 
@@ -266,7 +266,7 @@ static int _release_job(wget_thread_id *ctx, JOB *job)
 	} else if (job->inuse && job->used_by == self) {
 		job->inuse = job->done = 0;
 		job->used_by = 0;
-		debug_printf("released job %s\n", job->iri->uri);
+		debug_printf("released job %s\n", job->iri->safe_uri);
 	}
 
 	return 0;
@@ -318,9 +318,9 @@ void host_add_job(HOST *host, const JOB *job)
 
 	jobp->host = host;
 
-	if (jobp->iri)
-		debug_printf("%s: %p %s\n", __func__, (void *)jobp, jobp->iri->uri);
-	else if (jobp->metalink)
+	if (jobp->iri) {
+		debug_printf("%s: %p %s\n", __func__, (void *)jobp, jobp->iri->safe_uri);
+	} else if (jobp->metalink)
 		debug_printf("%s: %p %s\n", __func__, (void *)jobp, jobp->metalink->name);
 
 	debug_printf("%s: qsize %d host-qsize=%d\n", __func__, qsize, host->qsize);
@@ -355,8 +355,7 @@ void host_add_robotstxt_job(HOST *host, const wget_iri *base, const char *encodi
 	host->qsize++;
 	if (!host->blocked)
 		qsize++;
-
-	debug_printf("%s: %p %s\n", __func__, (void *)job, job->iri->uri);
+	debug_printf("%s: %p %s\n", __func__, (void *)job, job->iri->safe_uri);
 	debug_printf("%s: qsize %d host-qsize=%d\n", __func__, qsize, host->qsize);
 
 	wget_thread_mutex_unlock(hosts_mutex);
@@ -391,7 +390,7 @@ static void _host_remove_job(HOST *host, JOB *job)
 					wget_string *path = wget_robots_get_path(host->robots, it);
 
 					if (path->len && !strncmp(path->p + 1, thejob->iri->path ? thejob->iri->path : "", path->len - 1)) {
-						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), thejob->iri->uri);
+						info_printf(_("URL '%s' not followed (disallowed by robots.txt)\n"), thejob->iri->safe_uri);
 						_host_remove_job(host, thejob);
 						break;
 					}
