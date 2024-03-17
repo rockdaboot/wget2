@@ -2432,7 +2432,7 @@ static void test_robots(void)
 			info_printf("'%s': paths mismatch: expected %d, got %d\n",
 				t->name, count, wget_robots_get_path_count(robots));
 			failed++;
-			continue;
+			goto next;
 		}
 
 		count = 0;
@@ -2442,7 +2442,7 @@ static void test_robots(void)
 			info_printf("'%s': sitemap # mismatch: expected %d, got %d\n",
 				t->name, count, wget_robots_get_sitemap_count(robots));
 			failed++;
-			continue;
+			goto next;
 		}
 
 		for (unsigned it2 = 0; it2 < countof(test_data[it].path) && t->path[it2]; it2++) {
@@ -2475,6 +2475,7 @@ static void test_robots(void)
 			}
 		}
 
+next:
 		wget_robots_free(&robots);
 	}
 }
