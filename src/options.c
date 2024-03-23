@@ -131,7 +131,7 @@ struct optionw {
 static const char version_text[] =
 "\n"
 "Copyright (C) 2012-2015 Tim Ruehsen\n"
-"Copyright (C) 2015-2021 Free Software Foundation, Inc.\n"
+"Copyright (C) 2015-2024 Free Software Foundation, Inc.\n"
 "\n"
 "License GPLv3+: GNU GPL version 3 or later\n"
 "<http://www.gnu.org/licenses/gpl.html>.\n"
