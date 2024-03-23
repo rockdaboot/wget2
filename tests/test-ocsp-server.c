@@ -40,6 +40,7 @@ int main(void)
 		WGET_TEST_FEATURE_OCSP,
 		0);
 
+#ifndef WITH_WOLFSSL
 	// Test ocsp with 'verified' response
 	wget_test(
 		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-root-cert.pem --no-ocsp-file --no-ocsp-date --no-ocsp-nonce --ocsp --ocsp-server http://localhost:{{ocspport}}",
@@ -51,7 +52,6 @@ int main(void)
 			{	NULL} },
 		0);
 
-#ifndef WITH_WOLFSSL
 	// Test ocsp with 'revoked' response
 	// Todo: Let WolfSSL code check the revocation.
 	wget_test(
@@ -73,6 +73,7 @@ int main(void)
 			{	NULL} },
 		0);
 
+#ifndef WITH_WOLFSSL
 	// Test ocsp without specifying responder URL
 	wget_test(
 		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-root-cert.pem --no-ocsp-file --no-ocsp-date --no-ocsp-nonce --ocsp",
@@ -83,6 +84,7 @@ int main(void)
 			{urls[0].name + 1, urls[0].body},
 			{	NULL} },
 		0);
+#endif
 
 	exit(EXIT_SUCCESS);
 }
