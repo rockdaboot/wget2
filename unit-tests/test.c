@@ -584,6 +584,7 @@ static void test_iri_parse(void)
 		{ "http://example+.com/pa+th?qu+ery#fr+ag", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example+.com", 80, "pa+th", "qu ery", "fr+ag"},
 		{ "http://example.com#frag?x", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, NULL, NULL, "frag?x"},
 		{ "http://user:pw@example.com", NULL, WGET_IRI_SCHEME_HTTP, "user", "pw", "example.com", 80, NULL, NULL, NULL},
+		{ "http://example.com//path//file", NULL, WGET_IRI_SCHEME_HTTP, NULL, NULL, "example.com", 80, "path/file", NULL, NULL},
 	};
 	unsigned it;
 

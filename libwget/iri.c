@@ -82,6 +82,8 @@ static struct iri_scheme {
 	[WGET_IRI_SCHEME_HTTPS] = { 443, "https" },
 };
 
+static size_t WGET_GCC_NONNULL_ALL normalize_path(char *path);
+
 /**
  * \param[in] scheme Scheme to get name for
  * \return Name of \p scheme (e.g. "http" or "https") or NULL is not supported
@@ -561,6 +563,7 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		c = *s;
 		if (c) *s++ = 0;
 		wget_iri_unescape_inline((char *)iri->path);
+		normalize_path((char *)iri->path);
 	}
 
 	if (c == '?') {
