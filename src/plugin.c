@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include <string.h>
+#include <stdbool.h>
 
 #include <wget.h>
 
@@ -60,7 +61,7 @@ typedef struct {
 	char name_buf[];
 } plugin_priv_t;
 
-static int initialized = 0;
+static bool initialized = false;
 // Plugin search paths
 static wget_vector *search_paths;
 // List of loaded plugins
@@ -68,7 +69,7 @@ static wget_vector *plugin_list;
 // Index of plugins by plugin name
 static wget_stringmap *plugin_name_index;
 // Whether any of the previous options forwarded was 'help'
-static int plugin_help_forwarded;
+static bool plugin_help_forwarded;
 
 // Sets a list of directories to search for plugins, separated by
 // _separator_.
@@ -463,7 +464,7 @@ int plugin_db_forward_option(const char *plugin_option, dl_error_t *e)
 			wget_free(plugin_option_copy);
 			return -1;
 		}
-		plugin_help_forwarded = 1;
+		plugin_help_forwarded = true;
 	}
 
 	// Search for plugin
@@ -507,11 +508,11 @@ void plugin_db_show_help(void)
 			printf("\n");
 		}
 	}
-	plugin_help_forwarded = 1;
+	plugin_help_forwarded = true;
 }
 
 // Returns 1 if any of the previous options forwarded was 'help'.
-int plugin_db_help_forwarded(void)
+bool plugin_db_help_forwarded(void)
 {
 	return plugin_help_forwarded;
 }
@@ -590,23 +591,23 @@ int plugin_db_forward_downloaded_file(const wget_iri *iri, int64_t size, const c
 // Initializes the plugin framework
 void plugin_db_init(void)
 {
-	if (! initialized) {
+	if (!initialized) {
 		search_paths = wget_vector_create(16, NULL);
 		plugin_list = wget_vector_create(16, NULL);
 		wget_vector_set_destructor(plugin_list, (wget_vector_destructor *) plugin_free);
 		plugin_name_index = wget_stringmap_create(16);
 		wget_stringmap_set_key_destructor(plugin_name_index, NULL);
 		wget_stringmap_set_value_destructor(plugin_name_index, NULL);
-		plugin_help_forwarded = 0;
+		plugin_help_forwarded = false;
 
-		initialized = 1;
+		initialized = true;
 	}
 }
 
 // Sends 'finalize' signal to all plugins and unloads all plugins
 void plugin_db_finalize(int exitcode)
 {
-	if (! initialized)
+	if (!initialized)
 		return;
 
 	int n_plugins = wget_vector_size(plugin_list);
@@ -621,5 +622,5 @@ void plugin_db_finalize(int exitcode)
 	wget_stringmap_free(&plugin_name_index);
 	wget_vector_free(&search_paths);
 
-	initialized = 0;
+	initialized = false;
 }
