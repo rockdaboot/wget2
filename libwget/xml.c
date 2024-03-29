@@ -49,18 +49,18 @@
 
 typedef struct {
 	const char
-		*buf, // pointer to original start of buffer (0-terminated)
-		*p, // pointer next char in buffer
-		*token; // token buffer
+		*buf, //!< pointer to original start of buffer (0-terminated)
+		*p, //!< pointer next char in buffer
+		*token; //!< token buffer
 	int
-		hints; // XML_HINT...
+		hints; //!< XML_HINT...
 	size_t
-		token_size, // size of token buffer
-		token_len; // used bytes of token buffer (not counting terminating 0 byte)
+		token_size, //!< size of token buffer
+		token_len; //!< used bytes of token buffer (not counting terminating 0 byte)
 	void
-		*user_ctx; // user context (not needed if we were using nested functions)
+		*user_ctx; //!< user context (not needed if we were using nested functions)
 	wget_xml_callback
-		*callback;
+		*callback; //!< callback function for tokens
 } xml_context;
 
 /* \cond _hide_internal_symbols */
