@@ -754,6 +754,10 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 	tcp->addrinfo = wget_dns_resolve(tcp->dns, host, port, tcp->family, tcp->preferred_family);
 	tcp->remote_port = port;
 
+	if (!tcp->addrinfo) {
+		return WGET_E_CONNECT;
+	}
+
 	for (ai = tcp->addrinfo; ai; ai = ai->ai_next) {
 		// Skip non-TCP sockets
 		if (ai->ai_socktype != SOCK_STREAM)
