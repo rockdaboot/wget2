@@ -103,15 +103,14 @@ typedef struct {
 		speed_buf[BAR_SPEED_SIZE],
 		human_size[BAR_DOWNBYTES_SIZE];
 	uint64_t
-		file_size,
 		time_ring[SPEED_RING_SIZE],
 		bytes_ring[SPEED_RING_SIZE],
+		file_size,
 		bytes_downloaded;
 	int
 		ring_pos,
 		ring_used,
-		tick,
-		numfiles;
+		tick;
 	enum bar_slot_status
 		status;
 	bool
@@ -510,7 +509,7 @@ void wget_bar_set_slots(wget_bar *bar, int nslots)
  * \param[in] bar Pointer to a wget_bar object
  * \param[in] slot The slot number to use
  * \param[in] filename The file name to display in the given \p slot
- * \param[in] new_file if this is the start of a download of the body of a new file
+ * \param[in] new_file if this is the start of a download of the body of a new file (unused)
  * \param[in] file_size The file size that would be 100%
  *
  * Initialize the given \p slot of the \p bar object with it's (file) name to display
@@ -518,28 +517,23 @@ void wget_bar_set_slots(wget_bar *bar, int nslots)
  */
 void wget_bar_slot_begin(wget_bar *bar, int slot, const char *filename, int new_file, ssize_t file_size)
 {
+	(void) new_file;
 	wget_thread_mutex_lock(bar->mutex);
 	bar_slot *slotp = &bar->slots[slot];
 
 	xfree(slotp->filename);
-	if (new_file)
-		slotp->numfiles++;
-	if (slotp->numfiles == 1) {
-		slotp->filename = wget_strdup(filename);
-		slotp->file_size = 0;
-		slotp->bytes_downloaded = 0;
-	} else {
-		slotp->filename = wget_aprintf("%d files", slotp->numfiles);
-	}
-	slotp->tick = 0;
-	slotp->file_size += file_size;
-	slotp->status = DOWNLOADING;
-	slotp->redraw = 1;
-	slotp->ring_pos = 0;
-	slotp->ring_used = 0;
+	slotp->filename = wget_strdup(filename);
 
 	memset(&slotp->time_ring, 0, sizeof(slotp->time_ring));
 	memset(&slotp->bytes_ring, 0, sizeof(slotp->bytes_ring));
+
+	slotp->file_size = file_size;
+	slotp->bytes_downloaded = 0;
+	slotp->ring_pos = 0;
+	slotp->ring_used = 0;
+	slotp->tick = 0;
+	slotp->status = DOWNLOADING;
+	slotp->redraw = 1;
 
 	wget_thread_mutex_unlock(bar->mutex);
 }
