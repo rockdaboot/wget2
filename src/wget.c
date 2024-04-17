@@ -1272,6 +1272,14 @@ static bool is_tty(void) {
 
 int main(int argc, const char **argv)
 {
+	#ifdef _WIN32
+		// The initial stdin and stdout modes, to be restored before exit.
+		DWORD stdin_mode = 0;
+		DWORD stdout_mode = 0;
+		GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &stdin_mode);
+		GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &stdout_mode);
+	#endif
+
 	int n, rc;
 	char quota_buf[16];
 	long long start_time = 0;
@@ -1515,6 +1523,12 @@ int main(int argc, const char **argv)
 		deinit();
 		program_deinit(); // destroy any resources belonging to this object file
 	}
+
+	#ifdef _WIN32
+		// Restore console modes.
+		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), stdin_mode);
+		SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), stdout_mode);
+	#endif
 
 	// Shutdown plugin system
 	plugin_db_finalize(get_exit_status());
