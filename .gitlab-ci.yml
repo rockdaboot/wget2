@@ -657,40 +657,6 @@ Debian/HTTP2:
     paths:
       - wget2-*-coverage
 
-# That is a specific runner that we cannot enable universally.
-# We restrict it to builds under the $BUILD_IMAGES_PROJECT project.
-# The OpenSSL version on this machine is too old to be supported.
-FreeBSD.x86_64:
-  stage: stage1-testing
-  image:
-  script:
-    - export CC="ccache clang"
-    - sed -i.bak 's/dist-lzip//g' configure.ac
-    - sed -i.bak '/^python/d' bootstrap.conf
-    - sed -i.bak '/^lzip/d' bootstrap.conf
-    - sed -i.bak '/^makeinfo/d' bootstrap.conf
-    - git config --global http.sslVerify false
-    - ./bootstrap --skip-po
-    - LIBS="-L/usr/local/lib" ./configure --cache-file cache/config.cache --disable-doc --with-ssl=none
-    - gmake -j$(sysctl hw.ncpu | awk '{print $2}')
-    - gmake check -j$(sysctl hw.ncpu | awk '{print $2}')
-  tags:
-    - freebsd
-  only:
-    - branches@gnuwget/wget2
-  allow_failure: true
-  except:
-    - tags
-    - coverity-scan@gnuwget/wget2
-  artifacts:
-    expire_in: 1 week
-    when: on_failure
-    paths:
-      - ./*.log
-      - fuzz/*.log
-      - tests/*.log
-      - unit-tests/*.log
-
 coverity:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
