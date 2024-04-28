@@ -662,6 +662,28 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 		}
 	}
 
+	if (config.recursive) {
+		if (!config.span_hosts && config.domains) {
+			if (wget_vector_find(config.domains, iri->host) < 0)
+				wget_vector_add(config.domains, wget_strdup(iri->host));
+		}
+
+		if (!config.parent) {
+			char *p;
+
+			if (!parents)
+				parents = wget_vector_create(4, NULL);
+
+			// calc length of directory part in iri->path (including last /)
+			if (!iri->path || !(p = strrchr(iri->path, '/')))
+				iri->dirlen = 0;
+			else
+				iri->dirlen = p - iri->path + 1;
+
+			wget_vector_add(parents, iri);
+		}
+	}
+
 	// only download content from hosts given on the command line or from input file
 	if (wget_vector_contains(config.exclude_domains, iri->host)) {
 		// download from this scheme://domain are explicitly not wanted
@@ -699,28 +721,6 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 		}
 	} else
 		host = host_get(iri);
-
-	if (config.recursive) {
-		if (!config.span_hosts && config.domains) {
-			if (wget_vector_find(config.domains, iri->host) < 0)
-				wget_vector_add(config.domains, wget_strdup(iri->host));
-		}
-
-		if (!config.parent) {
-			char *p;
-
-			if (!parents)
-				parents = wget_vector_create(4, NULL);
-
-			// calc length of directory part in iri->path (including last /)
-			if (!iri->path || !(p = strrchr(iri->path, '/')))
-				iri->dirlen = 0;
-			else
-				iri->dirlen = p - iri->path + 1;
-
-			wget_vector_add(parents, iri);
-		}
-	}
 
 	new_job = job_init(&job_buf, blacklistp, http_fallback);
 
@@ -892,7 +892,6 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 
 			if (!wget_strcmp(parent->host, iri->host)) {
 				if (!parent->dirlen || !wget_strncmp(parent->path, iri->path, parent->dirlen)) {
-					// info_printf("found\n");
 					ok = true;
 					break;
 				}
@@ -920,7 +919,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 			info_printf(_("URL '%s' not requested (file already exists)\n"), iri->uri);
 			wget_thread_mutex_unlock(downloader_mutex);
-			if (config.recursive && (!config.level || (job && job->level < config.level + config.page_requisites))) {
+			if (config.recursive && (!config.level || !job || (job && job->level < config.level + config.page_requisites))) {
 				parse_localfile(job, blacklistp->local_filename, encoding, NULL, iri);
 			}
 			// do not 'goto out;' here
@@ -2677,8 +2676,6 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 		}
 	}
 
-	wget_thread_mutex_lock(known_urls_mutex);
-
 	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
 		wget_html_parsed_url *html_url = wget_vector_get(parsed->uris, it);
 		wget_string *url = &html_url->url;
@@ -2713,7 +2710,11 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 			info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)url->len, url->p);
 		else {
 			// Blacklist for URLs before they are processed
-			if (wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL) == 0) {
+			wget_thread_mutex_lock(known_urls_mutex);
+			int rc = wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL);
+			wget_thread_mutex_unlock(known_urls_mutex);
+
+			if (rc == 0) {
 				char *download_name;
 
 				if (config.download_attr && html_url->download.p)
@@ -2726,7 +2727,6 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 			}
 		}
 	}
-	wget_thread_mutex_unlock(known_urls_mutex);
 
 	wget_buffer_deinit(&buf);
 
@@ -2775,7 +2775,6 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, const w
 
 	// process the sitemap urls here
 	info_printf(_("found %d url(s) (base=%s)\n"), wget_vector_size(urls), base ? base->uri : NULL);
-	wget_thread_mutex_lock(known_urls_mutex);
 	for (int it = 0; it < wget_vector_size(urls); it++) {
 		wget_string *url = wget_vector_get(urls, it);
 
@@ -2787,7 +2786,11 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, const w
 		}
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+		wget_thread_mutex_lock(known_urls_mutex);
+		int rc = wget_hashmap_put(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL);
+		wget_thread_mutex_unlock(known_urls_mutex);
+
+		if (rc) {
 			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
@@ -2804,7 +2807,11 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, const w
 		// TODO: url must have same scheme, port and host as base
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL)) {
+		wget_thread_mutex_lock(known_urls_mutex);
+		int rc = wget_hashmap_put(known_urls, (p = wget_strmemdup(url->p, url->len)), NULL);
+		wget_thread_mutex_unlock(known_urls_mutex);
+
+		if (rc) {
 			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
@@ -2812,7 +2819,6 @@ void sitemap_parse_xml(JOB *job, const char *data, const char *encoding, const w
 
 		queue_url_from_remote(job, encoding, p, URL_FLG_SITEMAP, NULL);
 	}
-	wget_thread_mutex_unlock(known_urls_mutex);
 
 	wget_vector_free(&urls);
 	wget_vector_free(&sitemap_urls);
@@ -2902,8 +2908,6 @@ static void add_urls(JOB *job, wget_vector *urls, const char *encoding, const wg
 
 	info_printf(_("found %d url(s) (base=%s)\n"), wget_vector_size(urls), base ? base->uri : NULL);
 
-	wget_thread_mutex_lock(known_urls_mutex);
-
 	for (int it = 0; it < wget_vector_size(urls); it++) {
 		wget_string *url = wget_vector_get(urls, it);
 
@@ -2917,7 +2921,11 @@ static void add_urls(JOB *job, wget_vector *urls, const char *encoding, const wg
 		}
 
 		// Blacklist for URLs before they are processed
-		if (wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL)) {
+		wget_thread_mutex_lock(known_urls_mutex);
+		int rc = wget_hashmap_put(known_urls, wget_strmemdup(buf.data, buf.length), NULL);
+		wget_thread_mutex_unlock(known_urls_mutex);
+
+		if (rc) {
 			// the dup'ed url has already been freed when we come here
 			info_printf(_("URL '%.*s' not followed (already known)\n"), (int)url->len, url->p);
 			continue;
@@ -2925,8 +2933,6 @@ static void add_urls(JOB *job, wget_vector *urls, const char *encoding, const wg
 
 		queue_url_from_remote(job, encoding, buf.data, 0, NULL);
 	}
-
-	wget_thread_mutex_unlock(known_urls_mutex);
 
 	wget_buffer_deinit(&buf);
 }
