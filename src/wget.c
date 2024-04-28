@@ -4211,8 +4211,8 @@ static int set_file_metadata(const wget_iri *origin_iri, const wget_iri *referre
 	 * user POSIX Extended Attributes of retrieved file.
 	 *
 	 * For more details about the user namespace see
-	 * [http://freedesktop.org/wiki/CommonExtendedAttributes] and
-	 * [http://0pointer.de/lennart/projects/mod_mime_xattr/].
+	 * [https://freedesktop.org/wiki/CommonExtendedAttributes] and
+	 * [https://0pointer.de/lennart/projects/mod_mime_xattr/].
 	 */
 	if (!origin_iri || !fp)
 		return -1;
