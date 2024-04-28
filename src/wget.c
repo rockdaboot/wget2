@@ -538,7 +538,7 @@ static void parse_localfile(JOB *job, const char *fname, const char *encoding, c
 		return;
 
 	if (!mimetype) {
-		if (read_xattr_metadata("user.mimetype", _mimetype, sizeof(_mimetype), fd) < 0)
+		if (read_xattr_metadata("user.mime_type", _mimetype, sizeof(_mimetype), fd) < 0)
 			*_mimetype = 0;
 		else if (*_mimetype)
 			mimetype = _mimetype;
