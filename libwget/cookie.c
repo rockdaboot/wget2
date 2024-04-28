@@ -341,7 +341,6 @@ void wget_cookie_set_keep_session_cookies(wget_cookie_db *cookie_db, bool keep)
 static int cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 {
 	wget_cookie cookie;
-	int ncookies = 0;
 	char *buf = NULL, *linep, *p;
 	size_t bufsize = 0;
 	ssize_t buflen;
@@ -420,7 +419,6 @@ static int cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 		cookie.value = wget_strmemdup(p, linep - p);
 
 		if (wget_cookie_normalize(NULL, &cookie) == 0 && wget_cookie_check_psl(cookie_db, &cookie) == 0) {
-			ncookies++;
 			// The following wget_memdup copies pointers to allocated memory to take ownership of the cookie contents.
 			// Thus it needs to be accomplished by wget_cookie_init(&cookie), which is done
 			// near the top of the loop.
@@ -435,7 +433,7 @@ static int cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 		return -1;
 	}
 
-	return ncookies;
+	return 0;
 }
 
 int wget_cookie_db_load(wget_cookie_db *cookie_db, const char *fname)
