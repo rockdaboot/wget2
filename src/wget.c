@@ -1820,8 +1820,25 @@ static int process_response_header(wget_http_response *resp)
 		wget_buffer uri_buf;
 		char uri_sbuf[1024];
 
-		if (resp->code / 100  == 3 && resp->code != 307)
-			job->redirect_get = 1;
+		/*
+		 * Modifying the request method on a redirect can only happen in
+		 * the following limited cases:
+		 * 
+		 * * [RFC 7231 sec 6.4.2]: A user agent MAY change a POST to GET on a 301 response
+		 * * [RFC 7231 sec 6.4.3]: A user agent MAY change a POST to GET on a 302 response
+		 * * [RFC 7231 sec 6.4.4]: A way to redirect the user agent to the representation of a POST request
+		 *
+		 * Even though, under RFC 2616, it was mandatory to not change a POST to GET on 301 / 302 responses,
+		 * it has been extremely common practice to do so. This is why the rule was modified in RFC 7231
+		 * to make it optional. Many servers will also assume this behaviour and respond with a 302 to point
+		 * to the newly created resource. This SHOULD be a 303 response, but we've got to follow what
+		 * servers do.
+		 */
+		if (!wget_strcasecmp_ascii(resp->req->method, "POST"))
+		{
+			if (resp->code == 301 || resp->code == 302 || resp->code == 303)
+				job->redirect_get = 1;
+		}
 
 		wget_cookie_normalize_cookies(job->iri, resp->cookies);
 		wget_cookie_store_cookies(config.cookie_db, resp->cookies);
