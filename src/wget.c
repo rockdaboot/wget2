@@ -1823,7 +1823,7 @@ static int process_response_header(wget_http_response *resp)
 		/*
 		 * Modifying the request method on a redirect can only happen in
 		 * the following limited cases:
-		 * 
+		 *
 		 * * [RFC 7231 sec 6.4.2]: A user agent MAY change a POST to GET on a 301 response
 		 * * [RFC 7231 sec 6.4.3]: A user agent MAY change a POST to GET on a 302 response
 		 * * [RFC 7231 sec 6.4.4]: A way to redirect the user agent to the representation of a POST request
