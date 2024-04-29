@@ -20,14 +20,14 @@ err=0
 # won't process these options
 excludes="+(--no-quiet|--html-extension)"
 
-for opt in `$WGET2 --help|egrep -o -- '--[a-zA-Z0-9-]+'|sort -u`; do
+for opt in `$WGET2 --help|grep -o -- '--[a-zA-Z0-9-]+'|sort -u`; do
   # skip if in $excludes
   case $opt in $excludes) continue;; esac
 
-  if ! egrep -q -- " \`$opt(=|\`|\[)" $DOCFILE; then
+  if ! grep -q -- " \`$opt(=|\`|\[)" $DOCFILE; then
     # search for the --no- variant
     noopt="--no-`echo $opt|cut -c3-`"
-    if ! egrep -q -- " \`$noopt\`" $DOCFILE; then
+    if ! grep -q -- " \`$noopt\`" $DOCFILE; then
       echo "Failed to find \`$opt in $DOCFILE"
       err=1
     fi
