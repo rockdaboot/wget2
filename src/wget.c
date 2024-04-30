@@ -1686,8 +1686,12 @@ static void add_statistics(wget_http_response *resp)
 		atomic_increment_int(&stats.nredirects);
 	else if (resp->code == 304)
 		atomic_increment_int(&stats.nnotmodified);
-	else
-		atomic_increment_int(&stats.nerrors);
+	else {
+		if (resp->code == 416 && !resp->cur_downloaded)
+			atomic_increment_int(&stats.ndownloads);
+		else
+			atomic_increment_int(&stats.nerrors);
+	}
 
 	if (config.stats_site_args)
 		stats_site_add(resp, NULL);
