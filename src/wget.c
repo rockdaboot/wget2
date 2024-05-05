@@ -1675,9 +1675,9 @@ static int establish_connection(DOWNLOADER *downloader, const wget_iri **iri)
 static void add_statistics(wget_http_response *resp)
 {
 	// do some statistics
-	JOB *job = resp->req->user_data;
+	if (resp->code == 200 || (resp->code == 416 && !resp->cur_downloaded)) {
+		JOB *job = resp->req->user_data;
 
-	if (resp->code == 200) {
 		if (job->part)
 			atomic_increment_int(&stats.nchunks);
 		else
