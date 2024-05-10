@@ -640,9 +640,11 @@ static void set_socket_options(const wget_tcp *tcp, int fd)
 #endif
 
 #ifdef TCP_FASTOPEN_LINUX_411
-	on = 1;
-	if (setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, (void *)&on, sizeof(on)) == -1)
-		debug_printf("Failed to set socket option TCP_FASTOPEN_CONNECT\n");
+	if (tcp->tcp_fastopen) {
+		on = 1;
+		if (setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, (void *)&on, sizeof(on)) == -1)
+			debug_printf("Failed to set socket option TCP_FASTOPEN_CONNECT\n");
+	}
 #endif
 }
 
