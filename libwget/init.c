@@ -50,10 +50,32 @@ static int global_initialized;
 static wget_thread_mutex _mutex;
 static bool initialized;
 
+#ifdef _WIN32
+	// The initial stdin and stdout modes, to be restored before exit.
+	static DWORD initial_stdin_mode = 0;
+	static DWORD initial_stdout_mode = 0;
+
+	BOOL HandleCtrlEvent(DWORD dwCtrlType)
+	{
+		// We exit with 2 per convention, as this is similar to SIGINT on UNIX.
+		// The destructor registered with atexit will do the cleanup work.
+		// If it's not ctrl+c nor ctrl+break, we return FALSE so other handlers, if any, get to run.
+		if(dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT)
+			exit(2);
+		else
+			return FALSE;
+	}
+#endif
+
 static void global_exit(void)
 {
 	if (initialized) {
 		wget_thread_mutex_destroy(&_mutex);
+		#ifdef _WIN32
+			// Restore console modes.
+			SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), initial_stdin_mode);
+			SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), initial_stdout_mode);
+		#endif
 		initialized = false;
 	}
 }
@@ -61,6 +83,14 @@ INITIALIZER(global_init)
 {
 	if (!initialized) {
 		wget_thread_mutex_init(&_mutex);
+		#ifdef _WIN32
+			// Save console modes, to be restored before exit.
+			// In case the initializer is called multiple times, do not override if mode is not 0.
+			if (initial_stdin_mode == 0) GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &initial_stdin_mode);
+			if (initial_stdout_mode == 0) GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &initial_stdout_mode);
+			// We also have to handle ctrl-c and ctrl-break.
+			SetConsoleCtrlHandler(HandleCtrlEvent, TRUE);
+		#endif
 		initialized = true;
 		atexit(global_exit);
 	}
