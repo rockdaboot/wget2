@@ -90,9 +90,11 @@ static int
 	keep_tmpfiles,
 	clean_directory,
 	reject_http_connection,
-	reject_https_connection;
+	reject_https_connection,
+	ocsp_response_pos;
 static wget_vector
-	*request_urls;
+	*request_urls,
+	*ocsp_responses;
 static wget_test_url_t
 	*urls;
 static size_t
@@ -121,12 +123,12 @@ static struct MHD_Daemon
 static gnutls_pcert_st *pcrt;
 static gnutls_privkey_t *privkey;
 
-static struct ocsp_resp_t {
+typedef struct {
 	char
 		*data;
 	size_t
 		size;
-} *ocsp_resp;
+} ocsp_resp_t;
 #endif
 
 #ifdef WITH_GNUTLS_OCSP
@@ -311,14 +313,14 @@ static enum MHD_Result _ocsp_ahc(
 	} else if (!first && upload_data == NULL) {
 		int ret = 0;
 
-		if (ocsp_resp->data) {
+		ocsp_resp_t *ocsp_resp = wget_vector_get(ocsp_responses, ocsp_response_pos++);
+
+		if (ocsp_resp) {
 			struct MHD_Response *response = MHD_create_response_from_buffer (ocsp_resp->size, ocsp_resp->data, MHD_RESPMEM_MUST_COPY);
 
 			ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
 
 			MHD_destroy_response (response);
-
-			wget_xfree(ocsp_resp->data);
 		}
 
 		return ret;
@@ -715,11 +717,6 @@ static void _http_server_stop(void)
 
 #ifdef WITH_GNUTLS_OCSP
 	gnutls_global_deinit();
-
-	if(ocsp_resp)
-		wget_free(ocsp_resp->data);
-
-	wget_xfree(ocsp_resp);
 #endif
 }
 
@@ -892,8 +889,6 @@ static int _http_server_start(int SERVER_MODE)
 #endif
 			MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
 			MHD_OPTION_END);
-
-		ocsp_resp = wget_malloc(sizeof(struct ocsp_resp_t));
 #endif
 
 		if (!ocspdaemon)
@@ -1121,6 +1116,7 @@ void wget_test_stop_server(void)
 {
 //	wget_vector_free(&response_headers);
 	wget_vector_free(&request_urls);
+	wget_vector_free(&ocsp_responses);
 
 	for (wget_test_url_t *url = urls; url < urls + nurls; url++) {
 		if (url->body_original) {
@@ -1535,9 +1531,6 @@ void wget_test(int first_key, ...)
 		const char
 			*request_url,
 			*options = "",
-#ifdef WITH_GNUTLS_OCSP
-			*ocsp_resp_file = NULL,
-#endif
 			*executable = global_executable;
 		const wget_test_file_t
 			*expected_files = NULL,
@@ -1579,6 +1572,10 @@ void wget_test(int first_key, ...)
 		if (!request_urls) {
 			request_urls = wget_vector_create(8, NULL);
 			wget_vector_set_destructor(request_urls, NULL);
+		}
+
+		if (!ocsp_responses) {
+			ocsp_responses = wget_vector_create(2, NULL);
 		}
 
 		va_start (args, first_key);
@@ -1633,9 +1630,24 @@ void wget_test(int first_key, ...)
 #endif
 				}
 				break;
-			case WGET_TEST_OCSP_RESP_FILE:
+			case WGET_TEST_OCSP_RESP_FILES:
 #ifdef WITH_GNUTLS_OCSP
-				ocsp_resp_file = va_arg(args, const char *);
+			{
+				const char *ocsp_resp_file = NULL;
+				while ((ocsp_resp_file = va_arg(args, const char *))) {
+					if (ocspdaemon) {
+						ocsp_resp_t ocsp_resp = { .data = wget_strdup(""), .size = 0 };
+						if (*ocsp_resp_file) {
+							ocsp_resp.data = wget_read_file(ocsp_resp_file, &ocsp_resp.size);
+							if (ocsp_resp.data == NULL) {
+								wget_error_printf_exit("Couldn't read the response from '%s'.\n", ocsp_resp_file);
+							}
+						}
+						wget_vector_add_memdup(ocsp_responses, &ocsp_resp, sizeof(ocsp_resp));
+					}
+				}
+				ocsp_response_pos = 0;
+			}
 #endif
 				break;
 			default:
@@ -1649,19 +1661,6 @@ void wget_test(int first_key, ...)
 			wget_buffer_printf(cmd, "../%s", tmpdir);
 			_empty_directory(cmd->data);
 		}
-
-#ifdef WITH_GNUTLS_OCSP
-		if (ocspdaemon) {
-			if (ocsp_resp_file) {
-				ocsp_resp->data = wget_read_file(ocsp_resp_file, &(ocsp_resp->size));
-				if (ocsp_resp->data == NULL) {
-					wget_error_printf_exit("Couldn't read the response.\n");
-				}
-			} else {
-				wget_error_printf_exit("Need value for option WGET_TEST_OCSP_RESP_FILE.\n");
-			}
-		}
-#endif
 
 		// create files
 		if (existing_files) {
@@ -1835,6 +1834,11 @@ void wget_test(int first_key, ...)
 			wget_free(post_handshake_auth);
 #endif
 
+		for (int i = 0; i < wget_vector_size(ocsp_responses); i++) {
+			ocsp_resp_t *r = wget_vector_get(ocsp_responses, it);
+			wget_xfree(r->data);
+		}
+		wget_vector_clear(ocsp_responses);
 		wget_vector_clear(request_urls);
 		wget_buffer_free(&cmd);
 
