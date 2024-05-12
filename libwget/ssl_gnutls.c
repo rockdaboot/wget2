@@ -1153,7 +1153,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 		cert_verify_hpkp(cert, hostname, session);
 
 #ifdef WITH_OCSP
-		if (config.ocsp && it > nvalid) {
+		if (config.ocsp && it >= nvalid) {
 			char fingerprint[64 * 2 +1];
 			int revoked;
 
