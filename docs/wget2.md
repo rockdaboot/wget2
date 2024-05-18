@@ -1569,7 +1569,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--ocsp`
 
-  Enable OCSP server access to check the possible revocation the HTTPS server certificate(s) (default: on).
+  Enable OCSP server access to check the possible revocation the HTTPS server certificate(s) (default: off).
 
   This procedure is pretty slow (connect to server, HTTP request, response) and thus we support
   OSCP stapling (server sends OCSP response within TLS handshake) and persistent OCSP caching.

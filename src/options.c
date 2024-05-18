@@ -1302,7 +1302,16 @@ struct config config = {
 	.http2 = 1,
 	.http2_request_window = 30,
 #endif
-	.ocsp = 1,
+	// OCSP validation of the server certificate implies privacy issues:
+	//   - The OCSP request tells the CA which web service the client tries to reach.
+	//   - The OCSP requests are sent via unencrypted HTTP, so every "listener in the middle" can see which web service
+	//     the client tries to connect.
+	// Additionally, the OCSP requests slow down operation and may cause unexpected network traffic, which may trigger
+	// security alarms unnecessarily.
+	// Due to these issues we explicitly disable OCSP by default.
+	//
+	// The upside of enabling OCSP mostly is a "real-time" recognition of certificate revocations.
+	.ocsp = 0,
 	.ocsp_date = 1,
 	.ocsp_stapling = 1,
 	.ocsp_nonce = 1,
