@@ -245,7 +245,7 @@ static ssize_t _callback (void *cls, uint64_t pos, char *buf, size_t buf_size)
 		(struct ResponseContentCallbackParam *)cls;
 
 	if (pos >= param->response_size)
-		return (ssize_t) MHD_CONTENT_READER_END_OF_STREAM;
+		return MHD_CONTENT_READER_END_OF_STREAM;
 
 	// divide data into two chunks
 	buf_size = (param->response_size / 2) + 1;
@@ -266,7 +266,7 @@ static ssize_t _callback_interruptable (void *cls, uint64_t pos, char *buf, size
 		(struct ResponseContentCallbackParam *)cls;
 
 	if (pos >= param->response_size)
-		return (ssize_t) MHD_CONTENT_READER_END_OF_STREAM;
+		return MHD_CONTENT_READER_END_OF_STREAM;
 
 	if (buf_size <= (param->response_size - pos)) {
 		size_to_copy = buf_size;
@@ -276,7 +276,7 @@ static ssize_t _callback_interruptable (void *cls, uint64_t pos, char *buf, size
 
 	if (param->interrupt_response_mode != INTERRUPT_RESPONSE_DISABLED) {
 		if (pos >= param->interrupt_response_after_nbytes) {
-			return (ssize_t) MHD_CONTENT_READER_END_WITH_ERROR;
+			return MHD_CONTENT_READER_END_WITH_ERROR;
 		}
 
 		if (size_to_copy > (param->interrupt_response_after_nbytes - pos)) {
@@ -416,7 +416,7 @@ static enum MHD_Result _answer_to_connection(
 	// get query string
 	query.params = wget_buffer_alloc(1024);
 	query.it = 0;
-	MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, (MHD_KeyValueIterator)_print_query_string, &query);
+	MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, _print_query_string, &query);
 
 	// get if-modified-since header
 	modified_val = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
@@ -428,7 +428,7 @@ static enum MHD_Result _answer_to_connection(
 	// get header range
 	wget_buffer *header_range = wget_buffer_alloc(1024);
 	if (!strcmp(method, "GET"))
-		MHD_get_connection_values(connection, MHD_HEADER_KIND, (MHD_KeyValueIterator)_print_header_range, header_range);
+		MHD_get_connection_values(connection, MHD_HEADER_KIND, _print_header_range, header_range);
 
 	from_bytes = to_bytes = 0;
 	if (*header_range->data) {
@@ -741,8 +741,8 @@ static int _http_server_start(int SERVER_MODE)
 		static char rnd[8] = "realrnd"; // fixed 'random' value
 
 		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
-			port_num, (MHD_AcceptPolicyCallback)_check_to_accept,
-			(void *) (ptrdiff_t) SERVER_MODE, (MHD_AccessHandlerCallback)_answer_to_connection, NULL,
+			port_num, _check_to_accept,
+			(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
 #if MHD_VERSION >= 0x00095400
@@ -774,8 +774,8 @@ static int _http_server_start(int SERVER_MODE)
 						| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 #endif
 					,
-					port_num, (MHD_AcceptPolicyCallback)_check_to_accept,
-					(void *) (ptrdiff_t) SERVER_MODE, (MHD_AccessHandlerCallback)_answer_to_connection, NULL,
+					port_num, _check_to_accept,
+					(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
 #if MHD_VERSION >= 0x00095400
@@ -828,8 +828,8 @@ static int _http_server_start(int SERVER_MODE)
 					| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 #endif
 				,
-				port_num, (MHD_AcceptPolicyCallback)_check_to_accept,
-				(void *) (ptrdiff_t) SERVER_MODE, (MHD_AccessHandlerCallback)_answer_to_connection, NULL,
+				port_num, _check_to_accept,
+				(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 				MHD_OPTION_HTTPS_CERT_CALLBACK, _ocsp_cert_callback,
 #if MHD_VERSION >= 0x00095400
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
@@ -878,7 +878,7 @@ static int _http_server_start(int SERVER_MODE)
 		static char rnd[8] = "realrnd"; // fixed 'random' value
 
 		ocspdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
-			port_num, NULL, NULL, (MHD_AccessHandlerCallback)_ocsp_ahc, NULL,
+			port_num, NULL, NULL, _ocsp_ahc, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
 #if MHD_VERSION >= 0x00095400
@@ -941,8 +941,8 @@ static int _http_server_start(int SERVER_MODE)
 		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
 				| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
 			,
-			port_num, (MHD_AcceptPolicyCallback)_check_to_accept,
-			(void *) (ptrdiff_t) SERVER_MODE, (MHD_AccessHandlerCallback)_answer_to_connection, NULL,
+			port_num, _check_to_accept,
+			(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_CERT_CALLBACK2, _ocsp_stap_cert_callback,
 #if MHD_VERSION >= 0x00095400
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
