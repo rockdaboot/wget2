@@ -1136,7 +1136,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 			}
 #endif
 			else if (!config.ocsp)
-				error_printf_check(_("WARNING: The certificate's (stapled) OCSP status has not been sent\n"));
+				error_printf_check(_("WARNING: OCSP stapling is not supported by '%s'\n"), hostname);
 #endif
 		} else if (ctx->valid)
 			debug_printf("OCSP: Host '%s' is valid (from cache)\n", hostname);
@@ -1728,13 +1728,14 @@ int wget_ssl_open(wget_tcp *tcp)
 	// If we know the cert chain for the hostname being valid at the moment,
 	// we don't ask for OCSP stapling to avoid unneeded IP traffic.
 	// In the unlikely case that the server's certificate chain changed right now,
-	// we fallback to OCSP responder request later.
+	// we fallback to OCSP responder request later (if enabled).
 	if (hostname) {
 		if (!(ctx->valid = wget_ocsp_hostname_is_valid(config.ocsp_host_cache, hostname))) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
-			if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS)
+			if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS) {
+				debug_printf("OCSP stapling requested for %s\n", hostname);
 				ctx->ocsp_stapling = 1;
-			else
+			} else
 				error_printf("GnuTLS: %s\n", gnutls_strerror(rc)); // no translation
 #endif
 		}
