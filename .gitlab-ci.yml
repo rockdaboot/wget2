@@ -428,6 +428,8 @@ MinGW64:
     - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
     - make -j$(nproc)
     - make check -j$(nproc) LOG_COMPILER=wine
+  tags:
+    - saas-linux-xlarge-amd64
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -453,6 +455,8 @@ MinGW64-static:
       ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows
     - make -j$(nproc)
     - mv src/wget2.exe .
+  tags:
+    - saas-linux-xlarge-amd64
   allow_failure: true
   artifacts:
     when: on_success
