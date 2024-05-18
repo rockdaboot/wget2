@@ -92,9 +92,6 @@ Full+VPATH/Debian:
     - make -j$(nproc)
     - make -j$(nproc) distcheck
     - mv wget2-*.gz ..
-  tags:
-    - shared
-    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -124,9 +121,6 @@ Debian/Testing:
         grep -v "libhsts was not found" | grep . && exit 1
     - make -j$(nproc)
     - make check -j$(nproc)
-  tags:
-    - shared
-    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -148,9 +142,6 @@ Debian/Unstable:
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc)
     - make check -j$(nproc)
-  tags:
-    - shared
-    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -171,9 +162,6 @@ Debian/WolfSSL:
     - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=wolfssl
     - make -j$(nproc)
     - make check -j$(nproc)
-  tags:
-    - shared
-    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -194,9 +182,6 @@ Debian/OpenSSL:
     - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=openssl
     - make -j$(nproc)
     - make check -j$(nproc)
-  tags:
-    - shared
-    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -224,8 +209,6 @@ Minimal/Debian:
         --without-libidn --without-libpcre2 --without-libpcre --without-plugin-support
     - make -j$(nproc) -C lib
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
-  tags:
-    - shared
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -254,9 +237,6 @@ Sanitizers/Debian:
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
     - make -j$(nproc) -C lib
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
-  tags:
-    - shared
-    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -278,9 +258,6 @@ Scan-Build/Debian:
     - make -C lib -j$(nproc)
     - scan-build -v --use-cc=clang --force-analyze-debug-code --show-description -analyzer-config stable-report-filename=true -enable-checker valist,nullability --status-bugs -o scan-build make -j$(nproc)
     - scan-build -v --use-cc=clang --force-analyze-debug-code --show-description -analyzer-config stable-report-filename=true -enable-checker valist,nullability --status-bugs -o scan-build make -j$(nproc) check
-  tags:
-    - shared
-    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -299,9 +276,6 @@ Valgrind/Debian:
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc)
     - make check -j$(nproc)
-  tags:
-    - shared
-    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -323,9 +297,6 @@ Valgrind/i386:
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests --without-gpgme
     - make -j$(nproc)
     - make check -j$(nproc)
-  tags:
-    - shared
-    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -347,9 +318,6 @@ Simple/Fedora:
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) -C lib
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
-  tags:
-    - shared
-    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -373,9 +341,6 @@ Alpine:
     - cd wget2-*
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) check
-  tags:
-    - shared
-    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -397,8 +362,6 @@ Alpine:
 #  script:
 #  - sed -i 's/AM_GNU_GETTEXT_VERSION(0.19.3)/AM_GNU_GETTEXT_VERSION(0.18.2)/g' configure.ac
 #  - ./bootstrap && ./configure --enable-gcc-warnings --disable-doc && make -j$(nproc) check
-#  tags:
-#  - shared
 #  artifacts:
 #    expire_in: 2 weeks
 #    when: on_failure
@@ -445,9 +408,6 @@ pages:
     - mv badge.svg public/fuzz-coverage.svg
     - rm -rf public/fuzz-coverage
     - mv lcov public/fuzz-coverage
-  tags:
-    - shared
-    - linux
   artifacts:
     when: on_success
     paths:
@@ -468,9 +428,6 @@ MinGW64:
     - ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-shared
     - make -j$(nproc)
     - make check -j$(nproc) LOG_COMPILER=wine
-  tags:
-    - shared
-    - linux
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -496,9 +453,6 @@ MinGW64-static:
       ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows
     - make -j$(nproc)
     - mv src/wget2.exe .
-  tags:
-    - shared
-    - linux
   allow_failure: true
   artifacts:
     when: on_success
@@ -517,9 +471,6 @@ Arch:
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc)
     - make check -j$(nproc)
-  tags:
-    - shared
-    - linux
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
@@ -553,9 +504,6 @@ Tarball:
     # check if essential files are accidentally cleaned
     - make clean
     - make -j$(nproc)
-  tags:
-    - shared
-    - linux
   dependencies:
     - Full+VPATH/Debian
   except:
@@ -605,9 +553,6 @@ Build-Tarball:
     - make -j$(nproc) -C docs
     - make -j$(nproc) dist-gzip
     - mv wget2-*.gz ..
-  tags:
-    - shared
-    - linux
   except:
     - coverity-scan@gnuwget/wget
   dependencies:
@@ -637,9 +582,6 @@ Debian/HTTP2:
     - make -j$(nproc)
     - make check -j$(nproc)
     - make code-coverage-capture
-  tags:
-    - shared
-    - linux
   allow_failure: true
   except:
     - coverity-scan@gnuwget/wget2
@@ -671,9 +613,6 @@ coverity:
       --form token=$COVERITY_SCAN_TOKEN --form email=tim.ruehsen@gmx.de
       --form file=@cov-int.tar.gz --form version="`git describe --tags`"
       --form description="CI build"
-  tags:
-    - shared
-    - linux
   only:
     - coverity-scan@gnuwget/wget2
   artifacts:
