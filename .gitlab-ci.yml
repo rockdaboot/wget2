@@ -276,6 +276,8 @@ Valgrind/Debian:
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests
     - make -j$(nproc)
     - make check -j$(nproc)
+  tags:
+    - saas-linux-xlarge-amd64
   except:
     - tags
     - coverity-scan@gnuwget/wget2
@@ -297,6 +299,8 @@ Valgrind/i386:
     - ./configure $CONFIGURE_BASE_FLAGS --enable-valgrind-tests --without-gpgme
     - make -j$(nproc)
     - make check -j$(nproc)
+  tags:
+    - saas-linux-xlarge-amd64
   except:
     - tags
     - coverity-scan@gnuwget/wget2
