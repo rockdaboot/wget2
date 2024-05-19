@@ -1140,7 +1140,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 			}
 #endif
 			else if (!config.ocsp) {
-				debug_printf(_("OCSP stapling is not supported by '%s'\n"), hostname);
+				debug_printf("OCSP stapling is not supported by '%s'\n", hostname);
 			} else {
 				error_printf_check(_("WARNING: OCSP stapling is not supported by '%s', but OCSP validation has been requested.\n"), hostname);
 				error_printf_check(_("WARNING: This implies a privacy leak: the client sends the certificate serial ID over HTTP to the CA.\n"));
