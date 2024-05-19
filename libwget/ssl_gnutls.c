@@ -1121,6 +1121,8 @@ static int verify_certificate_callback(gnutls_session_t session)
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
 #ifdef WITH_OCSP
+	bool skip_server_cert_check = false;
+
 	if (config.ocsp_stapling) {
 		if (!ctx->valid && ctx->ocsp_stapling) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
@@ -1129,14 +1131,20 @@ static int verify_certificate_callback(gnutls_session_t session)
 //				_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
 				add_cert_to_ocsp_cache(cert, true);
 				nvalid = 1;
+				skip_server_cert_check = true;
 			}
 #if GNUTLS_VERSION_NUMBER >= 0x030400
 			else if (gnutls_ocsp_status_request_is_checked(session, GNUTLS_OCSP_SR_IS_AVAIL)) {
 				error_printf_check(_("WARNING: The certificate's (stapled) OCSP status is invalid\n"));
+				skip_server_cert_check = true;
 			}
 #endif
-			else if (!config.ocsp)
-				error_printf_check(_("WARNING: OCSP stapling is not supported by '%s'\n"), hostname);
+			else if (!config.ocsp) {
+				debug_printf(_("OCSP stapling is not supported by '%s'\n"), hostname);
+			} else {
+				error_printf_check(_("WARNING: OCSP stapling is not supported by '%s', but OCSP validation has been requested.\n"), hostname);
+				error_printf_check(_("WARNING: This implies a privacy leak: the client sends the certificate serial ID over HTTP to the CA.\n"));
+			}
 #endif
 		} else if (ctx->valid)
 			debug_printf("OCSP: Host '%s' is valid (from cache)\n", hostname);
@@ -1158,55 +1166,55 @@ static int verify_certificate_callback(gnutls_session_t session)
 		cert_verify_hpkp(cert, hostname, session);
 
 #ifdef WITH_OCSP
-		if (config.ocsp && it >= nvalid) {
-			char fingerprint[64 * 2 +1];
-			int revoked;
+		if (!config.ocsp || (skip_server_cert_check && it == 0))
+			continue;
 
-			_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
+		char fingerprint[64 * 2 +1];
+		_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
 
-			if (wget_ocsp_fingerprint_in_cache(config.ocsp_cert_cache, fingerprint, &revoked)) {
-				// found cert's fingerprint in cache
-				if (revoked) {
-					debug_printf("Certificate[%u] of '%s' has been revoked (cached)\n", it, hostname);
-					nrevoked++;
-				} else {
-					debug_printf("Certificate[%u] of '%s' is valid (cached)\n", it, hostname);
-					nvalid++;
-				}
-				continue;
-			}
-
-			if (deinit_issuer) {
-				gnutls_x509_crt_deinit(issuer);
-				deinit_issuer = 0;
-			}
-			if ((err = gnutls_certificate_get_issuer(credentials, cert, &issuer, 0)) != GNUTLS_E_SUCCESS && it < cert_list_size - 1) {
-				gnutls_x509_crt_init(&issuer);
-				deinit_issuer = 1;
-				if ((err = gnutls_x509_crt_import(issuer, &cert_list[it + 1], GNUTLS_X509_FMT_DER))  != GNUTLS_E_SUCCESS) {
-					debug_printf("Decoding error: %s\n", gnutls_strerror(err));
-					continue;
-				}
-			} else if (err  != GNUTLS_E_SUCCESS) {
-				debug_printf("Cannot find issuer: %s\n", gnutls_strerror(err));
-				continue;
-			}
-
-			ocsp_ok = cert_verify_ocsp(cert, issuer);
-			debug_printf("check_ocsp_response() returned %d\n", ocsp_ok);
-
-			if (ocsp_ok == 1) {
-				debug_printf("Certificate[%u] of '%s' is valid (via OCSP)\n", it, hostname);
-				wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, true); // 1h valid
-				nvalid++;
-			} else if (ocsp_ok == 0) {
-				debug_printf("%s: Certificate[%u] of '%s' has been revoked (via OCSP)\n", tag, it, hostname);
-				wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, false);  // cert has been revoked
+		int revoked;
+		if (wget_ocsp_fingerprint_in_cache(config.ocsp_cert_cache, fingerprint, &revoked)) {
+			// found cert's fingerprint in cache
+			if (revoked) {
+				debug_printf("Certificate[%u] of '%s' has been revoked (cached)\n", it, hostname);
 				nrevoked++;
 			} else {
-				debug_printf("WARNING: OCSP response not available or ignored\n");
-				nignored++;
+				debug_printf("Certificate[%u] of '%s' is valid (cached)\n", it, hostname);
+				nvalid++;
 			}
+			continue;
+		}
+
+		if (deinit_issuer) {
+			gnutls_x509_crt_deinit(issuer);
+			deinit_issuer = 0;
+		}
+		if ((err = gnutls_certificate_get_issuer(credentials, cert, &issuer, 0)) != GNUTLS_E_SUCCESS && it < cert_list_size - 1) {
+			gnutls_x509_crt_init(&issuer);
+			deinit_issuer = 1;
+			if ((err = gnutls_x509_crt_import(issuer, &cert_list[it + 1], GNUTLS_X509_FMT_DER))  != GNUTLS_E_SUCCESS) {
+				debug_printf("Decoding error: %s\n", gnutls_strerror(err));
+				continue;
+			}
+		} else if (err  != GNUTLS_E_SUCCESS) {
+			debug_printf("Cannot find issuer: %s\n", gnutls_strerror(err));
+			continue;
+		}
+
+		ocsp_ok = cert_verify_ocsp(cert, issuer);
+		debug_printf("check_ocsp_response() returned %d\n", ocsp_ok);
+
+		if (ocsp_ok == 1) {
+			debug_printf("Certificate[%u] of '%s' is valid (via OCSP)\n", it, hostname);
+			wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, true); // 1h valid
+			nvalid++;
+		} else if (ocsp_ok == 0) {
+			debug_printf("%s: Certificate[%u] of '%s' has been revoked (via OCSP)\n", tag, it, hostname);
+			wget_ocsp_db_add_fingerprint(config.ocsp_cert_cache, fingerprint, time(NULL) + 3600, false);  // cert has been revoked
+			nrevoked++;
+		} else {
+			debug_printf("WARNING: OCSP response not available or ignored\n");
+			nignored++;
 		}
 #endif
 	}
