@@ -965,6 +965,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *tag = config.check_certificate ? _("ERROR") : _("WARNING");
 #ifdef WITH_OCSP
+	bool skip_server_cert_check = false;
 	unsigned nvalid = 0, nrevoked = 0, nignored = 0;
 #endif
 
@@ -1121,8 +1122,6 @@ static int verify_certificate_callback(gnutls_session_t session)
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
 #ifdef WITH_OCSP
-	bool skip_server_cert_check = false;
-
 	if (config.ocsp_stapling) {
 		if (!ctx->valid && ctx->ocsp_stapling) {
 #if GNUTLS_VERSION_NUMBER >= 0x030103
