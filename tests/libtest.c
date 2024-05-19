@@ -1636,7 +1636,7 @@ void wget_test(int first_key, ...)
 				const char *ocsp_resp_file = NULL;
 				while ((ocsp_resp_file = va_arg(args, const char *))) {
 					if (ocspdaemon) {
-						ocsp_resp_t ocsp_resp = { .data = wget_strdup(""), .size = 0 };
+						ocsp_resp_t ocsp_resp = { .data = NULL, .size = 0 };
 						if (*ocsp_resp_file) {
 							ocsp_resp.data = wget_read_file(ocsp_resp_file, &ocsp_resp.size);
 							if (ocsp_resp.data == NULL) {
@@ -1835,7 +1835,7 @@ void wget_test(int first_key, ...)
 #endif
 
 		for (int i = 0; i < wget_vector_size(ocsp_responses); i++) {
-			ocsp_resp_t *r = wget_vector_get(ocsp_responses, it);
+			ocsp_resp_t *r = wget_vector_get(ocsp_responses, i);
 			wget_xfree(r->data);
 		}
 		wget_vector_clear(ocsp_responses);
