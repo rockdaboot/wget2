@@ -102,7 +102,7 @@ static struct config
 	.check_certificate = 1,
 	.check_hostname = 1,
 #ifdef WITH_OCSP
-	.ocsp = 1,
+	.ocsp = 0,
 	.ocsp_stapling = 1,
 #endif
 	.ca_type = WGET_SSL_X509_FMT_PEM,

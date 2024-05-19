@@ -108,7 +108,7 @@ static struct config {
 	.check_certificate = 1,
 	.report_invalid_cert = 1,
 	.check_hostname = 1,
-	.ocsp = 1,
+	.ocsp = 0,
 	.ocsp_stapling = 1,
 	.ca_type = WGET_SSL_X509_FMT_PEM,
 	.cert_type = WGET_SSL_X509_FMT_PEM,
