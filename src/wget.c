@@ -239,6 +239,27 @@ static void nop(int sig)
 	}
 }
 
+#ifdef _WIN32
+// The initial stdin and stdout modes, to be restored before exit.
+static DWORD initial_stdin_mode = 0;
+static DWORD initial_stdout_mode = 0;
+
+static BOOL HandleCtrlEvent(DWORD dwCtrlType) {
+	// The destructor registered with atexit will do the cleanup work.
+	// If it's not ctrl+c nor ctrl+break, we return FALSE so other handlers, if any, get to run.
+	if (dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT)
+		exit(EXIT_STATUS_GENERIC);
+
+	return FALSE;
+}
+
+static void restore_console_modes(void) {
+	// Restore console modes.
+	SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), initial_stdin_mode);
+	SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), initial_stdout_mode);
+}
+#endif
+
 static void
 	*input_thread(void *p);
 static wget_thread
@@ -287,6 +308,15 @@ static void program_init(void)
 	// signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, nop);
 	signal(SIGINT, nop);
+
+	// Save console modes, to be restored before exit.
+	// In case the initializer is called multiple times, do not override if mode is not 0.
+	if (initial_stdin_mode == 0) GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &initial_stdin_mode);
+	if (initial_stdout_mode == 0) GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &initial_stdout_mode);
+	// We also have to handle ctrl-c and ctrl-break.
+	SetConsoleCtrlHandler(HandleCtrlEvent, TRUE);
+
+	atexit(restore_console_modes);
 #else
 	// need to set some signals
 	struct sigaction sig_action = { .sa_handler = SIG_IGN };
