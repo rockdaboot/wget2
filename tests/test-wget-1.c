@@ -626,6 +626,16 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test different --progress options to be accepted
+	wget_test(
+		WGET_TEST_OPTIONS, "--progress=none --progress=bar --progress=bar:force --progress=bar:noscroll:force --progress=dot --progress=dot:giga",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
 	// test--https-only
 	wget_test(
 		WGET_TEST_OPTIONS, "--https-only -r -nH",
