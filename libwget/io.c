@@ -68,8 +68,8 @@ static ssize_t getline_internal(
 		return WGET_E_INVALID;
 
 	if (!*buf || !*bufsize) {
-		// first call
-		if (!(p = wget_malloc(10240)))
+		// first call (clear memory to not confuse valgrind)
+		if (!(p = wget_calloc(10240, 1)))
 			return WGET_E_MEMORY;
 		*buf = p;
 		*bufsize = 10240;
