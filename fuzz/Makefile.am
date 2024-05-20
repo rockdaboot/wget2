@@ -103,6 +103,7 @@ wget_options_fuzzer_LDADD += \
  $(LDADD)
 
 
+EXTRA_DIST = valgrind-suppressions
 #EXTRA_DIST = $(wildcard *.options) $(wildcard *.dict) \
 # $(wildcard *.in) $(wildcard *.repro)
 
