@@ -337,6 +337,7 @@ pages:
     - mv lcov ../public/coverage
 
 # Online Documentation
+    - make -C docs
     - rm -rf ../public/reference
     - mv docs/html ../public/reference
 
