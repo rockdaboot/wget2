@@ -86,7 +86,7 @@ libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\"
 libtest_la_LIBADD = ../src/libtest-utils.la ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
-EXTRA_DIST = certs gpg
+EXTRA_DIST = certs gpg valgrind-suppressions clang-asan-suppressions
 
 clean-local:
 	rm -rf $(srcdir)/.test_*
