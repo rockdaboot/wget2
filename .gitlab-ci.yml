@@ -331,7 +331,7 @@ pages:
     - coverage=$(printf %.2f $coverage)
     - inum=$(echo $coverage|cut -d'.' -f1)
     - if [ -z "$inum" ]; then inum="0"; fi
-    - contrib/make-coverage-badge "coverage" "$coverage%"
+    - ../contrib/make-coverage-badge "coverage" "$coverage%"
     - mv badge.svg ../public/coverage.svg
     - rm -rf ../public/coverage
     - mv lcov ../public/coverage
@@ -346,7 +346,7 @@ pages:
     - coverage=$(printf %.2f $coverage)
     - inum=$(echo $coverage|cut -d'.' -f1)
     - if [ -z "$inum" ]; then inum="0"; fi
-    - contrib/make-coverage-badge "fuzz-coverage" "$coverage%"
+    - ../contrib/make-coverage-badge "fuzz-coverage" "$coverage%"
     - mv badge.svg ../public/fuzz-coverage.svg
     - rm -rf ../public/fuzz-coverage
     - mv lcov ../public/fuzz-coverage
