@@ -1415,7 +1415,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	if (config.quiet) {
+	if (config.quiet || !config.verbose || config.debug) {
 		if (!config.force_progress) {
 			config.progress = PROGRESS_TYPE_NONE;
 		}
