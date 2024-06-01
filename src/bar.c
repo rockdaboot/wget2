@@ -92,6 +92,14 @@ static void *bar_update_thread(void *p WGET_GCC_UNUSED)
 
 static void error_write(const char *buf, size_t len)
 {
+	// write 'above' the progress bar area, scrolls screen one line up, red text color
+	// CSI 31m:  Red text color
+	// CSI m: reset text color
+	wget_bar_write_line_ext(bar, buf, len, "\033[31m", "\033[m");
+}
+
+static void info_write(const char *buf, size_t len)
+{
 	// write 'above' the progress bar area, scrolls screen one line up
 	wget_bar_write_line(bar, buf, len);
 }
@@ -106,6 +114,7 @@ bool bar_init(void)
 
 		// set custom write function for wget_error_printf()
 		wget_logger_set_func(wget_get_logger(WGET_LOGGER_ERROR), error_write);
+		wget_logger_set_func(wget_get_logger(WGET_LOGGER_INFO), info_write);
 
 		terminate_thread = 0;
 		if (wget_thread_start(&progress_thread, bar_update_thread, NULL, 0)) {
