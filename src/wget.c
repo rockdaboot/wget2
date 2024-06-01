@@ -1427,10 +1427,6 @@ int main(int argc, const char **argv)
 
 	if (config.progress == PROGRESS_TYPE_BAR) {
 		if (bar_init()) {
-			wget_logger *logger = wget_get_logger(WGET_LOGGER_INFO);
-			if (config.debug && wget_logger_is_active(logger))
-				wget_info_printf(_("INFO logger being disabled as --progress=bar enabled\n"));
-			wget_logger_set_stream(logger, NULL);
 			start_time = wget_get_timemillis();
 		}
 	}
