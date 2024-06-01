@@ -2532,6 +2532,8 @@ WGETAPI void
 WGETAPI void
 	wget_bar_write_line(wget_bar *bar, const char *buf, size_t len) WGET_GCC_NONNULL_ALL;
 WGETAPI void
+	wget_bar_write_line_ext(wget_bar *bar, const char *buf, size_t len, const char *pre, const char *post) WGET_GCC_NONNULL_ALL;
+WGETAPI void
 	wget_bar_set_speed_type(wget_report_speed type);
 
 /*

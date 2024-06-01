@@ -704,6 +704,23 @@ void wget_bar_screen_resized(void)
  */
 void wget_bar_write_line(wget_bar *bar, const char *buf, size_t len)
 {
+	wget_bar_write_line_ext(bar, buf, len, "", "");
+}
+
+/**
+ *
+ * \param[in] bar Pointer to \p wget_bar
+ * @param buf Pointer to buffer to be displayed
+ * @param len Number of bytes to be displayed
+ *
+ * Write 'above' the progress bar area, scrolls screen one line up
+ * if needed. Currently used by Wget2 to display error messages in
+ * color red.
+ *
+ * This function needs a redesign to be useful for general purposes.
+ */
+void wget_bar_write_line_ext(wget_bar *bar, const char *buf, size_t len, const char *pre, const char *post)
+{
 	wget_thread_mutex_lock(bar->mutex);
 	// ESC 7:    Save cursor
 	// CSI <n>S: Scroll up whole screen
@@ -711,9 +728,9 @@ void wget_bar_write_line(wget_bar *bar, const char *buf, size_t len)
 	// CSI <n>G: Cursor horizontal absolute
 	// CSI 0J:   Clear from cursor to end of screen
 	// CSI 31m:  Red text color
-	wget_fprintf(stdout, "\0337\033[1S\033[%dA\033[1G\033[0J\033[31m", bar->nslots + 1);
+	wget_fprintf(stdout, "\0337\033[1S\033[%dA\033[1G\033[0J%s", bar->nslots + 1, pre);
 	fwrite(buf, 1, len, stdout);
-	fputs("\033[m", stdout); // reset text color
+	fputs(post, stdout); // reset text color
 	restore_cursor_position();
 
 	bar_update(bar);
