@@ -3140,7 +3140,7 @@ static int preload_dns_cache(const char *fname)
 	}
 
 	while (fgets(buf, sizeof(buf), fp)) {
-		if (sscanf(buf, "%63[0-9.:] %255[a-zA-Z0-9.-]", ip, name) != 2)
+		if (sscanf(buf, "%63s %255s", ip, name) != 2)
 			continue;
 
 		wget_strtolower(name);
