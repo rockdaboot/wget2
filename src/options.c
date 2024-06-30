@@ -1270,7 +1270,6 @@ struct config config = {
 	.max_redirect = 20,
 	.max_threads = 5,
 	.dns_caching = 1,
-	.tcp_fastopen = 1,
 	// we use 'Wget' here for compatibility, see https://github.com/rockdaboot/wget2/issues/314
 	.user_agent = "Wget/"PACKAGE_VERSION,
 	.verbose = 1,

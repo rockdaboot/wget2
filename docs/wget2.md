@@ -730,11 +730,17 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--tcp-fastopen`
 
-  Enable support for TCP Fast Open (TFO) (default: on).
+  Enable support for TCP Fast Open (TFO) (default: off).
 
   TFO reduces connection latency by 1 RT on "hot" connections (2nd+ connection to the same host in a certain amount of time).
 
   Currently this works on recent Linux and OSX kernels, on HTTP and HTTPS.
+
+  The main reasons why TFO is disabled by default are
+    - possible user tracking issues
+    - possible issues with middle boxes that do not support TFO
+
+  This article gives has more details about TFO than fits here: https://candrews.integralblue.com/2019/03/the-sad-story-of-tcp-fast-open/
 
 ### `--dns-cache-preload=file`
 
