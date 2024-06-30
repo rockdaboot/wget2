@@ -224,13 +224,11 @@ static struct addrinfo *sort_preferred(struct addrinfo *addrinfo, int preferred_
 
 static int getaddrinfo_merging(const char *host, const char *s_port, struct addrinfo *hints, struct addrinfo **out_addr)
 {
-	struct addrinfo *ai_tail;
-
 	if (!*out_addr)
 		return getaddrinfo(host, s_port, hints, out_addr);
 
 	// Get to the tail of the list
-	ai_tail = *out_addr;
+	struct addrinfo *ai_tail = *out_addr;
 	while (ai_tail->ai_next)
 		ai_tail = ai_tail->ai_next;
 
@@ -245,9 +243,7 @@ static int resolve(int family, int flags, const char *host, uint16_t port, struc
 		.ai_socktype = 0,
 		.ai_flags = AI_ADDRCONFIG | flags
 	};
-	int ret;
 	char s_port[NI_MAXSERV];
-
 
 	*out_addr = NULL;
 
@@ -266,6 +262,8 @@ static int resolve(int family, int flags, const char *host, uint16_t port, struc
 		debug_printf("resolving %s...\n", host);
 	}
 
+	int ret;
+
 	/*
 	 * .ai_socktype = 0, which would give us all the available socket types,
 	 * is not a valid option on Windows. Hence, we call getaddrinfo() twice with SOCK_STREAM
@@ -274,17 +272,14 @@ static int resolve(int family, int flags, const char *host, uint16_t port, struc
 	 */
 	hints.ai_socktype = SOCK_STREAM;
 	if ((ret = getaddrinfo_merging(host, port ? s_port : NULL, &hints, out_addr)) != 0)
-		goto end;
+		return ret;
 
 	hints.ai_socktype = SOCK_DGRAM;
-	if ((ret = getaddrinfo_merging(host, port ? s_port : NULL, &hints, out_addr)) != 0)
-		goto end;
+	if ((ret = getaddrinfo_merging(host, port ? s_port : NULL, &hints, out_addr)) != 0) {
+		if (*out_addr)
+			freeaddrinfo(*out_addr);
+	}
 
-	return 0;
-
-end:
-	if (*out_addr)
-		freeaddrinfo(*out_addr);
 	return ret;
 }
 

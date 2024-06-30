@@ -769,63 +769,67 @@ int wget_tcp_connect(wget_tcp *tcp, const char *host, uint16_t port)
 			debug_addr("trying", ai->ai_addr, ai->ai_addrlen);
 
 		int sockfd;
-		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) != -1) {
-			_set_async(sockfd);
-			set_socket_options(tcp, sockfd);
-
-			if (tcp->bind_addrinfo) {
-				if (debug)
-					debug_addr("binding to",
-						   tcp->bind_addrinfo->ai_addr, tcp->bind_addrinfo->ai_addrlen);
-
-				if (bind(sockfd, tcp->bind_addrinfo->ai_addr, tcp->bind_addrinfo->ai_addrlen) != 0) {
-					print_error_host(_("Failed to bind"), host);
-					close(sockfd);
-
-					return WGET_E_UNKNOWN;
-				}
-			}
-
-			rc = tcp_connect(tcp, ai, sockfd);
-			if (rc < 0
-				&& errno != EAGAIN
-				&& errno != EINPROGRESS
-			) {
-				print_error_host(_("Failed to connect"), host);
-				ret = WGET_E_CONNECT;
-				close(sockfd);
-			} else {
-				tcp->sockfd = sockfd;
-				if (tcp->ssl) {
-					if ((ret = wget_ssl_open(tcp))) {
-						if (ret == WGET_E_CERTIFICATE) {
-							wget_tcp_close(tcp);
-							break; /* stop here - the server cert couldn't be validated */
-						}
-
-						/* do not free tcp->addrinfo when calling wget_tcp_close() */
-						struct addrinfo *ai_tmp = tcp->addrinfo;
-
-						tcp->addrinfo = NULL;
-						wget_tcp_close(tcp);
-						tcp->addrinfo = ai_tmp;
-
-						continue;
-					}
-				}
-
-				if (getnameinfo(ai->ai_addr, ai->ai_addrlen,
-						adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV) == 0)
-					tcp->ip = wget_strdup(adr);
-				else
-					tcp->ip = NULL;
-
-				tcp->host = wget_strdup(host);
-
-				return WGET_E_SUCCESS;
-			}
-		} else
+		if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
 			print_error_host(_("Failed to create socket"), host);
+			ret = WGET_E_UNKNOWN;
+			continue;
+		}
+
+		set_socket_options(tcp, sockfd);
+
+		if (tcp->bind_addrinfo) {
+			if (debug)
+				debug_addr("binding to",
+						tcp->bind_addrinfo->ai_addr, tcp->bind_addrinfo->ai_addrlen);
+
+			if (bind(sockfd, tcp->bind_addrinfo->ai_addr, tcp->bind_addrinfo->ai_addrlen) != 0) {
+				print_error_host(_("Failed to bind"), host);
+				close(sockfd);
+
+				return WGET_E_UNKNOWN;
+			}
+		}
+
+		rc = tcp_connect(tcp, ai, sockfd);
+		if (rc < 0
+			&& errno != EAGAIN
+			&& errno != EINPROGRESS
+		) {
+			print_error_host(_("Failed to connect"), host);
+			ret = WGET_E_CONNECT;
+			close(sockfd);
+		} else {
+			tcp->sockfd = sockfd;
+			if (tcp->ssl) {
+				if ((ret = wget_ssl_open(tcp))) {
+					if (ret == WGET_E_CERTIFICATE) {
+						wget_tcp_close(tcp);
+						break; /* stop here - the server cert couldn't be validated */
+					}
+
+					/* do not free tcp->addrinfo when calling wget_tcp_close() */
+					struct addrinfo *ai_tmp = tcp->addrinfo;
+
+					tcp->addrinfo = NULL;
+					wget_tcp_close(tcp);
+					tcp->addrinfo = ai_tmp;
+
+					continue;
+				}
+			}
+
+			if (getnameinfo(ai->ai_addr, ai->ai_addrlen,
+					adr, sizeof(adr), s_port, sizeof(s_port), NI_NUMERICHOST | NI_NUMERICSERV) == 0)
+				tcp->ip = wget_strdup(adr);
+			else
+				tcp->ip = NULL;
+
+			tcp->host = wget_strdup(host);
+
+			_set_async(sockfd);
+
+			return WGET_E_SUCCESS;
+		}
 	}
 
 	return ret;
