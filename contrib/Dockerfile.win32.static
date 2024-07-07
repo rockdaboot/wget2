@@ -47,10 +47,6 @@ ENV PKG_CONFIG_PATH="$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig" \
 RUN git clone --recursive https://gitlab.com/gnuwget/gnulib-mirror.git gnulib
 ENV GNULIB_REFDIR=/usr/local/gnulib
 
-RUN git clone https://github.com/google/brotli
-RUN cd brotli && \
-    CMAKE_SYSTEM_NAME=Windows CMAKE_C_COMPILER=x86_64-w64-mingw32-gcc CMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ cmake . -DCMAKE_INSTALL_PREFIX=/home/tim/src/wget2/x86_64-w64-mingw32 -DBUILD_SHARED_LIBS=OFF && make install && cd .. && rm -rf brotli
-
 RUN wget -q -O- https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz | tar xz
 RUN cd libiconv-* && \
     ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --prefix=$INSTALLDIR && \
