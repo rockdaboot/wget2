@@ -646,6 +646,11 @@ static void set_socket_options(const wget_tcp *tcp, int fd)
 			debug_printf("Failed to set socket option TCP_FASTOPEN_CONNECT\n");
 	}
 #endif
+
+	// Synchronous socket connection timeout
+	struct timeval tv = { .tv_sec = tcp->connect_timeout/1000, .tv_usec = tcp->connect_timeout % 1000 * 1000 };
+	if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) == -1)
+		error_printf(_("Failed to set socket option SO_SNDTIMEO\n"));
 }
 
 /**
