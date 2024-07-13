@@ -648,9 +648,11 @@ static void set_socket_options(const wget_tcp *tcp, int fd)
 #endif
 
 	// Synchronous socket connection timeout
-	struct timeval tv = { .tv_sec = tcp->connect_timeout/1000, .tv_usec = tcp->connect_timeout % 1000 * 1000 };
-	if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) == -1)
-		error_printf(_("Failed to set socket option SO_SNDTIMEO\n"));
+	if (tcp->connect_timeout > 0) {
+		struct timeval tv = { .tv_sec = tcp->connect_timeout/1000, .tv_usec = tcp->connect_timeout % 1000 * 1000 };
+		if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) == -1)
+			error_printf(_("Failed to set socket option SO_SNDTIMEO\n"));
+	}
 }
 
 /**
