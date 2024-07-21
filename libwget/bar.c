@@ -224,7 +224,7 @@ bar_set_progress(const wget_bar *bar, int slot)
 		slotp->progress[cols - 1] = '>';
 		if (cols < bar->max_width)
 			memset(slotp->progress + cols, ' ', bar->max_width - cols);
-	} else {
+	} else if (bar->max_width > 3) {
 		int ind = slotp->tick % (bar->max_width * 2 - 6);
 		int pre_space;
 
@@ -235,6 +235,8 @@ bar_set_progress(const wget_bar *bar, int slot)
 
 		memset(slotp->progress, ' ', bar->max_width);
 		memcpy(slotp->progress + pre_space, "<=>", 3);
+	} else {
+		memset(slotp->progress, ' ', bar->max_width);
 	}
 
 	slotp->progress[bar->max_width] = 0;
