@@ -281,28 +281,6 @@ static wget_thread_cond
 
 static void program_init(void)
 {
-	wget_global_init(0);
-	blacklist_init();
-	host_init();
-
-	wget_thread_mutex_init(&downloader_mutex);
-	wget_thread_mutex_init(&main_mutex);
-	wget_thread_mutex_init(&known_urls_mutex);
-	wget_thread_mutex_init(&etag_mutex);
-	wget_thread_mutex_init(&savefile_mutex);
-	wget_thread_mutex_init(&netrc_mutex);
-	wget_thread_mutex_init(&conversion_mutex);
-	wget_thread_mutex_init(&quota_mutex);
-	wget_thread_cond_init(&main_cond);
-	wget_thread_cond_init(&worker_cond);
-
-	setlocale(LC_ALL, "");
-
-#ifdef ENABLE_NLS
-	bindtextdomain("wget", LOCALEDIR);
-	textdomain("wget");
-#endif
-
 #ifdef _WIN32
 	// not sure if this is needed for Windows
 	// signal(SIGPIPE, SIG_IGN);
@@ -326,6 +304,28 @@ static void program_init(void)
 	sigaction(SIGTERM, &sig_action, NULL);
 	sigaction(SIGINT, &sig_action, NULL);
 	sigaction(SIGWINCH, &sig_action, NULL);
+#endif
+
+	wget_global_init(0);
+	blacklist_init();
+	host_init();
+
+	wget_thread_mutex_init(&downloader_mutex);
+	wget_thread_mutex_init(&main_mutex);
+	wget_thread_mutex_init(&known_urls_mutex);
+	wget_thread_mutex_init(&etag_mutex);
+	wget_thread_mutex_init(&savefile_mutex);
+	wget_thread_mutex_init(&netrc_mutex);
+	wget_thread_mutex_init(&conversion_mutex);
+	wget_thread_mutex_init(&quota_mutex);
+	wget_thread_cond_init(&main_cond);
+	wget_thread_cond_init(&worker_cond);
+
+	setlocale(LC_ALL, "");
+
+#ifdef ENABLE_NLS
+	bindtextdomain("wget", LOCALEDIR);
+	textdomain("wget");
 #endif
 
 	known_urls = wget_hashmap_create(128, (wget_hashmap_hash_fn *) hash_url, (wget_hashmap_compare_fn *) strcmp);
