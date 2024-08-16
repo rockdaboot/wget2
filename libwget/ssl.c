@@ -73,6 +73,6 @@ const char *wget_ssl_default_ca_bundle_path(void)
 {
 	if (!ssl_default_certbundle_path)
 		ssl_default_certbundle_path = ssl_default_path("ca-bundle.pem");
-	return ssl_default_certbundle_path;
+	return access(ssl_default_certbundle_path, F_OK) == 0 ? ssl_default_certbundle_path: NULL;
 }
 #endif
