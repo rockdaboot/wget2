@@ -58,15 +58,13 @@ int main(void)
 				"Content-Type: text/html",
 			}
 		},
-		{
-			.name = "/302.html",
+		{	.name = "/302.html",
 			.code = "302 Redirect",
 			.headers = {
 				"Location: 302_2.html",
 			}
 		},
-		{
-			.name = "/302_2.html",
+		{	.name = "/302_2.html",
 			.code = "200 Dontcare",
 			.body = "<html>302</html",
 			.headers = {
@@ -79,14 +77,25 @@ int main(void)
 				"Location: http://localhost:{{port}}/307_2.html",
 			}
 		},
-		{
-			.name = "/307_2.html",
+		{	.name = "/307_2.html",
 			.code = "200 Dontcare",
 			.body = "<html>307</html>",
 			.headers = {
 				"Content-Type: text/html",
 			},
 			.expected_method = "POST"
+		},
+		{	.name = "/robots.txt",
+			.code = "302 Redirect",
+			.headers = {
+				"Location: http://localhost:{{port}}/robots2.txt",
+			}
+		},
+		{	.name = "/robots2.txt",
+			.code = "404 Not exist",
+			.headers = {
+				"Location: http://localhost:{{port}}/robots2.txt",
+			}
 		},
 	};
 
@@ -155,6 +164,15 @@ int main(void)
 	// Check if we really retried exactly 1x.
 	if (system("if [ \"$(grep -c 'HTTP ERROR response 501' ../test-redirection.log)\" != 2 ]; then exit 1; fi"))
 		wget_error_printf_exit("Expected exactly 2x 'HTTP ERROR response 501'\n");
+
+	wget_test(
+	WGET_TEST_OPTIONS, "--recursive --no-directories",
+	WGET_TEST_REQUEST_URL, "index2.html",
+	WGET_TEST_EXPECTED_ERROR_CODE, 0,
+	WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+		{ urls[1].name + 1, urls[1].body },
+		{	NULL } },
+	0);
 
 	//for a POST request:
 	//	upon receiving 301 response code, redirection request must be GET request

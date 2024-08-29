@@ -1017,6 +1017,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 			new_job->referer = job->referer;
 			new_job->original_url = job->iri;
 			new_job->redirect_get = job->redirect_get;
+			new_job->robotstxt = job->robotstxt;
 		} else {
 			new_job->parent_id = job->id;
 			new_job->level = job->level + 1;
