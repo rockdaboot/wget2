@@ -9,6 +9,6 @@
 set -e
 
 codespell "$@" -L "tim,gonna,cas,referer,fpr,vas,anull" $(git ls-files|\
-  grep -E -v '_fuzzer.in|_fuzzer.repro|\.der$|\.pem$|gnulib|ChangeLog|tests/gpg|\.png$|\.dat$|src/wget.c|contrib/spell-checker|tests/certs/ocsp/generate_certs.sh|tests/certs/README.md')
+  grep -E -v '_fuzzer.in|_fuzzer.repro|\.der$|\.pem$|gnulib|ChangeLog|tests/gpg|\.png$|\.dat$|src/wget.c|contrib/spell-checker|tests/certs/ocsp/generate_certs.sh|tests/certs/README.md|NEWS|bootstrap.conf')
 
 codespell "$@" -L "tim,gonna,cas,te,referer,ist,fpr,vas,anull" src/wget.c contrib/spell-checker
