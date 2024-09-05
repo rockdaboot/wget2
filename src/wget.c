@@ -633,6 +633,51 @@ static void test_modify_hsts(wget_iri *iri)
 		wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
 	}
 }
+
+// Add iri to parents (for --no-parent option).
+static void add_parent(wget_iri *iri)
+{
+	char *p;
+
+	if (!parents)
+		parents = wget_vector_create(4, NULL);
+
+	// calc length of directory part in iri->path (including last /)
+	if (!iri->path || !(p = strrchr(iri->path, '/')))
+		iri->dirlen = 0;
+	else
+		iri->dirlen = p - iri->path + 1;
+
+	wget_vector_add(parents, iri);
+}
+
+static bool is_parent(const wget_iri *iri)
+{
+	for (int it = 0; it < wget_vector_size(parents); it++) {
+		wget_iri *parent = wget_vector_get(parents, it);
+
+		if (wget_iri_compare(parent, iri) == 0)
+			return true;
+	}
+
+	return false;
+}
+
+static bool matches_parent(const wget_iri *iri)
+{
+	for (int it = 0; it < wget_vector_size(parents); it++) {
+		wget_iri *parent = wget_vector_get(parents, it);
+
+		if (!wget_strcmp(parent->host, iri->host)) {
+			if (!parent->dirlen || !wget_strncmp(parent->path, iri->path, parent->dirlen)) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 // Add URLs given by user (command line, file or -i option).
 // Needs to be thread-save.
 static void queue_url_from_local(const char *url, wget_iri *base, const char *encoding, int flags)
@@ -698,20 +743,8 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 				wget_vector_add(config.domains, wget_strdup(iri->host));
 		}
 
-		if (!config.parent) {
-			char *p;
-
-			if (!parents)
-				parents = wget_vector_create(4, NULL);
-
-			// calc length of directory part in iri->path (including last /)
-			if (!iri->path || !(p = strrchr(iri->path, '/')))
-				iri->dirlen = 0;
-			else
-				iri->dirlen = p - iri->path + 1;
-
-			wget_vector_add(parents, iri);
-		}
+		if (!config.parent)
+			add_parent(iri);
 	}
 
 	// only download content from hosts given on the command line or from input file
@@ -913,22 +946,9 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	}
 
 	if (config.recursive && !config.parent && !(flags & URL_FLG_REQUISITE)) {
-		// do not ascend above the parent directory
-		bool ok = false;
-
-		// see if at least one parent matches
-		for (int it = 0; it < wget_vector_size(parents); it++) {
-			wget_iri *parent = wget_vector_get(parents, it);
-
-			if (!wget_strcmp(parent->host, iri->host)) {
-				if (!parent->dirlen || !wget_strncmp(parent->path, iri->path, parent->dirlen)) {
-					ok = true;
-					break;
-				}
-			}
-		}
-
-		if (!ok) {
+		if (job && (flags & URL_FLG_REDIRECTION) && is_parent(job->iri)) {
+			add_parent(iri);
+		} else if (!matches_parent(iri)) {
 			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
 			goto out;
 		}
@@ -1018,6 +1038,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 			new_job->original_url = job->iri;
 			new_job->redirect_get = job->redirect_get;
 			new_job->robotstxt = job->robotstxt;
+			new_job->requested_by_user = job->requested_by_user;
 		} else {
 			new_job->parent_id = job->id;
 			new_job->level = job->level + 1;
