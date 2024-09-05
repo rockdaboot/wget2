@@ -477,7 +477,9 @@ static int establish_proxy_connect(wget_tcp *tcp, const char *host, uint16_t por
 	while (nbytes > 0 && c_isspace(sbuf[--nbytes]))
 		sbuf[nbytes] = 0;
 
-	if (wget_strncasecmp_ascii(sbuf, "HTTP/1.1 200", 12)) {
+	// Additionally accepting HTTP/1.0 solves at least some compatibility issues.
+	// See https://gitlab.com/gnuwget/wget2/-/issues/666#note_2002037243
+	if (wget_strncasecmp_ascii(sbuf, "HTTP/1.1 200", 12) && wget_strncasecmp_ascii(sbuf, "HTTP/1.0 200", 12)) {
 		error_printf(_("Proxy connection failed with: %s\n"), sbuf);
 		return WGET_E_CONNECT;
 	}
