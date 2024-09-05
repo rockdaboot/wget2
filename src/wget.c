@@ -4530,19 +4530,34 @@ static void fork_to_background(void)
 }
 
 #else // We assume every non-Windows OS supports fork()
+static char *create_unique(const char *name)
+{
+	char *fname = wget_strdup(name);
+
+	for (int it = 0; it < 9999; it++) {
+		if (it) {
+			fname = wget_aprintf("%s.%d", name, it);
+		}
+
+		int fd = open(fname, O_CREAT|O_WRONLY|O_EXCL, 0600);
+		if (fd != -1) {
+			close(fd);
+			return fname;
+		}
+
+		xfree(fname);
+	}
+
+	return wget_strdup(name);
+}
+
 static void fork_to_background(void)
 {
-	short logfile_changed = 0;
+	bool logfile_changed = false;
 
 	if (!config.logfile && (!config.quiet || config.server_response) && !config.dont_write) {
-		config.logfile = wget_strdup(WGET_DEFAULT_LOGFILE);
-		// truncate logfile
-		int fd = open(config.logfile, O_WRONLY | O_TRUNC);
-
-		if (fd != -1)
-			close(fd);
-
-		logfile_changed = 1;
+		config.logfile = create_unique(WGET_DEFAULT_LOGFILE);
+		logfile_changed = wget_strcmp(config.logfile, WGET_DEFAULT_LOGFILE) != 0;
 	}
 
 	pid_t pid = fork();
