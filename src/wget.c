@@ -173,7 +173,8 @@ static wget_hashmap
 static DOWNLOADER
 	*downloaders;
 static void
-	*downloader_thread(void *p);
+	*downloader_thread(void *p),
+	*progress_report(void *p);
 static wget_thread_mutex
 	quota_mutex;
 static long long
@@ -1284,7 +1285,6 @@ static void print_status(DOWNLOADER *downloader WGET_GCC_UNUSED, const char *fmt
 
 static void print_progress_report(long long start_time)
 {
-
 	if (config.progress == PROGRESS_TYPE_BAR) {
 		char quota_buf[16];
 		char speed_buf[16];
@@ -1450,6 +1450,10 @@ int main(int argc, const char **argv)
 	if (config.progress == PROGRESS_TYPE_BAR) {
 		if (bar_init()) {
 			start_time = wget_get_timemillis();
+			static wget_thread progress_thread;
+			if ((rc = wget_thread_start(&progress_thread, progress_report, NULL, 0)) != 0) {
+				error_printf(_("Failed to start progress report thread, error %d\n"), rc);
+			}
 		}
 	}
 
@@ -1567,6 +1571,19 @@ int main(int argc, const char **argv)
 	plugin_db_finalize(get_exit_status());
 
 	return get_exit_status();
+}
+
+// Thread function to update the progress report bar.
+void *progress_report(void *p WGET_GCC_UNUSED)
+{
+	while (!terminate) {
+		wget_millisleep(1000);
+
+		// Wake up main thread to update the progress report.
+		wget_thread_cond_signal(main_cond);
+	}
+
+	return NULL;
 }
 
 /*

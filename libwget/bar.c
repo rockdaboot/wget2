@@ -328,6 +328,12 @@ static void bar_update_slot(const wget_bar *bar, int slot)
 		cur = slotp->bytes_downloaded;
 
 		ratio = max ? (int) ((100 * cur) / max) : 0;
+		if (ratio > 100) {
+			// TODO: wget2 uses a single bar per worker thread. With HTTP/2,
+			// there can be multiple files being downloaded, but 'max' contains
+			// only the size of a (random) single file.
+			ratio = 100;
+		}
 
 		wget_human_readable(slotp->human_size, sizeof(slotp->human_size), cur);
 

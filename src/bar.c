@@ -46,7 +46,7 @@
 // Rate at which progress thread it updated. This is the amount of time (in ms)
 // for which the thread will sleep before waking up and redrawing the progress
 enum {
-	BAR_THREAD_SLEEP_DURATION = 125,
+	BAR_THREAD_SLEEP_DURATION = 1000,
 	BAR_THREAD_WINDOWS_CONSOLE_SIZE_CHECK_INTERVAL = 1000
 };
 
