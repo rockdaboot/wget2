@@ -54,7 +54,8 @@ struct wget_http_connection_st {
 	bool
 		print_response_headers : 1,
 		abort_indicator : 1,
-		proxied : 1;
+		proxied : 1,
+		goaway : 1;
 };
 
 /* HTTP/1.0 status codes from RFC1945 */

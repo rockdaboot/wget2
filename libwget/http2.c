@@ -7,6 +7,8 @@
 #include "http.h"
 
 struct http2_stream_context {
+	wget_http_connection
+		*conn;
 	wget_http_response
 		*resp;
 	wget_decompressor
@@ -91,6 +93,14 @@ static int on_frame_recv_callback(nghttp2_session *session,
 									 http_get_body_cb, resp);
 				wget_decompress_set_error_handler(ctx->decompressor, http_decompress_error_handler_cb);
 			}
+		}
+	}
+	else if (frame->hd.type == NGHTTP2_GOAWAY) {
+		struct http2_stream_context *ctx = nghttp2_session_get_stream_user_data(session, frame->goaway.last_stream_id);
+		wget_http_connection *conn = ctx ? ctx->conn : NULL;
+
+		if (conn) {
+			conn->goaway = true;
 		}
 	}
 
@@ -319,7 +329,8 @@ int wget_http2_send_request(wget_http_connection *conn, wget_http_request *req)
 	if (!ctx) {
 		return -1;
 	}
-	// HTTP/2.0 has the streamid as link between
+	// HTTP/2.0 has the streamid as a link to request and connection.
+	ctx->conn = conn;
 	ctx->resp = wget_calloc(1, sizeof(wget_http_response));
 	if (!ctx->resp) {
 		xfree(ctx);

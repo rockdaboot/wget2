@@ -1882,9 +1882,6 @@ static int process_response_header(wget_http_response *resp)
 		return 0; // final response
 
 	if (resp->location) {
-		wget_buffer uri_buf;
-		char uri_sbuf[1024];
-
 		/*
 		 * Modifying the request method on a redirect can only happen in
 		 * the following limited cases:
@@ -1907,33 +1904,6 @@ static int process_response_header(wget_http_response *resp)
 
 		wget_cookie_normalize_cookies(job->iri, resp->cookies);
 		wget_cookie_store_cookies(config.cookie_db, resp->cookies);
-
-		wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
-
-		const char *location = resp->location;
-
-		if (resp->links) {
-			// Download from the link with the highest priority.
-			wget_http_link *top_link = NULL;
-
-			for (int it = 0; it < wget_vector_size(resp->links); it++) {
-				wget_http_link *link = wget_vector_get(resp->links, it);
-				if (link->rel == link_rel_duplicate) {
-					if (!top_link || top_link->pri > link->pri) {
-						// just save the top priority link
-						top_link = link;
-						location = link->uri;
-					}
-				}
-			}
-		}
-
-		wget_iri_relative_to_abs(iri, location, (size_t) -1, &uri_buf);
-
-		if (uri_buf.length)
-			queue_url_from_remote(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION, NULL);
-
-		wget_buffer_deinit(&uri_buf);
 	}
 
 	return 0;
@@ -2138,22 +2108,58 @@ static void process_response(wget_http_response *resp)
 	// Location: http://ftp.suse.com/pub/projects/go-oo/evolution/stable/Evolution-2.24.0.exe
 	// Content-Type: text/html; charset=iso-8859-1
 
-	if (config.metalink && resp->links) {
-		// Found a Metalink answer (RFC 6249 Metalink/HTTP: Mirrors and Hashes).
-		// We try to find and download the .meta4 file (RFC 5854).
-		// If we can't find the .meta4, download from the link with the highest priority.
-		for (int it = 0; it < wget_vector_size(resp->links); it++) {
-			wget_http_link *link = wget_vector_get(resp->links, it);
-			if (link->rel == link_rel_describedby) {
-				if (link->type && (!wget_strcasecmp_ascii(link->type, "application/metalink4+xml") ||
-					 !wget_strcasecmp_ascii(link->type, "application/metalink+xml")))
-				{
-					// found a link to a metalink3 or metalink4 description, create a new job
-					queue_url_from_remote(job, "utf-8", link->uri, 0, NULL);
-					return;
+	if (resp->location) {
+		if (config.metalink) {
+			// Found a Metalink answer (RFC 6249 Metalink/HTTP: Mirrors and Hashes).
+			// We try to find and download the .meta4 file (RFC 5854).
+			for (int it = 0; it < wget_vector_size(resp->links); it++) {
+				wget_http_link *link = wget_vector_get(resp->links, it);
+				if (link->rel == link_rel_describedby) {
+					if (link->type && (!wget_strcasecmp_ascii(link->type, "application/metalink4+xml") ||
+						 !wget_strcasecmp_ascii(link->type, "application/metalink+xml")))
+					{
+						// found a link to a metalink3 or metalink4 description, create a new job
+						queue_url_from_remote(job, "utf-8", link->uri, 0, NULL);
+						return;
+					}
 				}
 			}
 		}
+
+		// If metalink is disabled by the user or if we didn't find any metalink links,
+		// download from the link with the highest priority.
+		wget_buffer uri_buf;
+		char uri_sbuf[1024];
+
+		wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
+
+		const char *location = resp->location;
+
+		// Download from the link with the highest priority.
+		wget_http_link *top_link = NULL;
+
+		for (int it = 0; it < wget_vector_size(resp->links); it++) {
+			wget_http_link *link = wget_vector_get(resp->links, it);
+			if (link->rel == link_rel_duplicate) {
+				if (!top_link || top_link->pri > link->pri) {
+					// just save the top priority link
+					top_link = link;
+					location = link->uri;
+				}
+			}
+		}
+
+		if (location) {
+			wget_iri_relative_to_abs(job->iri, location, (size_t) -1, &uri_buf);
+
+			if (uri_buf.length)
+				queue_url_from_remote(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION, NULL);
+		}
+
+		wget_buffer_deinit(&uri_buf);
+
+		if (location)
+			return;
 	}
 
 	if (config.metalink && resp->content_type) {
@@ -2383,10 +2389,25 @@ void *downloader_thread(void *p)
 	wget_thread_mutex_lock(main_mutex); locked = 1;
 
 	while (!terminate) {
-		debug_printf("[%d] action=%d pending=%d host=%p\n", downloader->id, (int) action, pending, (void *) host);
+		debug_printf("[%d] action=%d pending=%d host=%p goaway=%s\n",
+			downloader->id, (int) action, pending, (void *) host,
+			downloader->conn ? (wget_http_connection_receive_only(downloader->conn) ? "true" : "false") : "n/a");
 
 		switch (action) {
 		case ACTION_GET_JOB: // Get a job, connect, send request
+			if (downloader->conn && wget_http_connection_receive_only(downloader->conn)) {
+				if (pending) {
+					// Remote H2 server said, it won't accept more requests.
+					// Get all pending responses, then close connection.
+					wget_thread_mutex_unlock(main_mutex); locked = 0;
+					action = ACTION_GET_RESPONSE;
+					break;
+				} else {
+					wget_thread_mutex_unlock(main_mutex); locked = 0;
+					action = ACTION_ERROR;
+					break;
+				}
+			}
 			if (!(job = host_get_job(host, &pause))) {
 				if (pending) {
 					wget_thread_mutex_unlock(main_mutex); locked = 0;

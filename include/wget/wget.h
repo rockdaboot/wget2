@@ -2280,6 +2280,8 @@ WGETAPI int
 	wget_http_match_no_proxy(const wget_vector *no_proxies, const char *host);
 WGETAPI void
 	wget_http_abort_connection(wget_http_connection *conn);
+WGETAPI bool
+	wget_http_connection_receive_only(wget_http_connection *conn);
 
 WGETAPI void
 	wget_http_free_param(wget_http_header_param *param);

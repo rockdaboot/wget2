@@ -1363,6 +1363,19 @@ int http_connection_is_aborted(wget_http_connection *conn)
 }
 
 /**
+ * \param[in] conn Pointer to a `wget_http_connection` instance.
+ * \return Returns true if the remote side no longer accepts requests.
+ *
+ * With HTTP/2 a server can indicate that no more requests are accepted.
+ * If that happens, pending responses are still delivered and should be retrieved.
+ * After the last response has been received, the connection should be closed.
+ */
+bool wget_http_connection_receive_only(wget_http_connection *conn)
+{
+	return conn->goaway;
+}
+
+/**
  * \param[in] fn A `wget_server_stats_callback` callback function to receive server statistics data
  * \param[in] ctx Context data given to \p fn
  *

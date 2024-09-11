@@ -257,7 +257,7 @@ static int _release_job(wget_thread_id *ctx, JOB *job)
 		for (int it = 0; it < wget_vector_size(job->parts); it++) {
 			PART *part = wget_vector_get(job->parts, it);
 
-			if (part->inuse && part->used_by == self) {
+			if (!part->done && part->inuse && part->used_by == self) {
 				part->inuse = 0;
 				part->used_by = 0;
 				debug_printf("released chunk %d/%d %s\n", it + 1, wget_vector_size(job->parts), job->blacklist_entry->local_filename);
