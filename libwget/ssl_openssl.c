@@ -1816,7 +1816,7 @@ static int ssl_transfer(int want,
 		else
 			retval = SSL_write(ssl, buf, count);
 
-		if (retval < 0) {
+		if (retval <= 0) {
 			error = SSL_get_error(ssl, retval);
 
 			if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE) {
@@ -1830,7 +1830,7 @@ static int ssl_transfer(int want,
 				return WGET_E_HANDSHAKE;
 			}
 		}
-	} while (retval < 0);
+	} while (retval <= 0);
 
 	return retval;
 }
