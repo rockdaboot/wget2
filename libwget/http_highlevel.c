@@ -83,6 +83,7 @@ wget_http_response *wget_http_get(int first_key, ...)
 	size_t bodylen = 0;
 	const void *body = NULL;
 	void *header_user_data = NULL, *body_user_data = NULL;
+	bool debug_skip_body = 0;
 
 	struct {
 		bool
@@ -156,6 +157,9 @@ wget_http_response *wget_http_get(int first_key, ...)
 		case WGET_HTTP_BODY:
 			body = va_arg(args, const void *);
 			bodylen = va_arg(args, size_t);
+			break;
+		case WGET_HTTP_DEBUG_SKIP_BODY:
+			debug_skip_body = 1;
 			break;
 		default:
 			error_printf(_("Unknown option %d\n"), key);
@@ -238,6 +242,8 @@ wget_http_response *wget_http_get(int first_key, ...)
 
 			if (body && bodylen)
 				wget_http_request_set_body(req, NULL, wget_memdup(body, bodylen), bodylen);
+
+			req->debug_skip_body = debug_skip_body;
 
 			rc = wget_http_send_request(conn, req);
 

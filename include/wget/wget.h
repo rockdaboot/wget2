@@ -250,6 +250,7 @@ WGET_BEGIN_DECLS
 #define WGET_HTTP_BODY_SAVEAS           2018
 #define WGET_HTTP_USER_DATA             2019
 #define WGET_HTTP_RESPONSE_IGNORELENGTH 2020
+#define WGET_HTTP_DEBUG_SKIP_BODY       2021
 
 // definition of error conditions
 typedef enum {
