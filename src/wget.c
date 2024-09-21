@@ -3577,6 +3577,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		}
 
 		if (config.save_headers) {
+			wget_buffer_memcat(resp->header, "\n", 1);
 			if ((rc = write(fd, resp->header->data, resp->header->length)) != (ssize_t)resp->header->length) {
 				error_printf(_("Failed to write file %s (%zd, errno=%d)\n"), *actual_file_name, rc, errno);
 				set_exit_status(EXIT_STATUS_IO);

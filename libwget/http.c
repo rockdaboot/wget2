@@ -806,7 +806,7 @@ skip_1xx:
 			if (req->response_keepheader) {
 				wget_buffer *header = wget_buffer_alloc(p - buf + 4);
 				wget_buffer_memcpy(header, buf, p - buf);
-				wget_buffer_memcat(header, "\r\n\r\n", 4);
+				wget_buffer_memcat(header, "\r\n", 2);
 
 				resp->header = header;
 
