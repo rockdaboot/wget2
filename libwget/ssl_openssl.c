@@ -1789,7 +1789,7 @@ static int ssl_transfer(int want,
 		void *buf, int count)
 {
 	SSL *ssl;
-	int fd, retval, error, ops = want;
+	int fd;
 
 	if (count == 0)
 		return 0;
@@ -1801,7 +1801,9 @@ static int ssl_transfer(int want,
 	if (timeout < -1)
 		timeout = -1;
 
-	do {
+	for (int ops = want;;) {
+		int retval;
+
 		if (timeout) {
 			/* Wait until file descriptor becomes ready */
 			retval = wget_ready_2_transfer(fd, timeout, ops);
@@ -1817,23 +1819,25 @@ static int ssl_transfer(int want,
 		else
 			retval = SSL_write(ssl, buf, count);
 
-		if (retval < 0) {
-			error = SSL_get_error(ssl, retval);
+		if (retval > 0)
+			return retval;
 
-			if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE) {
-				/* Socket not ready - let's try again (unless timeout was zero) */
-				ops = WGET_IO_WRITABLE | WGET_IO_READABLE;
+		// The OpenSSL docs consider <= 0 an error.
+		int error = SSL_get_error(ssl, retval);
+		if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE) {
+			/* Socket not ready - let's try again (unless timeout was zero) */
+			ops = WGET_IO_WRITABLE | WGET_IO_READABLE;
 
-				if (timeout == 0)
-					return 0;
-			} else {
-				/* Not exactly a handshake error, but this is the closest one to signal TLS layer errors */
-				return WGET_E_HANDSHAKE;
-			}
+			if (timeout == 0)
+				return 0;
+		} else {
+			/* Not exactly a handshake error, but this is the closest one to signal TLS layer errors */
+			return WGET_E_HANDSHAKE;
 		}
-	} while (retval < 0);
+	}
 
-	return retval;
+	// The execution can never get here.
+	return WGET_E_UNKNOWN;
 }
 
 /**
