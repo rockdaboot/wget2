@@ -762,6 +762,7 @@ static OCSP_REQUEST *send_ocsp_request(const char *uri,
 		WGET_HTTP_HEADER_ADD, "Content-Type", "application/ocsp-request",
 		WGET_HTTP_MAX_REDIRECTIONS, 5,
 		WGET_HTTP_BODY, ocspreq_bytes, ocspreq_bytes_len,
+		WGET_HTTP_DEBUG_SKIP_BODY,
 		0);
 
 	OPENSSL_free(ocspreq_bytes);
