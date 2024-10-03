@@ -175,6 +175,8 @@ static DOWNLOADER
 static void
 	*downloader_thread(void *p),
 	*progress_report(void *p);
+static wget_thread
+	progress_thread;
 static wget_thread_mutex
 	quota_mutex;
 static long long
@@ -1449,7 +1451,6 @@ int main(int argc, const char **argv)
 	if (config.progress == PROGRESS_TYPE_BAR) {
 		if (bar_init()) {
 			start_time = wget_get_timemillis();
-			static wget_thread progress_thread;
 			if ((rc = wget_thread_start(&progress_thread, progress_report, NULL, 0)) != 0) {
 				error_printf(_("Failed to start progress report thread, error %d\n"), rc);
 			}
@@ -1552,6 +1553,9 @@ int main(int argc, const char **argv)
  out:
 	if (is_testing() || wget_match_tail(argv[0], "wget2_noinstall")) {
 		// freeing to avoid disguising valgrind output
+		if ((rc = wget_thread_join(&progress_thread)) != 0)
+			error_printf(_("Failed to wait for progress thread (%d %d)\n"), rc, errno);
+
 		blacklist_free();
 		hosts_free();
 		xfree(downloaders);
