@@ -177,3 +177,14 @@
    ...
    fun:_dl_catch_exception
 }
+
+{
+   <glibc overlap in memmove>
+   Memcheck:Overlap
+   fun:__memcpy_chk
+   fun:memmove
+   fun:inet_pton6
+   ...
+   fun:getaddrinfo
+   ...
+}
