@@ -2569,6 +2569,9 @@ out:
 	// if we terminate, tell the other downloaders
 	wget_thread_cond_signal(worker_cond);
 
+	// ... and main thread so it does not get stuck on shutdown
+	wget_thread_cond_signal(main_cond);
+
 	return NULL;
 }
 
