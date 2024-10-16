@@ -55,7 +55,7 @@ int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 		WGET_HTTP_URL, "https://example.com",
 		// WGET_HTTP_URL_ENCODING, "utf-8",
 		WGET_HTTP_HEADER_ADD, "User-Agent", "Mozilla/5.0",
-		WGET_HTTP_HEADER_ADD, "Accept-Encoding", "gzip, deflate",
+		WGET_HTTP_HEADER_ADD, "Accept-Encoding", "gzip, deflate, bzip2",
 		WGET_HTTP_HEADER_ADD, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 		WGET_HTTP_HEADER_ADD, "Accept-Language", "en-us,en;q=0.5",
 		// WGET_HTTP_PROXY, "myproxy.com:9375",
