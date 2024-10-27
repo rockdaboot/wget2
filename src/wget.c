@@ -148,7 +148,7 @@ static void
 	rss_parse(JOB *job, const char *data, const char *encoding, const wget_iri *base),
 	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
 	metalink_parse_localfile(const char *fname),
-	html_parse(JOB *job, int level, const char *fname, const char *data, size_t len, const char *encoding, const wget_iri *base),
+	html_parse(JOB *job, int level, const char *fname, const char *html, size_t len, const char *encoding, const wget_iri *base),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, const wget_iri *base),
 	css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
@@ -160,7 +160,7 @@ static int
 	read_xattr_metadata(const char *name, char *value, size_t size, int fd),
 	write_xattr_metadata(const char *name, const char *value, int fd),
 	write_xattr_last_modified(int64_t last_modified, int fd),
-	set_file_metadata(const wget_iri *origin_url, const wget_iri *referrer_url, const char *mime_type, const char *charset, int64_t last_modified, FILE *fp),
+	set_file_metadata(const wget_iri *origin_iri, const wget_iri *referrer_iri, const char *mime_type, const char *charset, int64_t last_modified, FILE *fp),
 	http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOADER *downloader);
 wget_http_response
 	*http_receive_response(wget_http_connection *conn);
