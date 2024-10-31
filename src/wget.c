@@ -361,10 +361,10 @@ static void program_deinit(void)
  * E.g. if 'dir' is `/something', match_subdir() will return true if and
  * only if 'subdir' begins with `/something/' or is exactly '/something'.
  */
-static bool match_subdir(const char *dir, const char *subdir, char ignore_case)
+static bool match_subdir(const char *dir, const char *subdir, bool ignore_case)
 {
 	if (*dir == '\0')
-		return (strcmp(subdir, "/")) ? false : true;
+		return strcmp(subdir, "/") == 0;
 
 	if (ignore_case)
 		for (; *dir && *subdir && (c_tolower(*dir) == c_tolower(*subdir)); ++dir, ++subdir)
