@@ -3412,9 +3412,9 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		// <fname> can only be NULL if config.delete_after is set
 		if (!strcmp(fname, "-")) {
 			if (config.save_headers) {
-				size_t rc = safe_write(1, resp->header->data, resp->header->length);
+				ptrdiff_t rc = safe_write(1, resp->header->data, resp->header->length);
 				if (rc == SAFE_WRITE_ERROR) {
-					error_printf(_("Failed to write to STDOUT (%zu, errno=%d)\n"), rc, errno);
+					error_printf(_("Failed to write to STDOUT (%td, errno=%d)\n"), rc, errno);
 					set_exit_status(EXIT_STATUS_IO);
 				}
 			}
@@ -3535,11 +3535,10 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		if (size >= 0) {
 			fd = open_unique(fname, O_RDONLY | O_BINARY, 0, multiple, unique, unique_size);
 			if (fd >= 0) {
-				size_t rc;
 				if ((unsigned long long) size > max_partial_content)
 					size = max_partial_content;
 				wget_buffer_memset_append(partial_content, 0, size);
-				rc = safe_read(fd, partial_content->data, size);
+				ptrdiff_t rc = safe_read(fd, partial_content->data, size);
 				if (rc == SAFE_READ_ERROR || (long long) rc != size) {
 					error_printf(_("Failed to load partial content from '%s' (errno=%d)\n"),
 						fname, errno);
@@ -3811,7 +3810,7 @@ static int get_body(wget_http_response *resp, void *context, const char *data, s
 	ctx->length += length;
 
 	if (ctx->outfd >= 0) {
-		size_t written = safe_write(ctx->outfd, data, length);
+		ptrdiff_t written = safe_write(ctx->outfd, data, length);
 
 		if (written == SAFE_WRITE_ERROR) {
 #if EAGAIN != EWOULDBLOCK
