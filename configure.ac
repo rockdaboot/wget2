@@ -137,6 +137,11 @@ if test -n "$WARN_CFLAGS"; then
     nw="$nw -Wlong-long" # gcc-12, we use C99
     nw="$nw -Wstrict-flex-arrays" # gcc-13 warns about it
     nw="$nw -Wuseless-cast" # gcc-14 warns about it (pretty useless for portable code)
+    nw="$nw -Wc99-c11-compat" # comes with latest gnulib (01.11.2024) generated config.h and gcc 14.2.0
+    nw="$nw -Wc11-c23-compat" # comes with latest gnulib (01.11.2024) generated config.h and gcc 14.2.0
+    nw="$nw -Wpedantic" # comes with latest gnulib (01.11.2024) generated config.h and gcc 14.2.0
+    nw="$nw -Wundef" # comes with latest gnulib (01.11.2024) generated config.h and gcc 14.2.0
+
     if test "$cross_compiling" = yes; then
       nw="$nw -Wformat"
     fi
