@@ -837,8 +837,8 @@ static void ShowX509(WOLFSSL_X509 *x509, const char *hdr)
 		debug_printf(" serial number%s\n", serialMsg);
 	}
 
-	XFREE(subject, 0, DYNAMIC_TYPE_OPENSSL)
-	XFREE(issuer, 0, DYNAMIC_TYPE_OPENSSL)
+	XFREE(subject, 0, DYNAMIC_TYPE_OPENSSL);
+	XFREE(issuer, 0, DYNAMIC_TYPE_OPENSSL);
 
 	{
 		WOLFSSL_BIO* bio;
