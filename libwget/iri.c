@@ -624,11 +624,14 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		}
 		if (*s == ':') {
 			if (c_isdigit(s[1])) {
-				int port = atoi(s + 1);
-				if (port > 0 && port < 65536) {
-					iri->port = (uint16_t) port;
-					iri->port_given = true;
+				unsigned long port = strtoul(s + 1, NULL, 10);
+				if (port == 0 || port > 65535) {
+					error_printf(_("Port number must be in the range 1..65535\n"));
+					wget_iri_free(&iri);
+					return NULL;
 				}
+				iri->port = (uint16_t) port;
+				iri->port_given = true;
 			}
 		}
 		*s = 0;
