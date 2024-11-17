@@ -29,17 +29,12 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <errno.h>
-#include <sys/time.h>
 
 #include <wget.h>
 
 #include "wget_main.h"
 #include "wget_options.h"
-#include "wget_log.h"
 #include "wget_bar.h"
 
 
@@ -54,7 +49,7 @@ static wget_bar
 	*bar;
 static wget_thread
 	progress_thread;
-static bool
+static volatile bool
 	terminate_thread;
 
 #ifdef _WIN32
