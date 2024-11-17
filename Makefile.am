@@ -29,7 +29,9 @@ endif
 SUBDIRS += fuzz unit-tests
 
 if WITH_MICROHTTPD
+if WITH_GNUTLS
 SUBDIRS += tests
+endif
 endif
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
