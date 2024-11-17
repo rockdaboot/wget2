@@ -436,13 +436,13 @@ if test "$enable_doc" = yes; then
     DOCS_INFO="yes"
     LIBWGET_DOCS_INFO="yes (found:"
     if test -n "$DOXYGEN"; then
-      LIBWGET_DOCS_INFO="$LIBWGET_DOCS_INFO Doxygen)"
+      LIBWGET_DOCS_INFO="$LIBWGET_DOCS_INFO $DOXYGEN)"
     else
       LIBWGET_DOCS_INFO="no"
     fi
     WGET2_DOCS_INFO="yes (found:"
     if test -n "$PANDOC"; then
-      WGET2_DOCS_INFO="$WGET2_DOCS_INFO Pandoc)"
+      WGET2_DOCS_INFO="$WGET2_DOCS_INFO $PANDOC)"
     else
       WGET2_DOCS_INFO="no"
     fi
