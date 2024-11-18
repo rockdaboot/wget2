@@ -3488,11 +3488,11 @@ int init(int argc, const char **argv)
 		config.hostname = xgethostname();
 	}
 
-	// truncate output document
+	// truncate output document but not if -c is used
 	if (config.output_document && strcmp(config.output_document, "-") && !config.dont_write) {
 		if (config.unlink) {
 			unlink(config.output_document);
-		} else {
+		} else if (!config.continue_download) {
 			int fd = open(config.output_document, O_WRONLY | O_TRUNC | O_BINARY);
 
 			if (fd != -1)
