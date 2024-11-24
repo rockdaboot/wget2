@@ -4200,6 +4200,9 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 
 wget_http_response *http_receive_response(wget_http_connection *conn)
 {
+	if (!conn)
+		return NULL;
+
 	wget_http_response *resp = wget_http_get_response_cb(conn);
 
 	if (!resp)
