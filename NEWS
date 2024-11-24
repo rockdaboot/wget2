@@ -6,6 +6,37 @@ See the end for copying conditions.
 
 Please send GNU Wget2 bug reports to <bug-wget@gnu.org>.
 
+24.11.2024 Release v2.2.0
+  * Don't truncate file when -c and -O are combined
+  * Don't log URI userinfo to logs
+  * Fix downloading multiple files via HTTP/2
+  * Fix redirections with --no-parent
+  * Support connecting with HTTP/1.0 proxies
+  * Ignore 1xx HTTP responses for HTTP/1.1
+  * Fix status 8 for failed redirection of robots.txt
+  * Fix ignoring connect timeout (regression)
+  * Disable TCP Fast Open by default
+  * Fix --dns-cache-preload for IPv6
+  * Accept --progress=dot:... for backwards compatibility
+  * Disable explicit OCSP requests by default
+  * Fix segfault when OCSP response is missing
+  * Fix OCSP verification of first intermediate certificate
+  * Allow option --no-tcp-fastopen to work on Linux kernels >= 4.11
+  * Limit cases where methods are redirected to GET
+  * Fix possible deadlock when combining --no-clobber and --no-parent
+  * Fix xattr reading of user.mime_type
+  * Fix --no-parent for denormalized paths
+  * Fix robots.txt parser
+  * Several improvements to the WolfSSL code
+  * Fix IPv6 address representation
+  * Fix --restrict-file-names to be backwards compatible with wget 1.x
+  * Add fetchmail compatibility for user/password in .netrc
+  * Improve suport for non-standard cookie timestamps
+  * Add libproxy support
+  * Add instruction on how to cross-build wget2.exe via docker
+  * Don't request preferred mime type for single file downloads
+  * Slightly improved compatibility with LibreSSL
+
 31.08.2023 Release v2.1.0
   * New option --follow-sitemaps
   * New option --dane (cert validation via DNS)
