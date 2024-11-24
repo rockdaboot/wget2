@@ -316,6 +316,7 @@ pages:
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_TESTING_BUILD
   script:
     - mkdir -p public
+    - apt-get -y update
     - apt-get -y install libcapture-tiny-perl libdatetime-perl pandoc doxygen texinfo
     - export CFLAGS="$CFLAGS_DEFAULT"
     - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
