@@ -3492,7 +3492,7 @@ int init(int argc, const char **argv)
 	if (config.output_document && strcmp(config.output_document, "-") && !config.dont_write) {
 		if (config.unlink) {
 			unlink(config.output_document);
-		} else if (!config.continue_download) {
+		} else if (!config.continue_download && config.clobber) {
 			int fd = open(config.output_document, O_WRONLY | O_TRUNC | O_BINARY);
 
 			if (fd != -1)
