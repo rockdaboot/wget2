@@ -151,7 +151,7 @@ char *wget_restrict_file_name(const char *fname, char *esc, int mode)
 	bool ascii = mode & WGET_RESTRICT_NAMES_ASCII;
 
 	for (dst = esc, s = fname; *s; s++) {
-		char c = *s;
+		signed char c = *s;
 
 		if (lowercase && c >= 'A' && c <= 'Z') { // isupper() also returns true for chars > 0x7f, the test is not EBCDIC compatible ;-)
 			c |= 0x20;
