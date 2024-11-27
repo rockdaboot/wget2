@@ -4220,7 +4220,9 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 			if (config.xattr && !terminate)
 				write_xattr_last_modified(resp->last_modified, context->outfd);
 
-			set_file_mtime(context->outfd, resp->last_modified - (terminate || resp->length_inconsistent));
+			// If requested, keep the local system timestamp rather than the server timestamp.
+			if (config.use_server_timestamps)
+				set_file_mtime(context->outfd, resp->last_modified - (terminate || resp->length_inconsistent));
 		}
 
 		if (config.fsync_policy) {
