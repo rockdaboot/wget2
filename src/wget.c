@@ -430,23 +430,23 @@ static int in_directory_pattern_list(const wget_vector *v, const char *fname)
 	return default_exclude;
 }
 
-static int in_pattern_list(const wget_vector *v, const char *url)
+static bool in_pattern_list(const wget_vector *v, const char *url)
 {
 	for (int it = 0; it < wget_vector_size(v); it++) {
 		const char *pattern = wget_vector_get(v, it);
 
 		if (strpbrk(pattern, "*?[]")) {
 			if (!fnmatch(pattern, url, config.ignore_case ? FNM_CASEFOLD : 0))
-				return 1;
+				return true;
 		} else if (config.ignore_case) {
 			if (wget_match_tail_nocase(url, pattern))
-				return 1;
+				return true;
 		} else if (wget_match_tail(url, pattern)) {
-			return 1;
+			return true;
 		}
 	}
 
-	return 0;
+	return false;
 }
 
 static int in_host_pattern_list(const wget_vector *v, const char *hostname)
