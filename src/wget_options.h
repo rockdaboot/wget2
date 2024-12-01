@@ -176,9 +176,8 @@ struct config {
 	char
 		*password,
 		*username;
-	size_t
-		chunk_size;
 	long long
+		chunk_size,
 		quota,
 		limit_rate, // bytes
 		start_pos; // bytes

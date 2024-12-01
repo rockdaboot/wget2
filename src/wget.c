@@ -218,7 +218,7 @@ static void atomic_increment_int(int *p)
 // we have to modify and check the quota in one (protected) step.
 static long long quota_modify_read(size_t nbytes)
 {
-	return fetch_and_add_longlong(&quota, (long long)nbytes);
+	return fetch_and_add_longlong(&quota, (long long) nbytes);
 }
 
 static void nop(int sig)
@@ -1976,7 +1976,7 @@ static void process_head_response(wget_http_response *resp)
 
 		job->done = 0; // do this job again with GET request
 		return;
-	} else if (config.chunk_size && resp->content_length > config.chunk_size) {
+	} else if (config.chunk_size && (long long) resp->content_length > config.chunk_size) {
 		// create metalink structure without hashing
 		wget_metalink_piece piece = { .length = config.chunk_size };
 		wget_metalink_mirror mirror = { .location = "-", .iri = job->iri };
