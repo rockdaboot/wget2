@@ -305,9 +305,9 @@ void wget_metalink_free(wget_metalink **metalink)
 }
 
 WGET_GCC_PURE
-static int compare_mirror(wget_metalink_mirror **m1, wget_metalink_mirror **m2)
+static int compare_mirror(wget_metalink_mirror *m1, wget_metalink_mirror *m2)
 {
-	return (*m1)->priority - (*m2)->priority;
+	return m1->priority - m2->priority;
 }
 
 void wget_metalink_sort_mirrors(wget_metalink *metalink)
