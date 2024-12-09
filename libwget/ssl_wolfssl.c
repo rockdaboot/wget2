@@ -594,10 +594,9 @@ void wget_ssl_init(void)
 
 		debug_printf("WolfSSL init\n");
 		wolfSSL_Init();
+#ifndef  NO_OLD_TLS
 
-		if (!wget_strcasecmp_ascii(config.secure_protocol, "SSLv2")) {
-			method = SSLv2_client_method();
-		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "SSLv3")) {
+		if (!wget_strcasecmp_ascii(config.secure_protocol, "SSLv3") || !wget_strcasecmp_ascii(config.secure_protocol, "SSL")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_SSLV3;
 		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1")) {
@@ -606,7 +605,9 @@ void wget_ssl_init(void)
 		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_1")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_TLSV1_1;
-		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_2")) {
+		} else 
+#endif // ! NO_OLD_TLS
+			if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_2")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_TLSV1_2;
 		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1_3")) {
