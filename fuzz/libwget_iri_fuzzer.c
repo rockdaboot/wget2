@@ -53,8 +53,12 @@ static void test(char *in, size_t len, const char *encoding)
 	wget_iri_escape_path(in, &buf);
 	wget_iri_escape_query(in, &buf);
 	if (iri) {
-		if (wget_iri_supported(iri))
+		if (wget_iri_supported(iri)) {
 			wget_iri_set_scheme(iri, WGET_IRI_SCHEME_HTTPS);
+			// clone after set_scheme may trigger a buffer overflow
+			iri2 = wget_iri_clone(iri);
+			wget_iri_free(&iri2);
+		}
 		wget_iri_get_escaped_host(iri, &buf);
 		wget_iri_get_escaped_resource(iri, &buf);
 		wget_iri_get_path(iri, &buf, encoding);

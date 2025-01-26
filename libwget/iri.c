@@ -496,18 +496,19 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 
 	// just use one block of memory for all parsed URI parts
 	slen = strlen(url);
-	extra = have_scheme ? 0 : sizeof("http://") - 1; // extra space for http://
 
-	iri = wget_malloc(sizeof(wget_iri) + (slen + extra + 1) * 2);
+	// Calculate extra space for inserting a scheme. Take the longest supported scheme string.
+	extra = have_scheme ? 0 : sizeof("https://") - 1;
+
+	iri = wget_calloc(1, sizeof(wget_iri) + (slen + extra + 1) * 2);
 	if (!iri)
 		return NULL;
 
-	memset(iri, 0, sizeof(wget_iri));
+	iri->msize = slen + extra + 1;
 
 	if (have_scheme) {
-		iri->msize = slen + 1;
-		iri->uri = memcpy(iri + 1, url, iri->msize);
-		p = s = memcpy((char *)iri->uri + iri->msize, url, iri->msize);
+		iri->uri = memcpy(iri + 1, url, slen + 1);
+		p = s = memcpy((char *)iri->uri + iri->msize, url, slen + 1);
 		s = strchr(s, ':'); // we know there is a :
 		*s++ = 0;
 
@@ -535,12 +536,13 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		}
 	} else {
 		// add http:// scheme to url
-		iri->uri = memcpy(iri + 1, "http://", extra);
-		memcpy((char *)iri->uri + extra, url, slen + 1);
-		iri->msize = extra + slen + 1;
-		s = memcpy((char *)iri->uri + iri->msize, iri->uri, iri->msize);
-		s[extra - 3] = 0;
-		s += extra;
+#define HTTP_SCHEME_STRING "http://"
+#define HTTP_SCHEME_LEN (sizeof(HTTP_SCHEME_STRING) - 1)
+		iri->uri = memcpy(iri + 1, HTTP_SCHEME_STRING, HTTP_SCHEME_LEN);
+		memcpy((char *)iri->uri + HTTP_SCHEME_LEN, url, slen + 1);
+		s = memcpy((char *)iri->uri + iri->msize, iri->uri, HTTP_SCHEME_LEN + slen + 1);
+		s[HTTP_SCHEME_LEN - 3] = 0;
+		s += HTTP_SCHEME_LEN;
 
 		iri->scheme = WGET_IRI_SCHEME_HTTP;
 		iri->port = schemes[WGET_IRI_SCHEME_HTTP].port;
@@ -713,14 +715,12 @@ wget_iri *wget_iri_clone(const wget_iri *iri)
 	if (!iri || !iri->uri)
 		return NULL;
 
-	size_t slen = strlen(iri->uri);
-	wget_iri *clone = wget_malloc(sizeof(wget_iri) + (slen + 1) + iri->msize);
+	wget_iri *clone = wget_memdup(iri, sizeof(wget_iri) + iri->msize * 2);
 
 	if (!clone)
 		return NULL;
 
-	memcpy(clone, iri, sizeof(wget_iri));
-	clone->uri = memcpy(clone + 1, iri->uri, (slen + 1) + iri->msize);
+	clone->uri = strcpy((char *) (clone + 1), iri->uri);
 	clone->uri_allocated = 0;
 
 	if (iri->userinfo)
@@ -1446,10 +1446,9 @@ wget_iri_scheme wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme)
 		size_t old_scheme_len = strlen(schemes[old_scheme].name);
 
 		if (strncmp(iri->uri, schemes[old_scheme].name, old_scheme_len) == 0 && iri->uri[old_scheme_len] == ':') {
-			char *new_uri = wget_aprintf("%s%s",  schemes[iri->scheme].name, iri->uri + old_scheme_len);
 			if (iri->uri_allocated)
 				xfree(iri->uri);
-			iri->uri = new_uri;
+			iri->uri = wget_aprintf("%s%s", schemes[iri->scheme].name, iri->uri + old_scheme_len);;
 			iri->uri_allocated = true;
 		}
 	}
