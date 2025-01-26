@@ -1262,9 +1262,6 @@ struct wget_iri_st {
 	/// If set, port was explicitly given
 	bool
 		port_given : 1;
-	/// If set, free uri in iri_free()
-	bool
-		uri_allocated : 1;
 	/// If set, free host in iri_free()
 	bool
 		host_allocated : 1;

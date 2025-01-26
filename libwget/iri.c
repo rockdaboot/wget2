@@ -396,8 +396,6 @@ void wget_iri_free_content(wget_iri *iri)
 			xfree(iri->safe_uri);
 		else
 			iri->safe_uri = NULL;
-		if (iri->uri_allocated)
-			xfree(iri->uri);
 		if (iri->host_allocated)
 			xfree(iri->host);
 		if (iri->path_allocated)
@@ -720,8 +718,7 @@ wget_iri *wget_iri_clone(const wget_iri *iri)
 	if (!clone)
 		return NULL;
 
-	clone->uri = strcpy((char *) (clone + 1), iri->uri);
-	clone->uri_allocated = 0;
+	clone->uri = (char *) (clone + 1);
 
 	if (iri->userinfo)
 		clone->safe_uri = wget_strdup(iri->safe_uri);
@@ -1444,21 +1441,21 @@ wget_iri_scheme wget_iri_set_scheme(wget_iri *iri, wget_iri_scheme scheme)
 			iri->port = schemes[scheme].port;
 
 		size_t old_scheme_len = strlen(schemes[old_scheme].name);
+		size_t scheme_len = strlen(schemes[scheme].name);
 
 		if (strncmp(iri->uri, schemes[old_scheme].name, old_scheme_len) == 0 && iri->uri[old_scheme_len] == ':') {
-			if (iri->uri_allocated)
-				xfree(iri->uri);
-			iri->uri = wget_aprintf("%s%s", schemes[iri->scheme].name, iri->uri + old_scheme_len);;
-			iri->uri_allocated = true;
+			memmove((char *)iri->uri + scheme_len, iri->uri + old_scheme_len, iri->msize - old_scheme_len);
+			memcpy((char *)iri->uri, schemes[scheme].name, scheme_len);
+		}
+
+		if (iri->userinfo) {
+			xfree(iri->safe_uri);
+			iri->safe_uri = create_safe_uri(iri);
+		} else {
+			iri->safe_uri = iri->uri;
 		}
 	}
 
-	if (iri->userinfo) {
-		xfree(iri->safe_uri);
-		iri->safe_uri = create_safe_uri(iri);
-	} else {
-		iri->safe_uri = iri->uri;
-	}
 	return old_scheme;
 }
 
