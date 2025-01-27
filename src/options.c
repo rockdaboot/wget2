@@ -2265,6 +2265,12 @@ static const struct optionw options[] = {
 		{ "Print the server response headers. (default: off)\n"
 		}
 	},
+	{ "show-progress", &config.force_progress, parse_bool, -1, 0,
+		SECTION_DOWNLOAD,
+		{ "Show Progress Bar (Deprecated alias for --force-progress)\n",
+		  "(default: off)\n"
+		}
+	},
 #ifdef WITH_GPGME
 	{ "signature-extensions", &config.sig_ext, parse_stringlist, 1, 0,
 		SECTION_GPG,
