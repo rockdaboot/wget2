@@ -1907,6 +1907,16 @@ static int process_response_header(wget_http_response *resp)
 
 		wget_cookie_normalize_cookies(job->iri, resp->cookies);
 		wget_cookie_store_cookies(config.cookie_db, resp->cookies);
+
+		wget_buffer uri_buf;
+		char uri_sbuf[1024];
+		wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
+
+		wget_iri_relative_to_abs(iri, resp->location, (size_t) -1, &uri_buf);
+		if (uri_buf.length)
+			queue_url_from_remote(job, "utf-8", uri_buf.data, URL_FLG_REDIRECTION, NULL);
+
+		wget_buffer_deinit(&uri_buf);
 	}
 
 	return 0;
