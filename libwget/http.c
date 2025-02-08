@@ -1346,6 +1346,7 @@ static bool cidr_v4_match(const char *cidr, struct in_addr *addr)
 
 #include <netinet/in.h>
 
+#ifdef HAVE_IPV6
 static bool cidr_v6_match(const char *cidr, struct in6_addr *addr)
 {
 	const char *slash_pos = strchr(cidr, '/');
@@ -1375,6 +1376,7 @@ static bool cidr_v6_match(const char *cidr, struct in6_addr *addr)
 	uint8_t mask = (uint8_t) ~(0xFF >> bits);
 	return ((network_addr.s6_addr[bytes] ^ addr->s6_addr[bytes]) & mask) == 0;
 }
+#endif
 
 int wget_http_match_no_proxy(const wget_vector *no_proxies_vec, const char *host)
 {
@@ -1382,13 +1384,17 @@ int wget_http_match_no_proxy(const wget_vector *no_proxies_vec, const char *host
 		return 0;
 
 	struct in_addr addr;
+#ifdef HAVE_IPV6
 	struct in6_addr addr6;
+#endif
 	bool ipv4 = false, ipv6 = false;
 
 	if (inet_pton(AF_INET, host, &addr) == 1) {
 		ipv4 = true;
+#ifdef HAVE_IPV6
 	} else if (inet_pton(AF_INET6, host, &addr6) == 1) {
 		ipv6 = true;
+#endif
 	}
 
 	// https://www.gnu.org/software/emacs/manual/html_node/url/Proxies.html
@@ -1405,10 +1411,12 @@ int wget_http_match_no_proxy(const wget_vector *no_proxies_vec, const char *host
 			if (cidr_v4_match(no_proxy, &addr)) {
 				return 1;
 			}
+#ifdef HAVE_IPV6
 		} else if (ipv6) {
 			if (cidr_v6_match(no_proxy, &addr6)) {
 				return 1;
 			}
+#endif
 		}
 
 		// check for subdomain match
