@@ -486,7 +486,21 @@ char *wget_human_readable(char *buf, size_t bufsize, uint64_t n)
  * to the width and height of the active terminal in number of columns. If
  * either of the parameter is NULL, its value will not be set by the function.
  */
-#ifdef HAVE_IOCTL
+#ifdef __OS2__
+int wget_get_screen_size(int *width, int *height)
+{
+	int wsz[2];
+
+	_scrsize (wsz);
+
+	if (width)
+		*width = wsz[0];
+	if (height)
+		*height = wsz[1];
+
+	return 0;
+}
+#elif defined HAVE_IOCTL
 int wget_get_screen_size(int *width, int *height)
 {
 	struct winsize wsz;
