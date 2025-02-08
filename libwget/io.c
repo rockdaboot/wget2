@@ -233,6 +233,10 @@ int wget_ready_2_transfer(int fd, int timeout, int mode)
 {
 	int rc = -1;
 	struct pollfd pollfd;
+	if (fd < 0) {
+		debug_printf(_("wget_ready_2_transfer asked to watch invalid fd, likely an incorrect call\n"));
+		return -1;
+	}
 
 	pollfd.fd = fd;
 
