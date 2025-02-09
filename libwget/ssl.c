@@ -28,12 +28,20 @@
 
 const char *wget_ssl_default_cert_dir(void)
 {
+#ifndef __OS2__
 	return "/etc/ssl/certs";
+#else
+	return "/@unixroot/etc/ssl/certs";
+#endif
 }
 
 const char *wget_ssl_default_ca_bundle_path(void)
 {
+#ifndef __OS2__
 	return NULL;
+#else
+	return "/@unixroot/etc/ssl/cert.pem";
+#endif
 }
 
 #else // _WIN32
