@@ -7,6 +7,8 @@
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".dll"
 #elif defined __CYGWIN__
 #define LOCAL_NAME(x) OBJECT_DIR "/cyg" x ".dll"
+#elif defined __OS2__
+#define LOCAL_NAME(x) OBJECT_DIR "/" x ".dll"
 #else
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
 #endif

@@ -58,6 +58,9 @@ do { \
 #elif defined __CYGWIN__
 #define BUILD_NAME(x) ".libs" "/cyg" x ".dll"
 #define LOCAL_NAME(x) OBJECT_DIR "/cyg" x ".dll"
+#elif defined __OS2__
+#define BUILD_NAME(x) ".libs" "/" x ".dll"
+#define LOCAL_NAME(x) OBJECT_DIR "/" x ".dll"
 #else
 #define BUILD_NAME(x) ".libs" "/lib" x ".so"
 #define LOCAL_NAME(x) OBJECT_DIR "/lib" x ".so"
