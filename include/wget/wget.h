@@ -46,7 +46,7 @@
 // see https://www.gnu.org/software/gnulib/manual/html_node/Exported-Symbols-of-Shared-Libraries.html
 #if defined BUILDING_LIBWGET && HAVE_VISIBILITY
 #	define WGETAPI __attribute__ ((__visibility__("default")))
-#elif defined BUILDING_LIBWGET && defined _MSC_VER && !defined LIBWGET_STATIC
+#elif defined BUILDING_LIBWGET && (defined _MSC_VER || defined __OS2__) && !defined LIBWGET_STATIC
 #	define WGETAPI __declspec(dllexport)
 #elif defined _MSC_VER && !defined LIBWGET_STATIC
 #	define WGETAPI __declspec(dllimport)
@@ -2587,7 +2587,7 @@ WGETAPI void
  *
  *     WGET_EXPORT void wget_plugin_initializer(wget_plugin *plugin);
  */
-#ifdef _WIN32
+#if defined _WIN32 || defined __OS2__
 #	define WGET_EXPORT __declspec(dllexport)
 #elif __GNUC__ > 4
 #	define WGET_EXPORT __attribute__ ((__visibility__("default")))
