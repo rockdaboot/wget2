@@ -3460,7 +3460,7 @@ int init(int argc, const char **argv)
 		path = getenv("WGET2_PLUGIN_DIRS");
 		if (path) {
 			plugin_db_clear_search_paths();
-#ifdef _WIN32
+#if defined _WIN32 || defined __OS2__
 			plugin_db_add_search_paths(path, ';');
 #else
 			plugin_db_add_search_paths(path, ':');

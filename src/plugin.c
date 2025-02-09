@@ -366,7 +366,7 @@ int plugin_db_load_from_envvar(void)
 	str = getenv(plugin_list_envvar);
 
 	if (str) {
-#ifdef _WIN32
+#if defined _WIN32 || defined __OS2__
 		char sep = ';';
 #else
 		char sep = ':';
@@ -385,7 +385,7 @@ int plugin_db_load_from_envvar(void)
 			str = (const char *) wget_vector_get(v, i);
 			if (strchr(str, '/'))
 				local = 1;
-#ifdef _WIN32
+#if defined _WIN32 || defined __OS2__
 			if (strchr(str, '\\'))
 				local = 1;
 #endif

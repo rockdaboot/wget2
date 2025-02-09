@@ -32,7 +32,7 @@
 
 #include <dirent.h>
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __OS2__
 #  define SLASH '\\'
 #else
 #  define SLASH '/'
@@ -107,7 +107,7 @@ int main(WGET_GCC_UNUSED int argc, char **argv)
 
 	target_len = strlen(target);
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __OS2__
 	target_len -= 4; // ignore .exe
 #endif
 

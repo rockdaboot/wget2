@@ -244,7 +244,7 @@ static int dl_match(const char *path, size_t *start_out, size_t *len_out)
 	for (i = 0; path[i]; i++) {
 		if (path[i] == '/')
 			mark = i + 1;
-#ifdef _WIN32
+#if defined _WIN32 || defined __OS2__
 		if (path[i] == '\\')
 			mark = i + 1;
 #endif // _WIN32
