@@ -193,7 +193,11 @@ static inline WGET_GCC_ALWAYS_INLINE void
 restore_cursor_position(void)
 {
 	// ESC 8: Restore cursor position
+#ifndef __OS2__
 	fputs("\0338", stdout);
+#else
+	fputs("\033[u", stdout);
+#endif
 }
 
 static inline WGET_GCC_ALWAYS_INLINE void
@@ -202,7 +206,11 @@ bar_print_slot(const wget_bar *bar, int slot)
 	// ESC 7: Save cursor
 	// CSI <n> A: Cursor up
 	// CSI <n> G: Cursor horizontal absolute
+#ifndef __OS2__
 	wget_fprintf(stdout, "\0337\033[%dA\033[1G", bar->nslots - slot);
+#else
+	wget_fprintf(stdout, "\033[s\033[%dA\r", bar->nslots - slot);
+#endif
 }
 
 static inline WGET_GCC_ALWAYS_INLINE void
@@ -639,7 +647,11 @@ void wget_bar_print(wget_bar *bar, int slot, const char *display)
 	wget_thread_mutex_lock(bar->mutex);
 	bar_print_slot(bar, slot);
 	// CSI <n> G: Cursor horizontal absolute
+#ifndef __OS2__
 	wget_fprintf(stdout, "\033[27G[%-*.*s]", bar->max_width, bar->max_width, display);
+#else
+	wget_fprintf(stdout, "\r\033[26C[%-*.*s]", bar->max_width, bar->max_width, display);
+#endif
 	restore_cursor_position();
 	fflush(stdout);
 	wget_thread_mutex_unlock(bar->mutex);
@@ -736,7 +748,17 @@ void wget_bar_write_line_ext(wget_bar *bar, const char *buf, size_t len, const c
 	// CSI <n>G: Cursor horizontal absolute
 	// CSI 0J:   Clear from cursor to end of screen
 	// CSI 31m:  Red text color
+#ifndef __OS2__
 	wget_fprintf(stdout, "\0337\033[1S\033[%dA\033[1G\033[0J%s", bar->nslots + 1, pre);
+#else
+	int w, h, r;
+	wget_get_screen_size(&w, &h);
+	wget_fprintf(stdout, "\033[s\033[%dH\n\033[u\033[%dA\r\033[K",
+				 h, bar->nslots + 1);
+	while (h-- > 0)
+		fputs("\033[1B\r\033[K", stdout);
+	wget_fprintf(stdout, "\033[u\033[%dA\r%s", bar->nslots + 1, pre);
+#endif
 	fwrite(buf, 1, len, stdout);
 	fputs(post, stdout); // reset text color
 	restore_cursor_position();
