@@ -44,7 +44,7 @@ ENV PKG_CONFIG_PATH="$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig" \
     CFLAGS="-O2 -g" \
     WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
 
-RUN git clone --recursive https://gitlab.com/gnuwget/gnulib-mirror.git gnulib
+RUN git clone --recursive https://git.savannah.gnu.org/git/gnulib.git gnulib
 ENV GNULIB_REFDIR=/usr/local/gnulib
 
 RUN wget -q -O- https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz | tar xz
