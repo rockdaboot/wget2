@@ -70,20 +70,26 @@ RUN cd libpsl && \
     --enable-runtime=libidn2 --enable-builtin --prefix=$INSTALLDIR && \
     make -j$(nproc) && make install && cd .. && rm -rf libpsl
 
+RUN git clone https://github.com/gmp-mirror/gmp-6.3
+RUN cd gmp-6.3 && \
+    ./.bootstrap && \
+	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static && \
+	make -j$(nproc) && make install && cd .. && rm -rf gmp-6.3
+
 RUN git clone https://git.lysator.liu.se/nettle/nettle.git
-RUN cd nettle && \
+RUN cd nettle && git checkout nettle_3.8.1_release_20220727 && \
 	bash .bootstrap && \
-	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --enable-mini-gmp --disable-shared --enable-static \
+	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static \
 	--disable-documentation --prefix=$INSTALLDIR && \
 	make -j$(nproc) && make install && cd .. && rm -rf nettle
 
-RUN wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.4.tar.xz | tar x --xz
+RUN wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.10.tar.xz | tar x --xz
 RUN cd gnutls-* && \
 	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR \
-		--with-nettle-mini --disable-shared --enable-static --with-included-libtasn1 \
-		--with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite \
-                --disable-tools --disable-cxx --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration \
-		--disable-guile && \
+    --with-nettle-mini --disable-shared --enable-static --with-included-libtasn1 \
+    --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite \
+    --disable-tools --disable-cxx --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration \
+    --disable-guile --disable-gcc-warnings && \
 	make -j$(nproc) && make install && cd .. && rm -rf gnutls-*
 
 RUN git clone https://github.com/zlib-ng/zlib-ng
@@ -123,8 +129,7 @@ RUN cd libmicrohttpd-* && \
 	make -j$(nproc) && make install && cd .. && rm -rf libmicrohttpd-*
 
 RUN git clone https://gitlab.com/gnuwget/wget2.git
-RUN cd wget2 && \
-	./bootstrap --skip-po && \
+RUN cd wget2 && ./bootstrap --skip-po && \
 	LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive" CFLAGS="-O2 -DNGHTTP2_STATICLIB" \
 	./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows && \
-	make -j$(nproc)
+	make -C lib -j$(nproc) && make -C libwget -j$(nproc) && make -C src -j$(nproc)
