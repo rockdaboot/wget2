@@ -437,6 +437,21 @@ void wget_iri_free(wget_iri **iri)
  */
 wget_iri *wget_iri_parse(const char *url, const char *encoding)
 {
+	return wget_iri_parse_ex(url, encoding, 0);
+}
+
+/**
+ * \param[in] url A URL/IRI
+ * \param[in] encoding Original encoding of \p url
+ * \return A libwget IRI (`wget_iri`)
+ *
+ * The host, path, query and fragment parts will be converted to UTF-8 from
+ * the encoding given in the parameter \p encoding. GNU libiconv is used
+ * to perform the conversion, so this value should be the name of a valid character set
+ * supported by that library, such as "utf-8" or "iso-8859-1".
+ */
+wget_iri *wget_iri_parse_ex(const char *url, const char *encoding, int flags)
+{
 	wget_iri *iri;
 	char *p, *s, *authority, c;
 	size_t slen, extra;
@@ -502,6 +517,7 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 	if (!iri)
 		return NULL;
 
+	iri->keep_path_as_is = (flags&WGET_IRI_KEEP_AS_IS) != 0;
 	iri->msize = slen + extra + 1;
 
 	if (have_scheme) {
@@ -511,7 +527,9 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 		*s++ = 0;
 
 		// p points to scheme
-		wget_iri_unescape_inline(p); // percent unescape
+		if (!iri->keep_path_as_is)
+			wget_iri_unescape_inline(p); // percent unescape
+
 		wget_strtolower(p); // convert to lowercase
 
 		bool found = false; // assume the scheme is unsupported
@@ -568,7 +586,8 @@ wget_iri *wget_iri_parse(const char *url, const char *encoding)
 			s++;
 		c = *s;
 		if (c) *s++ = 0;
-		wget_iri_unescape_inline((char *)iri->path);
+		if (!iri->keep_path_as_is)
+			wget_iri_unescape_inline((char *)iri->path);
 		normalize_path((char *)iri->path);
 	}
 
@@ -1192,8 +1211,12 @@ const char *wget_iri_get_escaped_host(const wget_iri *iri, wget_buffer *buf)
  */
 const char *wget_iri_get_escaped_resource(const wget_iri *iri, wget_buffer *buf)
 {
-	if (iri->path)
-		wget_iri_escape_path(iri->path, buf);
+	if (iri->path) {
+		if (!iri->keep_path_as_is)
+			wget_iri_escape_path(iri->path, buf);
+		else
+			wget_buffer_strcat(buf, iri->path);
+	}
 
 	// Do not actually escape the query field. This part of the URL *MAY*
 	// contain reserved characters which should be passed on as-is and without

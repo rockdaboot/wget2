@@ -49,10 +49,10 @@ int main(void)
 		{	.name = "/301.html",
 			.code = "301 Redirect",
 			.headers = {
-				"Location: /with spaces .html",
+				"Location: /with+spaces.html",
 			}
 		},
-		{	.name = "/with spaces .html",
+		{	.name = "/with+spaces.html",
 			.code = "200 Dontcare",
 			.body = "<html>hello2</html>",
 			.headers = {

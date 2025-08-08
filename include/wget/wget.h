@@ -1180,6 +1180,9 @@ typedef enum {
 // flags for wget_iri_get_basename()
 #define WGET_IRI_WITH_QUERY  1
 
+// flags for wget_iri_parse_ex()
+#define WGET_IRI_KEEP_AS_IS  2
+
 /**
  * \ingroup libwget-iri
  *
@@ -1278,6 +1281,9 @@ struct wget_iri_st {
 	/// If set, the hostname part is a literal IPv4/IPv6 address
 	bool
 		is_ip_address : 1;
+	/// If set, the path part wasn't percent unescaped (e.g. for Location: headers in redirections)
+	bool
+		keep_path_as_is : 1;
 };
 
 typedef struct wget_iri_st wget_iri;
@@ -1311,6 +1317,8 @@ WGETAPI char *
 	wget_iri_unescape_url_inline(char *src) WGET_GCC_NONNULL_ALL;
 WGETAPI wget_iri *
 	wget_iri_parse(const char *uri, const char *encoding);
+WGETAPI wget_iri *
+	wget_iri_parse_ex(const char *uri, const char *encoding, int flags);
 WGETAPI wget_iri * NULLABLE
 	wget_iri_parse_base(const wget_iri *base, const char *url, const char *encoding);
 WGETAPI wget_iri * NULLABLE

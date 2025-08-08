@@ -632,6 +632,36 @@ static void test_iri_parse(void)
 	}
 }
 
+static void test_iri_parse_ex(void)
+{
+	wget_iri *iri;
+	wget_buffer buf;
+
+	iri = wget_iri_parse_ex("http://example%2ecom/a%20b%2Bc?q=1%262#sec%20tion", "utf-8", 0);
+	assert(iri != NULL);
+	assert(strcmp(iri->host, "example.com") == 0);
+	assert(strcmp(iri->path, "a b+c") == 0);
+	assert(strcmp(iri->query, "q=1%262") == 0);
+	assert(strcmp(iri->fragment, "sec tion") == 0);
+	wget_buffer_init(&buf, NULL, 64);
+	wget_iri_get_escaped_resource(iri, &buf);
+	assert(strcmp(buf.data, "a%20b+c?q=1%262") == 0);  // unescaped then re-escaped to %20
+	wget_buffer_deinit(&buf);
+	wget_iri_free(&iri);
+
+	iri = wget_iri_parse_ex("http://example%2ecom/a%20b%2Bc?q=1%262#sec%20tion", "utf-8", WGET_IRI_KEEP_AS_IS);
+	assert(iri != NULL);
+	assert(strcmp(iri->host, "example.com") == 0); // authority always unescaped
+	assert(strcmp(iri->path, "a%20b%2Bc") == 0);
+	assert(strcmp(iri->query, "q=1%262") == 0);
+	assert(strcmp(iri->fragment, "sec tion") == 0); // fragment always unescaped
+	wget_buffer_init(&buf, NULL, 64);
+	wget_iri_get_escaped_resource(iri, &buf);
+	assert(strcmp(buf.data, "a%20b%2Bc?q=1%262") == 0);  // escaped chars stay as-is
+	wget_buffer_deinit(&buf);
+	wget_iri_free(&iri);
+}
+
 /*
 // testing with https://github.com/annevk/url/blob/master/urltests.txt
 static void test_iri_parse_urltests(void)
@@ -2764,6 +2794,7 @@ int main(int argc, const char **argv)
 	}
 
 	test_iri_parse();
+	test_iri_parse_ex();
 //	test_iri_parse_urltests();
 	test_iri_relative_to_absolute();
 	test_iri_compare();
