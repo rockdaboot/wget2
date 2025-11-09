@@ -149,5 +149,5 @@ const char *wget_logger_get_file(wget_logger *logger)
 
 bool wget_logger_is_active(wget_logger *logger)
 {
-	return logger->vprintf != 0;
+	return logger->vprintf != NULL;
 }

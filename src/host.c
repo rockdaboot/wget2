@@ -217,7 +217,7 @@ static int WGET_GCC_NONNULL((1,2)) _search_host_for_free_job(void *_ctx, const v
 	// find next job to do
 	wget_list_browse(host->queue, (wget_list_browse_fn *) _search_queue_for_free_job, ctx);
 
-	return ctx->job != 0; // 1=found a job, 0=no free job
+	return ctx->job != NULL; // 1=found a job, 0=no free job
 }
 
 /**

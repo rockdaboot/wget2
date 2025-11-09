@@ -959,7 +959,7 @@ static void print_verification_status(gnutls_session_t session, const char *tag,
 static int verify_certificate_callback(gnutls_session_t session)
 {
 	unsigned int status, deinit_cert = 0, deinit_issuer = 0;
-	const gnutls_datum_t *cert_list = 0;
+	const gnutls_datum_t *cert_list = NULL;
 	unsigned int cert_list_size;
 	int ret = -1, err, ocsp_ok = 0, pinning_ok = 0;
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;

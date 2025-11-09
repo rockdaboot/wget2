@@ -1395,7 +1395,7 @@ int main(int argc, const char **argv)
 			int fd;
 			ssize_t len;
 			size_t bufsize = 0;
-			char *url, *buf = 0;
+			char *url, *buf = NULL;
 
 			// read URLs from input file
 			if ((fd = open(config.input_file, O_RDONLY|O_BINARY)) >= 0) {
@@ -1625,7 +1625,7 @@ void *input_thread(void *p WGET_GCC_UNUSED)
 	// wake up main thread to take control (e.g. checking if we are done)
 	wget_thread_cond_signal(main_cond);
 
-	input_tid = 0;
+	input_tid = NULL;
 	return NULL;
 }
 
