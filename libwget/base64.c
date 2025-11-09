@@ -170,9 +170,9 @@ char *wget_base64_decode_alloc(const char *src, size_t n, size_t *outlen)
 
 static size_t base64_encode(char *dst, const char *src, size_t n, int flags)
 {
-	static const char base64unsafe[64] =
+	static const char base64unsafe[] =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	static const char base64urlsafe[64] =
+	static const char base64urlsafe[] =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 	const char *base64 = (flags & WGET_BASE64_URLENCODE) ? base64urlsafe : base64unsafe;

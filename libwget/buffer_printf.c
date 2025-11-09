@@ -233,7 +233,7 @@ static void convert_dec(wget_buffer *buf, unsigned int flags, int field_width, i
 
 static void convert_pointer(wget_buffer *buf, void *pointer)
 {
-	static const char HEX[16] = "0123456789abcdef";
+	static const char HEX[] = "0123456789abcdef";
 	char str[32]; // long enough to hold hexadecimal pointer
 	char *dst;
 	int length;
