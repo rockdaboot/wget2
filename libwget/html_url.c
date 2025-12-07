@@ -259,9 +259,6 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 		if ((*tag|0x20) == 'a' && (tag[1] == 0 || !wget_strcasecmp_ascii(tag, "area"))
 			&& !wget_strcasecmp_ascii(attr, "download"))
 		{
-			if (!val)
-				return;
-
 			for (;len && c_isspace(*val); val++, len--); // skip leading spaces
 			for (;len && c_isspace(val[len - 1]); len--);  // skip trailing spaces
 			if (!len)
