@@ -2611,7 +2611,7 @@ static int WGET_GCC_NONNULL((1)) set_long_option(const char *name, const char *v
 		name += 2;
 	}
 	// If the option is negated (--no-) delete the "no-" prefix
-	if (!strncmp(name, "no-", 3)) {
+	if (!strncmp(name, "no-", 3) || !strncmp(name, "no_", 3)) {
 		invert = 1;
 		name += 3;
 	}
