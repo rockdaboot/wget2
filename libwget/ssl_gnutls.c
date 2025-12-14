@@ -1592,7 +1592,7 @@ static ssize_t ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int io
 				debug_printf("Fallback from TCP Fast Open... TFO is disabled at system level\n");
 				tcp->tcp_fastopen = 0;
 				ret = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
-				if (errno == ENOTCONN || errno == EINPROGRESS)
+				if (ret < 0 && (errno == ENOTCONN || errno == EINPROGRESS))
 					errno = EAGAIN;
 			}
 		}

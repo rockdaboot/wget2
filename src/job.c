@@ -192,6 +192,7 @@ int job_validate_file(JOB *job)
 	if (wget_vector_size(metalink->hashes) > 0 && (fd = open(metalink->name, O_RDONLY|O_BINARY)) != -1) {
 		// file exists, check which piece is invalid and re-queue it
 		int rc = -1;
+		errno = 0;
 		for (int it = 0; errno != EINTR && it < wget_vector_size(metalink->hashes); it++) {
 			wget_metalink_hash *hash = wget_vector_get(metalink->hashes, it);
 

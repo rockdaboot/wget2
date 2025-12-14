@@ -3608,16 +3608,17 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		// TODO SAVE UNIQUE-NESS
 	} else {
 		if (fd == -1) {
-			if (errno == EEXIST && is_file(fname)) {
+			int err = errno;
+			if (err == EEXIST && is_file(fname)) {
 				error_printf(_("File '%s' already there; not retrieving.\n"), fname);
 
 				if (config.page_requisites && !config.clobber) {
 					parse_localfile(job, job->blacklist_entry->local_filename, config.remote_encoding, resp->content_type, job->iri);
 				}
-			} else if (errno == EISDIR || is_directory(fname))
+			} else if (err == EISDIR || is_directory(fname))
 				info_printf(_("Directory / file name clash - not saving '%s'\n"), fname);
 			else {
-				error_printf(_("Failed to open '%s' (%d)\n"), fname, errno);
+				error_printf(_("Failed to open '%s' (%d)\n"), fname, err);
 				set_exit_status(EXIT_STATUS_IO);
 			}
 		}
