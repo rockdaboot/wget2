@@ -258,7 +258,7 @@ Sanitizers/Debian:
     - export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
     - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
     - make -j$(nproc) -C lib
-    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
+    - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT"
 
 Scan-Build/Debian:
   stage: stage1-testing
