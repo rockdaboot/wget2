@@ -135,8 +135,8 @@ static char * get_local_filename_real(const wget_iri *iri)
 		char tmp[1024];
 
 		char *fname_esc = (sizeof(tmp) < buf.length * 3 + 1)
-			? tmp
-			: wget_malloc(buf.length * 3 + 1);
+			? wget_malloc(buf.length * 3 + 1)
+			: tmp;
 
 		if (wget_restrict_file_name(fname, fname_esc, config.restrict_file_names) != fname) {
 			// escaping was really done, replace fname
