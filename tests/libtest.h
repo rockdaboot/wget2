@@ -33,6 +33,7 @@
 #ifndef TESTS_LIBTEST_H
 #define TESTS_LIBTEST_H
 
+#include <stdbool.h>
 #include <wget.h>
 
 #ifdef	__cplusplus
@@ -49,6 +50,7 @@ extern "C" {
 #define WGET_TEST_HTTPS_REJECT_CONNECTIONS 1006
 #define WGET_TEST_H2_ONLY 1007
 #define WGET_TEST_SKIP_H2 1008
+#define WGET_TEST_H2_MIN_CONCURRENT_STREAMS 1009
 #define WGET_TEST_FEATURE_MHD 1101
 #define WGET_TEST_FEATURE_TLS 1102
 #define WGET_TEST_FEATURE_IDN 1103
@@ -155,7 +157,8 @@ typedef struct {
 
 	bool
 		https_only : 1,
-		http_only : 1;
+		http_only : 1,
+		h2_delay_response : 1;
 } wget_test_url_t;
 
 WGETAPI void wget_test_stop_server(void);
