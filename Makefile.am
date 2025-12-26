@@ -29,7 +29,7 @@ endif
 SUBDIRS += fuzz unit-tests
 
 if WITH_MICROHTTPD
-if WITH_GNUTLS
+if WITH_GNUTLS_IN_TESTSUITE
 SUBDIRS += tests
 endif
 endif

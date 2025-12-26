@@ -596,7 +596,12 @@ void wget_ssl_init(void)
 		wolfSSL_Init();
 
 		if (!wget_strcasecmp_ascii(config.secure_protocol, "SSLv2")) {
+#ifdef HAVE_SSLV2_CLIENT_METHOD
 			method = SSLv2_client_method();
+#else
+			method = wolfSSLv23_client_method();
+			min_version = WOLFSSL_SSLV3; // SSLv2 is no longer supported, use SSLv3 as minimum
+#endif
 		} else if (!wget_strcasecmp_ascii(config.secure_protocol, "SSLv3")) {
 			method = wolfSSLv23_client_method();
 			min_version = WOLFSSL_SSLV3;
