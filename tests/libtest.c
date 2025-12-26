@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <utime.h>
 #include <dirent.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 
@@ -45,11 +46,13 @@
 #include "libtest.h"
 
 #include <microhttpd.h>
-#ifdef HAVE_MICROHTTPD_HTTP2_H
-#  include <microhttpd_http2.h>
-#endif
 #ifndef HAVE_MHD_FREE
 #  define MHD_free wget_free
+#endif
+
+#ifdef WITH_LIBNGHTTP2
+#  include <nghttp2/nghttp2.h>
+#  include <pthread.h>
 #endif
 #ifndef MHD_HTTP_RANGE_NOT_SATISFIABLE
 #  define MHD_HTTP_RANGE_NOT_SATISFIABLE MHD_HTTP_REQUESTED_RANGE_NOT_SATISFIABLE
@@ -91,7 +94,8 @@ static int
 	clean_directory,
 	reject_http_connection,
 	reject_https_connection,
-	ocsp_response_pos;
+	ocsp_response_pos,
+	h2_min_concurrent_streams;
 static wget_vector
 	*request_urls,
 	*ocsp_responses;
@@ -116,8 +120,7 @@ static enum CHECK_POST_HANDSHAKE_AUTH {
 static struct MHD_Daemon
 	*httpdaemon,
 	*httpsdaemon,
-	*ocspdaemon,
-	*h2daemon;
+	*ocspdaemon;
 
 #ifdef WITH_GNUTLS_OCSP
 static gnutls_pcert_st *pcrt;
@@ -135,6 +138,32 @@ typedef struct {
 #if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
 static gnutls_ocsp_data_st *ocsp_stap_resp;
 #endif
+#endif
+
+#ifdef WITH_LIBNGHTTP2
+typedef struct {
+	nghttp2_session *session;
+	gnutls_session_t tls_session;
+	int sockfd;
+	char *method;
+	char *path;
+	const char *response_body;  // Points to test URL body
+	size_t response_body_len;
+	size_t response_body_offset;
+	int32_t stream_id;
+	char **header_names;   // Allocated header names to free later
+	char **header_values;  // Allocated header values to free later
+	int num_headers;       // Number of allocated headers
+} h2_session_data;
+
+typedef struct {
+	int listen_fd;
+	pthread_t thread;
+	volatile int running;
+	gnutls_certificate_credentials_t creds;
+} h2_server_t;
+
+static h2_server_t *nghttp2_server;
 #endif
 
 // for passing URL query string
@@ -705,19 +734,519 @@ static enum MHD_Result _answer_to_connection(
 	return ret;
 }
 
+#ifdef WITH_LIBNGHTTP2
+
+static ssize_t h2_send_callback(nghttp2_session *session WGET_GCC_UNUSED,
+	const uint8_t *data, size_t length, int flags WGET_GCC_UNUSED, void *user_data)
+{
+	h2_session_data *session_data = (h2_session_data *) user_data;
+	ssize_t nwrite = gnutls_record_send(session_data->tls_session, data, length);
+
+	if (nwrite < 0) {
+		if (nwrite == GNUTLS_E_AGAIN || nwrite == GNUTLS_E_INTERRUPTED)
+			return NGHTTP2_ERR_WOULDBLOCK;
+		return NGHTTP2_ERR_CALLBACK_FAILURE;
+	}
+
+	return nwrite;
+}
+
+static ssize_t h2_recv_callback(nghttp2_session *session WGET_GCC_UNUSED,
+	uint8_t *buf, size_t length, int flags WGET_GCC_UNUSED, void *user_data)
+{
+	h2_session_data *session_data = (h2_session_data *) user_data;
+	ssize_t nread = gnutls_record_recv(session_data->tls_session, buf, length);
+
+	if (nread < 0) {
+		if (nread == GNUTLS_E_AGAIN || nread == GNUTLS_E_INTERRUPTED)
+			return NGHTTP2_ERR_WOULDBLOCK;
+		return NGHTTP2_ERR_CALLBACK_FAILURE;
+	}
+
+	if (nread == 0)
+		return NGHTTP2_ERR_EOF;
+
+	return nread;
+}
+
+static ssize_t h2_data_read_callback(nghttp2_session *session WGET_GCC_UNUSED,
+	int32_t stream_id, uint8_t *buf, size_t length, uint32_t *data_flags,
+	nghttp2_data_source *source WGET_GCC_UNUSED, void *user_data WGET_GCC_UNUSED)
+{
+	h2_session_data *stream_data = nghttp2_session_get_stream_user_data(session, stream_id);
+	if (!stream_data || !stream_data->response_body)
+		return 0;
+
+	size_t remaining = stream_data->response_body_len - stream_data->response_body_offset;
+
+	// Limit chunk size to 8KB to allow proper rate limiting on the client side
+	// Without this limit, large responses are sent too quickly and bypass rate limiting
+	// Smaller chunks allow better rate limiting granularity, especially with HTTP/2 multiplexing
+	static const size_t max_chunk = 8 * 1024;
+	if (length > max_chunk)
+		length = max_chunk;
+
+	size_t to_send = remaining < length ? remaining : length;
+
+	if (to_send > 0) {
+		memcpy(buf, stream_data->response_body + stream_data->response_body_offset, to_send);
+		stream_data->response_body_offset += to_send;
+	}
+
+	if (stream_data->response_body_offset >= stream_data->response_body_len)
+		*data_flags |= NGHTTP2_DATA_FLAG_EOF;
+
+	return (ssize_t) to_send;
+}
+
+static int h2_on_header_callback(nghttp2_session *session,
+	const nghttp2_frame *frame, const uint8_t *name, size_t namelen,
+	const uint8_t *value, size_t valuelen, uint8_t flags WGET_GCC_UNUSED, void *user_data WGET_GCC_UNUSED)
+{
+	h2_session_data *session_data = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+
+	if (!session_data || frame->hd.type != NGHTTP2_HEADERS)
+		return 0;
+
+	if (frame->headers.cat != NGHTTP2_HCAT_REQUEST)
+		return 0;
+
+	// Parse :method and :path pseudo-headers
+	if (namelen == 7 && memcmp(name, ":method", 7) == 0) {
+		session_data->method = wget_strmemdup((const char *) value, valuelen);
+	} else if (namelen == 5 && memcmp(name, ":path", 5) == 0) {
+		session_data->path = wget_strmemdup((const char *) value, valuelen);
+	}
+
+	return 0;
+}
+
+static int h2_on_begin_headers_callback(nghttp2_session *session,
+	const nghttp2_frame *frame, void *user_data)
+{
+	if (frame->hd.type != NGHTTP2_HEADERS || frame->headers.cat != NGHTTP2_HCAT_REQUEST)
+		return 0;
+
+	h2_session_data *stream_data = wget_calloc(1, sizeof(h2_session_data));
+	if (!stream_data)
+		return NGHTTP2_ERR_CALLBACK_FAILURE;
+
+	h2_session_data *session_data = (h2_session_data *)user_data;
+	stream_data->session = session;
+	stream_data->tls_session = session_data->tls_session;
+	stream_data->sockfd = session_data->sockfd;
+	stream_data->stream_id = frame->hd.stream_id;
+	stream_data->response_body = NULL;
+	stream_data->response_body_len = 0;
+	stream_data->response_body_offset = 0;
+
+	nghttp2_session_set_stream_user_data(session, frame->hd.stream_id, stream_data);
+
+	return 0;
+}
+
+static int h2_on_frame_recv_callback(nghttp2_session *session,
+	const nghttp2_frame *frame, void *user_data WGET_GCC_UNUSED)
+{
+	if (frame->hd.type != NGHTTP2_HEADERS || frame->headers.cat != NGHTTP2_HCAT_REQUEST)
+		return 0;
+
+	h2_session_data *stream_data = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+	if (!stream_data || !stream_data->path)
+		return 0;
+
+	// Find matching URL in test definitions
+	const char *path = stream_data->path;
+	if (*path == '/')
+		path++;
+
+	wget_test_url_t *url = NULL;
+	for (size_t i = 0; i < nurls; i++) {
+		const char *url_name = urls[i].name;
+		if (*url_name == '/')
+			url_name++;
+
+		if (strcmp(path, url_name) == 0) {
+			url = &urls[i];
+			break;
+		}
+	}
+
+	// Prepare response
+	const char *status = "404 Not Found";
+	const char *body = "Not Found";
+	size_t body_len = strlen(body);
+
+	if (url) {
+		status = url->code;
+		body = url->body;
+		body_len = url->body_len ? url->body_len : (body ? strlen(body) : 0);
+	}
+
+	// Store response body in stream context
+	stream_data->response_body = body;
+	stream_data->response_body_len = body_len;
+	stream_data->response_body_offset = 0;
+
+	// Parse status code
+	int status_code = 404;
+	if (status)
+		status_code = atoi(status);
+
+	// Build response headers
+	char status_str[16];
+	wget_snprintf(status_str, sizeof(status_str), "%d", status_code);
+
+	#define MAX_HEADERS 20
+	nghttp2_nv hdrs[MAX_HEADERS];
+	int nhdrs = 0;
+
+	hdrs[nhdrs].name = (uint8_t *) ":status";
+	hdrs[nhdrs].namelen = strlen((char *) hdrs[nhdrs].name);
+	hdrs[nhdrs].value = (uint8_t *) status_str;
+	hdrs[nhdrs].valuelen = strlen(status_str);
+	hdrs[nhdrs].flags = NGHTTP2_NV_FLAG_NONE;
+	nhdrs++;
+
+	hdrs[nhdrs].name = (uint8_t *) "server";
+	hdrs[nhdrs].namelen = strlen((char *) hdrs[nhdrs].name);
+	hdrs[nhdrs].value = (uint8_t *) "libwget-test-h2/1.0";
+	hdrs[nhdrs].valuelen = strlen((char *) hdrs[nhdrs].value);
+	hdrs[nhdrs].flags = NGHTTP2_NV_FLAG_NONE;
+	nhdrs++;
+
+	// Add custom headers from test definition
+	if (url) {
+		for (int i = 0; i < 10 && url->headers[i] && nhdrs < MAX_HEADERS - 1; i++) {
+			const char *header = url->headers[i];
+			const char *colon = strchr(header, ':');
+			if (colon) {
+				size_t name_len = colon - header;
+				const char *value = colon + 1;
+				while (*value == ' ') value++;
+
+				// Convert header name to lowercase for HTTP/2
+				char *name_lower = wget_strmemdup(header, name_len);
+				for (size_t j = 0; j < name_len; j++)
+					name_lower[j] = tolower((unsigned char) name_lower[j]);
+
+				hdrs[nhdrs].name = (uint8_t *) name_lower;
+				hdrs[nhdrs].namelen = name_len;
+				hdrs[nhdrs].value = (uint8_t *) wget_strdup(value);
+				hdrs[nhdrs].valuelen = strlen(value);
+				hdrs[nhdrs].flags = NGHTTP2_NV_FLAG_NONE;
+				nhdrs++;
+			}
+		}
+	}
+
+	// Setup data provider for response body
+	nghttp2_data_provider data_prov;
+	data_prov.read_callback = h2_data_read_callback;
+
+	// Store allocated headers in stream_data so we can free them later
+	// (nghttp2 doesn't copy header data, so they must remain valid)
+	if (nhdrs > 2) {
+		stream_data->num_headers = nhdrs - 2;  // Exclude :status and server headers
+		stream_data->header_names = wget_malloc(stream_data->num_headers * sizeof(char *));
+		stream_data->header_values = wget_malloc(stream_data->num_headers * sizeof(char *));
+		for (int i = 0; i < stream_data->num_headers; i++) {
+			stream_data->header_names[i] = (char *) hdrs[i + 2].name;
+			stream_data->header_values[i] = (char *) hdrs[i + 2].value;
+		}
+	} else {
+		stream_data->header_names = NULL;
+		stream_data->header_values = NULL;
+		stream_data->num_headers = 0;
+	}
+
+	// Submit response with data provider
+	int rv = nghttp2_submit_response(session, stream_data->stream_id, hdrs, nhdrs,
+		body_len > 0 ? &data_prov : NULL);
+
+	return (rv == 0) ? 0 : NGHTTP2_ERR_CALLBACK_FAILURE;
+}
+
+static int h2_on_stream_close_callback(nghttp2_session *session,
+	int32_t stream_id, uint32_t error_code WGET_GCC_UNUSED, void *user_data WGET_GCC_UNUSED)
+{
+	h2_session_data *stream_data = nghttp2_session_get_stream_user_data(session, stream_id);
+
+	if (stream_data) {
+		wget_free(stream_data->method);
+		wget_free(stream_data->path);
+
+		// Free allocated header strings
+		if (stream_data->header_names) {
+			for (int i = 0; i < stream_data->num_headers; i++) {
+				wget_free(stream_data->header_names[i]);
+				wget_free(stream_data->header_values[i]);
+			}
+			wget_free(stream_data->header_names);
+			wget_free(stream_data->header_values);
+		}
+
+		wget_free(stream_data);
+	}
+
+	return 0;
+}
+
+static void *h2_server_thread(void *arg WGET_GCC_UNUSED)
+{
+	if (!nghttp2_server)
+		return NULL;
+
+	while (nghttp2_server->running) {
+		struct sockaddr_in client_addr;
+		socklen_t client_len = sizeof(client_addr);
+
+		// Accept with timeout
+		fd_set readfds;
+		struct timeval tv;
+		FD_ZERO(&readfds);
+		FD_SET(nghttp2_server->listen_fd, &readfds);
+		tv.tv_sec = 0;
+		tv.tv_usec = 100000;  // 100ms timeout
+
+		if (select(nghttp2_server->listen_fd + 1, &readfds, NULL, NULL, &tv) <= 0)
+			continue;
+
+		int client_fd = accept(nghttp2_server->listen_fd, (struct sockaddr *) &client_addr, &client_len);
+		if (client_fd < 0)
+			continue;
+
+		// Setup TLS (keep blocking for handshake)
+		gnutls_session_t tls_session;
+		gnutls_init(&tls_session, GNUTLS_SERVER);
+		gnutls_priority_set_direct(tls_session, "NORMAL:-VERS-ALL:+VERS-TLS1.3:+VERS-TLS1.2", NULL);
+		gnutls_credentials_set(tls_session, GNUTLS_CRD_CERTIFICATE, nghttp2_server->creds);
+
+		// ALPN for h2
+		gnutls_datum_t alpn_protos[1];
+		alpn_protos[0].data = (unsigned char *)"h2";
+		alpn_protos[0].size = 2;
+		gnutls_alpn_set_protocols(tls_session, alpn_protos, 1, 0);
+
+		gnutls_transport_set_int(tls_session, client_fd);
+		gnutls_handshake_set_timeout(tls_session, GNUTLS_DEFAULT_HANDSHAKE_TIMEOUT);
+
+		// TLS handshake (blocking)
+		int ret = gnutls_handshake(tls_session);
+		if (ret < 0) {
+			gnutls_deinit(tls_session);
+			close(client_fd);
+			continue;
+		}
+
+		// Make socket non-blocking after handshake
+		int flags = fcntl(client_fd, F_GETFL, 0);
+		fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
+		gnutls_transport_set_int(tls_session, client_fd);
+
+		// Verify ALPN selected h2
+		gnutls_datum_t alpn;
+		ret = gnutls_alpn_get_selected_protocol(tls_session, &alpn);
+		if (ret < 0 || alpn.size != 2 || memcmp(alpn.data, "h2", 2) != 0) {
+			gnutls_bye(tls_session, GNUTLS_SHUT_RDWR);
+			gnutls_deinit(tls_session);
+			close(client_fd);
+			continue;
+		}
+
+		// Create nghttp2 session
+		h2_session_data session_data = {
+			.session = NULL,
+			.tls_session = tls_session,
+			.sockfd = client_fd,
+			.method = NULL,
+			.path = NULL,
+			.response_body = NULL,
+			.response_body_len = 0,
+			.response_body_offset = 0,
+			.stream_id = 0
+		};
+
+		nghttp2_session_callbacks *callbacks;
+		nghttp2_session_callbacks_new(&callbacks);
+		nghttp2_session_callbacks_set_send_callback(callbacks, h2_send_callback);
+		nghttp2_session_callbacks_set_on_frame_recv_callback(callbacks, h2_on_frame_recv_callback);
+		nghttp2_session_callbacks_set_on_stream_close_callback(callbacks, h2_on_stream_close_callback);
+		nghttp2_session_callbacks_set_on_header_callback(callbacks, h2_on_header_callback);
+		nghttp2_session_callbacks_set_on_begin_headers_callback(callbacks, h2_on_begin_headers_callback);
+		nghttp2_session_callbacks_set_recv_callback(callbacks, h2_recv_callback);
+
+		nghttp2_session_server_new(&session_data.session, callbacks, &session_data);
+		nghttp2_session_callbacks_del(callbacks);
+
+		// Send server connection preface (SETTINGS frame)
+		nghttp2_settings_entry iv[2] = {
+			{NGHTTP2_SETTINGS_MAX_CONCURRENT_STREAMS, 100},
+			{NGHTTP2_SETTINGS_ENABLE_PUSH, 0}
+		};
+		nghttp2_submit_settings(session_data.session, NGHTTP2_FLAG_NONE, iv, 2);
+
+		// Event loop for this connection
+		while (nghttp2_server->running) {
+			// Check if we want to read or write
+			int want_read = nghttp2_session_want_read(session_data.session);
+			int want_write = nghttp2_session_want_write(session_data.session);
+
+			if (!want_read && !want_write)
+				break;
+
+			// Use select with timeout
+			fd_set readfds, writefds;
+			struct timeval tv;
+			FD_ZERO(&readfds);
+			FD_ZERO(&writefds);
+
+			if (want_read)
+				FD_SET(client_fd, &readfds);
+			if (want_write)
+				FD_SET(client_fd, &writefds);
+
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
+
+			int nfds = select(client_fd + 1, &readfds, &writefds, NULL, &tv);
+			if (nfds <= 0)
+				break;  // Timeout or error
+
+			if (FD_ISSET(client_fd, &readfds)) {
+				int rv = nghttp2_session_recv(session_data.session);
+				if (rv != 0 && rv != NGHTTP2_ERR_WOULDBLOCK)
+					break;
+			}
+
+			if (FD_ISSET(client_fd, &writefds)) {
+				int rv = nghttp2_session_send(session_data.session);
+				if (rv != 0 && rv != NGHTTP2_ERR_WOULDBLOCK)
+					break;
+			}
+		}
+
+		// Cleanup
+		nghttp2_session_del(session_data.session);
+		gnutls_bye(tls_session, GNUTLS_SHUT_RDWR);
+		gnutls_deinit(tls_session);
+		close(client_fd);
+	}
+
+	return NULL;
+}
+
+static int h2_server_start(void)
+{
+	if (nghttp2_server)
+		return 0;  // Already running
+
+	nghttp2_server = wget_calloc(1, sizeof(h2_server_t));
+	if (!nghttp2_server)
+		return -1;
+
+	// Create listen socket
+	nghttp2_server->listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (nghttp2_server->listen_fd < 0) {
+		wget_free(nghttp2_server);
+		nghttp2_server = NULL;
+		return -1;
+	}
+
+	int optval = 1;
+	setsockopt(nghttp2_server->listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+	struct sockaddr_in server_addr;
+	memset(&server_addr, 0, sizeof(server_addr));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	server_addr.sin_port = 0;  // Let OS assign port
+
+	if (bind(nghttp2_server->listen_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
+		close(nghttp2_server->listen_fd);
+		wget_free(nghttp2_server);
+		nghttp2_server = NULL;
+		return -1;
+	}
+
+	// Get assigned port
+	socklen_t addr_len = sizeof(server_addr);
+	if (getsockname(nghttp2_server->listen_fd, (struct sockaddr *) &server_addr, &addr_len) < 0) {
+		close(nghttp2_server->listen_fd);
+		wget_free(nghttp2_server);
+		nghttp2_server = NULL;
+		return -1;
+	}
+
+	h2_server_port = ntohs(server_addr.sin_port);
+
+	if (listen(nghttp2_server->listen_fd, 5) < 0) {
+		close(nghttp2_server->listen_fd);
+		wget_free(nghttp2_server);
+		nghttp2_server = NULL;
+		return -1;
+	}
+
+	// Setup TLS credentials
+	gnutls_certificate_allocate_credentials(&nghttp2_server->creds);
+	gnutls_certificate_set_x509_key_file(nghttp2_server->creds,
+		SRCDIR "/certs/x509-server-cert.pem",
+		SRCDIR "/certs/x509-server-key.pem",
+		GNUTLS_X509_FMT_PEM);
+
+	// Start server thread
+	nghttp2_server->running = 1;
+	if (pthread_create(&nghttp2_server->thread, NULL, h2_server_thread, NULL) != 0) {
+		gnutls_certificate_free_credentials(nghttp2_server->creds);
+		close(nghttp2_server->listen_fd);
+		wget_free(nghttp2_server);
+		nghttp2_server = NULL;
+		return -1;
+	}
+
+	wget_info_printf("HTTP/2 server started on port %d\n", h2_server_port);
+
+	return 0;
+}
+
+static void h2_server_stop(void)
+{
+	if (!nghttp2_server)
+		return;
+
+	nghttp2_server->running = 0;
+
+	// Shutdown the listen socket to unblock accept()
+	shutdown(nghttp2_server->listen_fd, SHUT_RDWR);
+
+	pthread_join(nghttp2_server->thread, NULL);
+
+	gnutls_certificate_free_credentials(nghttp2_server->creds);
+	close(nghttp2_server->listen_fd);
+
+	wget_free(nghttp2_server);
+	nghttp2_server = NULL;
+
+	h2_server_port = 0;
+}
+
+#endif // WITH_LIBNGHTTP2
+
 static void _http_server_stop(void)
 {
 	MHD_stop_daemon(httpdaemon);
 	MHD_stop_daemon(httpsdaemon);
 	MHD_stop_daemon(ocspdaemon);
-	MHD_stop_daemon(h2daemon);
+
+#ifdef WITH_LIBNGHTTP2
+	h2_server_stop();
+#endif
 
 	wget_xfree(key_pem);
 	wget_xfree(cert_pem);
 
-#ifdef WITH_GNUTLS_OCSP
-	gnutls_global_deinit();
-#endif
+	// Don't call gnutls_global_deinit() here as it breaks subsequent tests
+	// that need TLS. GnuTLS will clean up automatically at process exit.
 }
 
 static enum MHD_Result _check_to_accept(
@@ -789,34 +1318,6 @@ static int _http_server_start(int SERVER_MODE)
 
 				if (!httpsdaemon) {
 					wget_error_printf("Cannot start the HTTPS server.\n");
-					return 1;
-				}
-			}
-			else {
-#ifdef HAVE_MICROHTTPD_HTTP2_H
-				h2daemon = MHD_start_daemon(MHD_USE_HTTP2 | MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
-#if MHD_VERSION >= 0x00096302
-						| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
-#endif
-					,
-					port_num, (MHD_AcceptPolicyCallback)_check_to_accept,
-					(void *) (ptrdiff_t) SERVER_MODE, (MHD_AccessHandlerCallback)_answer_to_connection, NULL,
-					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
-					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
-#if MHD_VERSION >= 0x00095400
-					MHD_OPTION_STRICT_FOR_CLIENT, 1,
-#endif
-#if MHD_VERSION >= 0x00096800
-			MHD_OPTION_SERVER_INSANITY, 1,
-#endif
-					//Enough to send 1MB files through
-					MHD_OPTION_CONNECTION_MEMORY_LIMIT, 1*1024*1024,
-					MHD_OPTION_END);
-#endif
-
-				if (!h2daemon) {
-					wget_error_printf("Cannot start the h2 server.\n");
-					wget_error_printf("HTTP/2 support for MHD not found.\n");
 					return 1;
 				}
 			}
@@ -970,10 +1471,6 @@ static int _http_server_start(int SERVER_MODE)
 		else if (SERVER_MODE == OCSP_MODE)
 			dinfo = MHD_get_daemon_info(ocspdaemon, MHD_DAEMON_INFO_BIND_PORT);
 #endif
-#ifdef HAVE_MICROHTTPD_HTTP2_H
-		else if (SERVER_MODE == H2_MODE)
-			dinfo = MHD_get_daemon_info(h2daemon, MHD_DAEMON_INFO_BIND_PORT);
-#endif
 
 		if (!dinfo || dinfo->port == 0)
 			return 1;
@@ -987,7 +1484,7 @@ static int _http_server_start(int SERVER_MODE)
 		else if (SERVER_MODE == OCSP_MODE)
 			ocsp_server_port = port_num;
 #endif
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 		else if (SERVER_MODE == H2_MODE) {
 			h2_server_port = port_num;
 		}
@@ -1006,10 +1503,6 @@ static int _http_server_start(int SERVER_MODE)
 #ifdef WITH_GNUTLS_OCSP
 		else if (SERVER_MODE == OCSP_MODE)
 			dinfo = MHD_get_daemon_info(ocspdaemon, MHD_DAEMON_INFO_LISTEN_FD);
-#endif
-#ifdef HAVE_MICROHTTPD_HTTP2_H
-		else if (SERVER_MODE == H2_MODE)
-			dinfo = MHD_get_daemon_info(h2daemon, MHD_DAEMON_INFO_LISTEN_FD);
 #endif
 
 		if (!dinfo)
@@ -1039,7 +1532,7 @@ static int _http_server_start(int SERVER_MODE)
 					ocsp_server_port = port_num;
 #endif
 
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 				else if (SERVER_MODE == H2_MODE)
 					h2_server_port = port_num;
 #endif
@@ -1157,7 +1650,7 @@ static char *_insert_ports(const char *src)
 				if (proto_pass == HTTP_1_1_PASS) {
 					dst += wget_snprintf(dst, srclen - (dst - ret), "%d", http_server_port);
 				}
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 				else {
 					dst += wget_snprintf(dst, srclen - (dst - ret), "%d", reject_https_connection ? http_server_port : h2_server_port);
 				}
@@ -1169,7 +1662,7 @@ static char *_insert_ports(const char *src)
 				if (proto_pass == HTTP_1_1_PASS) {
 					dst += wget_snprintf(dst, srclen - (dst - ret), "%d", https_server_port);
 				}
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 				else {
 					dst += wget_snprintf(dst, srclen - (dst - ret), "%d", h2_server_port);
 				}
@@ -1217,8 +1710,8 @@ void wget_test_start_server(int first_key, ...)
 	bool ocsp_stap = 0;
 	bool start_ocsp = 0;
 #endif
-#ifdef HAVE_MICROHTTPD_HTTP2_H
-	bool start_h2 = 1;
+#ifdef WITH_LIBNGHTTP2
+	bool start_h2 = 0;  // Changed to 0: HTTP/2 is now opt-in with WGET_TEST_H2_ONLY
 #endif
 #endif
 
@@ -1239,10 +1732,10 @@ void wget_test_start_server(int first_key, ...)
 #else
 	wget_debug_printf("MHD_OPTION_SERVER_INSANITY: no\n");
 #endif
-#ifdef HAVE_MICROHTTPD_HTTP2_H
-	wget_debug_printf("HAVE_MICROHTTPD_HTTP2_H: yes\n");
+#ifdef WITH_LIBNGHTTP2
+	wget_debug_printf("WITH_LIBNGHTTP2: yes\n");
 #else
-	wget_debug_printf("HAVE_MICROHTTPD_HTTP2_H: no\n");
+	wget_debug_printf("WITH_LIBNGHTTP2: no\n");
 #endif
 #ifdef HAVE_GNUTLS_OCSP_H
 	wget_debug_printf("HAVE_GNUTLS_OCSP_H: yes\n");
@@ -1278,7 +1771,7 @@ void wget_test_start_server(int first_key, ...)
 		case WGET_TEST_HTTP_ONLY:
 #ifdef WITH_TLS
 			start_https = 0;
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 			start_h2 = 0;
 #endif
 #endif
@@ -1287,6 +1780,9 @@ void wget_test_start_server(int first_key, ...)
 			start_http = 0;
 #ifdef WITH_TLS
 			start_https = 0;
+#endif
+#ifdef WITH_LIBNGHTTP2
+			start_h2 = 1;
 #endif
 			break;
 		case WGET_TEST_HTTP_REJECT_CONNECTIONS:
@@ -1321,7 +1817,7 @@ void wget_test_start_server(int first_key, ...)
 			exit(WGET_TEST_EXIT_SKIP);
 #else
 			start_http = 0;
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 			start_h2 = 0;
 #endif
 #ifdef WITH_TLS
@@ -1340,7 +1836,7 @@ void wget_test_start_server(int first_key, ...)
 #ifdef WITH_TLS
 			start_https = 0;
 #endif
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 			start_h2 = 0;
 #endif
 #ifdef WITH_TLS
@@ -1351,7 +1847,7 @@ void wget_test_start_server(int first_key, ...)
 			break;
 #endif
 		case WGET_TEST_SKIP_H2:
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 			start_h2 = 0;
 #endif
 			break;
@@ -1401,11 +1897,11 @@ void wget_test_start_server(int first_key, ...)
 			wget_error_printf_exit("Failed to start HTTPS server, error %d\n", rc);
 	}
 
-#ifdef HAVE_MICROHTTPD_HTTP2_H
-	// start h2 server
+#ifdef WITH_LIBNGHTTP2
+	// start libnghttp2 h2 server
 	if (start_h2) {
-		if ((rc = _http_server_start(H2_MODE)) != 0)
-			wget_error_printf_exit("Failed to start h2 server, error %d\n", rc);
+		if ((rc = h2_server_start()) != 0)
+			wget_error_printf_exit("Failed to start HTTP/2 server, error %d\n", rc);
 	}
 #endif
 #endif
@@ -1492,7 +1988,7 @@ void wget_test_set_executable(const char *program)
 
 void wget_test(int first_key, ...)
 {
-#if !defined WITH_LIBNGHTTP2 || !defined HAVE_MICROHTTPD_HTTP2_H
+#ifndef WITH_LIBNGHTTP2
 	if (!httpdaemon && !httpsdaemon)
 		exit(WGET_TEST_EXIT_SKIP);
 #endif
@@ -1505,8 +2001,12 @@ void wget_test(int first_key, ...)
 #ifndef WITH_LIBNGHTTP2
 			continue;
 #endif
-			if (!h2daemon)
+#ifdef WITH_LIBNGHTTP2
+			if (!nghttp2_server)
 				continue;
+#else
+			continue;  // No HTTP/2 support without libnghttp2
+#endif
 		}
 
 		// now replace {{port}} in the body by the actual server port
@@ -1568,15 +2068,18 @@ void wget_test(int first_key, ...)
 
 		keep_tmpfiles = 0;
 		clean_directory = 1;
+		h2_min_concurrent_streams = 0;
 
 		if (!request_urls) {
 			request_urls = wget_vector_create(8, NULL);
 			wget_vector_set_destructor(request_urls, NULL);
 		}
 
+#ifdef WITH_GNUTLS_OCSP
 		if (!ocsp_responses) {
 			ocsp_responses = wget_vector_create(2, NULL);
 		}
+#endif
 
 		va_start (args, first_key);
 		for (key = first_key; key; key = va_arg(args, int)) {
@@ -1622,6 +2125,9 @@ void wget_test(int first_key, ...)
 				break;
 			case WGET_TEST_SERVER_SEND_CONTENT_LENGTH:
 				server_send_content_length = !!va_arg(args, int);
+				break;
+			case WGET_TEST_H2_MIN_CONCURRENT_STREAMS:
+				h2_min_concurrent_streams = va_arg(args, int);
 				break;
 			case WGET_TEST_POST_HANDSHAKE_AUTH:
 				if (va_arg(args, int)) {
@@ -1732,7 +2238,7 @@ void wget_test(int first_key, ...)
 					wget_buffer_printf_append(cmd, " \"http://localhost:%d/%s\"",
 					http_server_port, request_url);
 				}
-#ifdef HAVE_MICROHTTPD_HTTP2_H
+#ifdef WITH_LIBNGHTTP2
 				else {
 					wget_buffer_printf_append(cmd, " \"https://localhost:%d/%s\"",
 					h2_server_port, request_url);
@@ -1834,11 +2340,13 @@ void wget_test(int first_key, ...)
 			wget_free(post_handshake_auth);
 #endif
 
+#ifdef WITH_GNUTLS_OCSP
 		for (int i = 0; i < wget_vector_size(ocsp_responses); i++) {
 			ocsp_resp_t *r = wget_vector_get(ocsp_responses, i);
 			wget_xfree(r->data);
 		}
 		wget_vector_clear(ocsp_responses);
+#endif
 		wget_vector_clear(request_urls);
 		wget_buffer_free(&cmd);
 
@@ -1880,10 +2388,10 @@ int wget_test_get_https_server_port(void)
 
 int wget_test_get_h2_server_port(void)
 {
-#ifndef HAVE_MICROHTTPD_HTTP2_H
-	return -1;
-#else
+#ifdef WITH_LIBNGHTTP2
 	return h2_server_port;
+#else
+	return -1;
 #endif
 }
 
