@@ -169,6 +169,25 @@ static void add_mirror(metalink_context *ctx, const char *value)
 	ctx->priority = 999999;
 }
 
+static const char *sanitized_filename(const char *in)
+{
+	// RFC 5854:
+	//   The path MUST NOT contain any directory traversal
+	//   directives or information.  The path MUST be relative.  The path
+	//   MUST NOT begin with a "/", "./", or "../"; contain "/../"; or end
+	//   with "/..".
+	if (*in == '/'
+	    || !strncmp(in, "./", 2)
+	    || !strncmp(in, "../", 3)
+	    || strstr(in, "/../")
+	    || wget_match_tail(in, "/../"))
+	{
+		return NULL;
+	}
+
+	return wget_strdup(in);
+}
+
 static void metalink_parse(void *context, int flags, const char *dir, const char *attr, const char *val, size_t len, size_t pos WGET_GCC_UNUSED)
 {
 	metalink_context *ctx = context;
@@ -194,7 +213,7 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 		if (attr) {
 			if (*dir == 0) { // /metalink/file
 				if (!ctx->metalink->name && !wget_strcasecmp_ascii(attr, "name")) {
-					ctx->metalink->name = wget_strdup(value);
+					ctx->metalink->name = sanitized_filename(value);
 				}
 			} else if (!wget_strcasecmp_ascii(dir, "/verification/pieces")) {
 				if (!wget_strcasecmp_ascii(attr, "type")) {
@@ -239,7 +258,7 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 		if (attr) {
 			if (*dir == 0) { // /metalink/file
 				if (!ctx->metalink->name && !wget_strcasecmp_ascii(attr, "name")) {
-					ctx->metalink->name = wget_strdup(value);
+					ctx->metalink->name = sanitized_filename(value);
 				}
 			} else if (!wget_strcasecmp_ascii(dir, "/pieces")) {
 				if (!wget_strcasecmp_ascii(attr, "type")) {

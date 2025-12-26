@@ -2194,18 +2194,26 @@ static void process_response(wget_http_response *resp)
 				error_printf(_("File length %llu - remove job\n"), (unsigned long long)job->metalink->size);
 			} else if (!job->metalink->mirrors) {
 				error_printf(_("No download mirrors found - remove job\n"));
+			} else if (!job->metalink->name || !*job->metalink->name) {
+				error_printf(_("Metalink file name is invalid, missing or empty - remove job\n"));
 			} else {
 				// just loaded a metalink description, create parts and sort mirrors
 
 				// start or resume downloading
 				if (!job_validate_file(job)) {
-					// sort mirrors by priority to download from highest priority first
-					wget_metalink_sort_mirrors(job->metalink);
+					// Account for retries
+					if (config.tries && ++job->failures > config.tries) {
+						error_printf(_("Metalink validation failed: max tries reached - remove job\n"));
+						job->done = 1;
+					} else {
+						// sort mirrors by priority to download from highest priority first
+						wget_metalink_sort_mirrors(job->metalink);
 
-					// wake up sleeping workers
-					wget_thread_cond_signal(worker_cond);
+						// wake up sleeping workers
+						wget_thread_cond_signal(worker_cond);
 
-					job->done = 0; // do not remove this job from queue yet
+						job->done = 0; // do not remove this job from queue yet
+					}
 				} // else file already downloaded and checksum ok
 			}
 			return;
@@ -3115,6 +3123,9 @@ void metalink_parse_localfile(const char *fname)
 			wget_metalink_free(&metalink);
 		} else if (!metalink->mirrors) {
 			error_printf(_("No download mirrors found\n"));
+			wget_metalink_free(&metalink);
+		} else if (!metalink->name || !*metalink->name) {
+			error_printf(_("Metalink file name is missing or empty\n"));
 			wget_metalink_free(&metalink);
 		} else {
 			// create parts and sort mirrors
