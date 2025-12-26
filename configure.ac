@@ -529,6 +529,7 @@ AC_ARG_WITH(ssl, AS_HELP_STRING([--with-ssl], [Use SSL/TLS with specified librar
 AS_IF([test "$with_ssl" = "gnutls" || test "$with_ssl" = "yes"], [
   PKG_CHECK_MODULES([GNUTLS], [gnutls], [
     with_gnutls=yes
+    with_gnutls_in_testsuite=yes
     LIBS="$GNUTLS_LIBS $LIBS"
     CFLAGS="$GNUTLS_CFLAGS $CFLAGS"
     AC_DEFINE([WITH_GNUTLS], [1], [Use GnuTLS])
@@ -604,6 +605,7 @@ AS_IF([test "$with_ssl" = "wolfssl" || (test "$with_ssl" = "yes" && test "$with_
   AS_IF([test "$with_wolfssl" = "yes"], [
     with_libwolfcrypt=yes
     AC_DEFINE([WITH_LIBWOLFCRYPT], [1], [Use wolfcrypt])
+    AC_CHECK_FUNCS([SSLv2_client_method])
   ])
 ])
 
@@ -982,6 +984,7 @@ AS_IF([test "$with_libmicrohttpd" != "no"], [
     PKG_CHECK_MODULES([GNUTLS], [gnutls], [
       TEST_LIBS="$TEST_LIBS $GNUTLS_LIBS"
       TEST_CFLAGS="$TEST_CFLAGS $GNUTLS_CFLAGS"
+      with_gnutls_in_testsuite=yes
       AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite.])
       AC_CHECK_HEADERS([gnutls/ocsp.h],
         [AC_DEFINE([WITH_GNUTLS_OCSP], [1], [GnuTLS OCSP is supported for test suite.])],
@@ -990,7 +993,7 @@ AS_IF([test "$with_libmicrohttpd" != "no"], [
       old_LIBS=$LIBS
       old_CFLAGS=$CFLAGS
       AC_SEARCH_LIBS(gnutls_global_init, gnutls,
-        [AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite.])],
+        [with_gnutls_in_testsuite=yes; AC_DEFINE([WITH_GNUTLS_IN_TESTSUITE], [1], [GnuTLS is available for test suite.])],
         [AC_MSG_WARN(*** GnuTLS is not available. Some tests will not run.)])
       TEST_LIBS=$LIBS
       TEST_CFLAGS=$CFLAGS
@@ -1001,6 +1004,7 @@ AS_IF([test "$with_libmicrohttpd" != "no"], [
 ])
 
 AM_CONDITIONAL([WITH_MICROHTTPD], [test "$with_libmicrohttpd" = "yes"])
+AM_CONDITIONAL([WITH_GNUTLS_IN_TESTSUITE], [test "$with_gnutls_in_testsuite" = "yes"])
 
 
 # libproxy support
