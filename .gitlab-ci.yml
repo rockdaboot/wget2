@@ -31,7 +31,6 @@ variables:
   DEBIAN_BUILD: buildenv-wget2-debian-stable
   DEBIAN_TESTING_BUILD: buildenv-wget2-debian-testing
   DEBIAN_STABLE_BUILD: buildenv-wget2-debian-stable
-  DEBIAN_STABLEi386_BUILD: buildenv-debian-stable-i386
   DEBIAN_UNSTABLE_BUILD: buildenv-wget2-debian-unstable
   FEDORA_BUILD: buildenv-wget2-fedora
   MINGW_BUILD: buildenv-mingw
@@ -304,11 +303,6 @@ Valgrind/Debian:
   extends:
     - .valgrind
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_STABLE_BUILD
-
-Valgrind/i386:
-  extends:
-    - .valgrind
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_STABLEi386_BUILD
 
 pages:
   stage: stage1-testing
