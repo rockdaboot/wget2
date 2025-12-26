@@ -819,8 +819,8 @@ static void ShowX509(WOLFSSL_X509 *x509, const char *hdr)
 		return;
 	}
 
-	issuer = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(x509), 0, 0);
-	subject = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_subject_name(x509), 0, 0);
+	issuer = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(x509), NULL, 0);
+	subject = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_subject_name(x509), NULL, 0);
 
 	debug_printf("%s issuer : %s subject: %s", hdr, issuer, subject);
 
