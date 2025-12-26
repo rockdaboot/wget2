@@ -33,7 +33,6 @@ variables:
   DEBIAN_STABLE_BUILD: buildenv-wget2-debian-stable
   DEBIAN_STABLEi386_BUILD: buildenv-debian-stable-i386
   DEBIAN_UNSTABLE_BUILD: buildenv-wget2-debian-unstable
-  DEBIAN_HTTP2_BUILD: buildenv-mhd-http2
   FEDORA_BUILD: buildenv-wget2-fedora
   MINGW_BUILD: buildenv-mingw
   MINGW_BUILD_STATIC: buildenv-mingw-static
@@ -418,26 +417,6 @@ Arch:
     - ./configure $CONFIGURE_BASE_FLAGS --cache-file cache/config.cache
     - make -j$(nproc)
     - make check -j$(nproc)
-
-Debian/HTTP2:
-  stage: stage1-testing
-  image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$DEBIAN_HTTP2_BUILD
-  extends:
-    - .defaults
-  script:
-    - export CFLAGS="$CFLAGS_DEFAULT"
-    - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
-    - cd wget2-*.*.?
-    - ./configure $CONFIGURE_BASE_FLAGS --enable-code-coverage --cache-file cache/config.cache
-    - make -j$(nproc)
-    - make check -j$(nproc)
-    - make code-coverage-capture
-  allow_failure: true
-  artifacts:
-    expire_in: 2 weeks
-    when: on_success
-    paths:
-      - wget2-*-coverage
 
 coverity:
   stage: stage1-testing
