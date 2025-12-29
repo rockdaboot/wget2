@@ -40,7 +40,7 @@ int main(void)
 		WGET_TEST_FEATURE_OCSP,
 		0);
 
-#if !defined(WITH_WOLFSSL) && !defined(WITH_OPENSSL)
+#if !defined WITH_WOLFSSL && !defined WITH_OPENSSL
 	// Test ocsp with 'verified' response
 	wget_test(
 		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-root-cert.pem --no-ocsp-file --no-ocsp-date --no-ocsp-nonce --ocsp --ocsp-server http://localhost:{{ocspport}}",
@@ -73,7 +73,7 @@ int main(void)
 			{	NULL} },
 		0);
 
-#if !defined(WITH_WOLFSSL) && !defined(WITH_OPENSSL)
+#if !defined WITH_WOLFSSL && !defined WITH_OPENSSL
 	// Test ocsp without specifying responder URL
 	wget_test(
 		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/ocsp/x509-root-cert.pem --no-ocsp-file --no-ocsp-date --no-ocsp-nonce --ocsp",
