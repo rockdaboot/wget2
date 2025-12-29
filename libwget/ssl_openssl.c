@@ -360,6 +360,7 @@ void wget_ssl_set_config_int(int key, int value)
 	case WGET_SSL_OCSP_DATE:
 		config.ocsp_date = value;
 		break;
+	case WGET_SSL_DANE: break;
 	default:
 		error_printf(_("Unknown configuration key %d (maybe this config value should be of another type?)\n"), key);
 	}
