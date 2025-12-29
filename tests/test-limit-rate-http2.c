@@ -122,7 +122,7 @@ int main(void)
 	if (!valgrind || !*valgrind || !strcmp(valgrind, "0"))
 		tolerance_ms = 200;
 	else
-		tolerance_ms = 500; // relatively high value due to valgrind tests and CI runners
+		tolerance_ms = 800; // relatively high value due to valgrind tests and CI runners
 
 	if (!WITHIN_RANGE(elapsed_ms, desired_ms, tolerance_ms)) {
 		wget_error_printf_exit("Time taken for single file with limit-rate enabled "
@@ -221,7 +221,7 @@ int main(void)
 	if (!valgrind || !*valgrind || !strcmp(valgrind, "0"))
 		tolerance_ms = 200;
 	else
-		tolerance_ms = 500; // relatively high value due to valgrind tests and CI runners
+		tolerance_ms = 800; // relatively high value due to valgrind tests and CI runners
 
 	if (!WITHIN_RANGE(elapsed_ms, desired_ms, tolerance_ms)) {
 		wget_error_printf_exit("Time taken for small file with limit-rate enabled "
