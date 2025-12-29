@@ -4369,6 +4369,7 @@ static int set_file_metadata(const wget_iri *origin_iri, const wget_iri *referre
 	if ((fd = fileno(fp)) < 0)
 		return -1;
 
+	errno = 0;
 	if (write_xattr_metadata("user.mime_type", mime_type, fd) < 0 && errno == ENOTSUP)
 		return -1; // give up early if file system doesn't support extended attributes
 
