@@ -290,6 +290,7 @@ fi
 
 if test "$gl_cc_sanitize_ubsan" = yes; then
   gl_WARN_ADD([-fsanitize=undefined])
+  gl_WARN_ADD([-fno-sanitize=function]) # Disabled: too many false positives with function pointer casts
   gl_WARN_ADD([-fsanitize=bool])
   gl_WARN_ADD([-fsanitize=alignment])
   gl_WARN_ADD([-fsanitize=null])
@@ -303,7 +304,6 @@ if test "$gl_cc_sanitize_ubsan" = yes; then
     gl_WARN_ADD([-fsanitize=array-bounds])
     gl_WARN_ADD([-fsanitize=builtin])
     gl_WARN_ADD([-fsanitize=float-divide-by-zero])
-    gl_WARN_ADD([-fsanitize=function])
     gl_WARN_ADD([-fsanitize=integer-divide-by-zero])
     gl_WARN_ADD([-fsanitize=object-size])
     gl_WARN_ADD([-fsanitize=return])
