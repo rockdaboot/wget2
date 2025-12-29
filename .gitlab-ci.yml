@@ -252,6 +252,8 @@ Sanitizers/Debian:
     - export CFLAGS="$CFLAGS_DEFAULT"
     - tar xf wget2-*.gz && rm wget2-*.gz
     - cd wget2-*
+    - git clone https://gitlab.com/gnuwget/wget2
+    - cp -a wget2/fuzz/*.in fuzz/
     - export CC="ccache clang"
     - export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1
     - export LSAN_OPTIONS=suppressions="$PWD/tests/clang-asan-suppressions"
