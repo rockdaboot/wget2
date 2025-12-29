@@ -3130,18 +3130,9 @@ static int use_askpass(void)
 static wget_dns_cache *dns_cache;
 static wget_dns *dns;
 
-static int preload_dns_cache(const char *fname)
+static int scan_from_file(FILE *fp)
 {
-	FILE *fp;
 	char buf[256], ip[64], name[256];
-
-	// wget_options_fuzzer sets config.dont_write, avoid waiting for stdin input forever
-	if (!strcmp(fname, "-") && !config.dont_write)
-		fp = stdin;
-	else if (!(fp = fopen(fname, "r"))) {
-		error_printf(_("Failed to open %s"), fname);
-		return -1;
-	}
 
 	while (fgets(buf, sizeof(buf), fp)) {
 		if (sscanf(buf, "%63s %255s", ip, name) != 2)
@@ -3154,10 +3145,24 @@ static int preload_dns_cache(const char *fname)
 		wget_dns_cache_ip(dns, ip, name, 443);
 	}
 
-	if (fp != stdin)
-		fclose(fp);
+	return ferror(fp);
+}
 
-	return 0;
+static int preload_dns_cache(const char *fname)
+{
+	// wget_options_fuzzer sets config.dont_write, avoid waiting for stdin input forever
+	if (!strcmp(fname, "-") && !config.dont_write)
+		return scan_from_file(stdin);
+
+	FILE *fp = fopen(fname, "r");
+	if (!fp) {
+		error_printf(_("Failed to open %s"), fname);
+		return -1;
+	}
+
+	int rc = scan_from_file(fp);
+	fclose(fp);
+	return rc;
 }
 
 static void WGET_GCC_NONNULL_ALL get_config_files(const char *config_home, const char *user_home)
