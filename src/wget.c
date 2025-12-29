@@ -1808,6 +1808,8 @@ static int process_response_header(wget_http_response *resp)
 #else
 			set_exit_status(EXIT_STATUS_REMOTE);
 #endif
+		} else if (resp->code == 403) {
+			set_exit_status(EXIT_STATUS_REMOTE);
 		}
 	}
 	else if (resp->code >= 500) {
