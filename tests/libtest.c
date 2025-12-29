@@ -70,7 +70,6 @@ enum MHD_Result {
 #endif
 
 #include <sys/types.h>
-#include <sys/select.h>
 #include <sys/socket.h>
 #include <netdb.h>
 
@@ -769,7 +768,7 @@ static ssize_t h2_recv_callback(nghttp2_session *session WGET_GCC_UNUSED,
 	return nread;
 }
 
-static ssize_t h2_data_read_callback(nghttp2_session *session WGET_GCC_UNUSED,
+static ssize_t h2_data_read_callback(nghttp2_session *session,
 	int32_t stream_id, uint8_t *buf, size_t length, uint32_t *data_flags,
 	nghttp2_data_source *source WGET_GCC_UNUSED, void *user_data WGET_GCC_UNUSED)
 {
@@ -928,7 +927,7 @@ static int h2_on_frame_recv_callback(nghttp2_session *session,
 				// Convert header name to lowercase for HTTP/2
 				char *name_lower = wget_strmemdup(header, name_len);
 				for (size_t j = 0; j < name_len; j++)
-					name_lower[j] = tolower((unsigned char) name_lower[j]);
+					name_lower[j] = (char) tolower((unsigned char) name_lower[j]);
 
 				hdrs[nhdrs].name = (uint8_t *) name_lower;
 				hdrs[nhdrs].namelen = name_len;
@@ -1001,16 +1000,8 @@ static void *h2_server_thread(void *arg WGET_GCC_UNUSED)
 		struct sockaddr_in client_addr;
 		socklen_t client_len = sizeof(client_addr);
 
-		// Accept with timeout
-		fd_set readfds;
-		struct timeval tv;
-		FD_ZERO(&readfds);
-		FD_SET(nghttp2_server->listen_fd, &readfds);
-		tv.tv_sec = 0;
-		tv.tv_usec = 100000;  // 100ms timeout
-
-		if (select(nghttp2_server->listen_fd + 1, &readfds, NULL, NULL, &tv) <= 0)
-			continue;
+                if (wget_ready_2_read(nghttp2_server->listen_fd, 100) <= 0)
+                    continue;
 
 		int client_fd = accept(nghttp2_server->listen_fd, (struct sockaddr *) &client_addr, &client_len);
 		if (client_fd < 0)
@@ -1089,37 +1080,23 @@ static void *h2_server_thread(void *arg WGET_GCC_UNUSED)
 		// Event loop for this connection
 		while (nghttp2_server->running) {
 			// Check if we want to read or write
-			int want_read = nghttp2_session_want_read(session_data.session);
-			int want_write = nghttp2_session_want_write(session_data.session);
+			int mode = nghttp2_session_want_read(session_data.session) != 0 ? WGET_IO_READABLE : 0;
+			mode |= nghttp2_session_want_write(session_data.session) != 0 ? WGET_IO_WRITABLE : 0;
 
-			if (!want_read && !want_write)
+			if (mode == 0)
 				break;
 
-			// Use select with timeout
-			fd_set readfds, writefds;
-			struct timeval tv;
-			FD_ZERO(&readfds);
-			FD_ZERO(&writefds);
+			int rc;
+			if ((rc = wget_ready_2_transfer(client_fd, 1000, WGET_IO_READABLE | WGET_IO_WRITABLE)) <= 0)
+				continue;
 
-			if (want_read)
-				FD_SET(client_fd, &readfds);
-			if (want_write)
-				FD_SET(client_fd, &writefds);
-
-			tv.tv_sec = 1;
-			tv.tv_usec = 0;
-
-			int nfds = select(client_fd + 1, &readfds, &writefds, NULL, &tv);
-			if (nfds <= 0)
-				break;  // Timeout or error
-
-			if (FD_ISSET(client_fd, &readfds)) {
+			if (rc & WGET_IO_READABLE) {
 				int rv = nghttp2_session_recv(session_data.session);
 				if (rv != 0 && rv != NGHTTP2_ERR_WOULDBLOCK)
 					break;
 			}
 
-			if (FD_ISSET(client_fd, &writefds)) {
+			if (rc & WGET_IO_WRITABLE) {
 				int rv = nghttp2_session_send(session_data.session);
 				if (rv != 0 && rv != NGHTTP2_ERR_WOULDBLOCK)
 					break;
