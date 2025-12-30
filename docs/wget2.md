@@ -183,7 +183,7 @@ Go to background immediately after startup. If no output file is specified via t
 ### `-F`, `--force-html`
 
   When input is read from a file, force it to be treated as an HTML file.  This enables you to retrieve relative links from
-  existing HTML files on your local disk, by adding "<base href="url">" to HTML, or using the `--base` command-line option.
+  existing HTML files on your local disk, by adding `<base href="url">` to HTML, or using the `--base` command-line option.
 
 ### `--force-css`
 
@@ -1835,8 +1835,8 @@ Go to background immediately after startup. If no output file is specified via t
 
       wget2 --ignore-tags=a,area -H -k -K -r https://<site>/<document>
 
-  However, the author of this option came across a page with tags like "<LINK REL="home" HREF="/">" and came to the
-  realization that specifying tags to ignore was not enough.  One can't just tell Wget2 to ignore "<LINK>", because
+  However, the author of this option came across a page with tags like `<LINK REL="home" HREF="/">` and came to the
+  realization that specifying tags to ignore was not enough.  One can't just tell Wget2 to ignore `<LINK>`, because
   then stylesheets will not be downloaded.  Now the best bet for downloading a single page and its requisites is
   the dedicated `--page-requisites` option.
 
