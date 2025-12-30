@@ -1205,56 +1205,69 @@ static void convert_links(void)
 			if (url->len >= 1 && *url->p == '#') // ignore e.g. href='#'
 				continue;
 
-			if (wget_iri_relative_to_abs(conversion->base, url->p, url->len, &buf)) {
-				// buf.data now holds the absolute URL as a string
-				wget_iri *iri = wget_iri_parse(buf.data, conversion->encoding);
-				blacklist_entry *blacklist_entry;
-				free_iri = false;
+			// Preprocess URL the same way as in normalize_uri() to ensure consistent
+			// URL encoding between initial download and link conversion.
+			// This fixes the bug where URLs with %2C (comma) and %7C (pipe) in query
+			// strings fail to match during blacklist lookup.
+			char *urlpart = wget_strmemdup(url->p, url->len);
+			wget_xml_decode_entities_inline(urlpart);
+			wget_iri_unescape_url_inline(urlpart);
 
-				if (!iri) {
-					info_printf(_("Cannot resolve URI '%s'\n"), buf.data);
-					continue;
+			if (!wget_iri_relative_to_abs(conversion->base, urlpart, strlen(urlpart), &buf)) {
+				xfree(urlpart);
+				continue;
+			}
+
+			xfree(urlpart);
+
+			// buf.data now holds the absolute URL as a string
+			wget_iri *iri = wget_iri_parse(buf.data, conversion->encoding);
+			blacklist_entry *blacklist_entry;
+			free_iri = false;
+
+			if (!iri) {
+				info_printf(_("Cannot resolve URI '%s'\n"), buf.data);
+				continue;
+			}
+
+			if (!(blacklist_entry = blacklist_add(iri))) {
+				blacklist_entry = blacklist_get(iri);
+				free_iri = true;
+			}
+
+			const char *filename = blacklist_entry->local_filename;
+
+			if (config.convert_links) {
+				convert_link_whole(filename, conversion, url, &buf);
+				if (iri->fragment) {
+					wget_buffer_memcat(&buf, "#", 1);
+					wget_buffer_strcat(&buf, iri->fragment);
 				}
+			} else if (config.convert_file_only)
+				convert_link_file_only(filename, url, &buf);
 
-				if (!(blacklist_entry = blacklist_add(iri))) {
-					blacklist_entry = blacklist_get(iri);
-					free_iri = true;
-				}
+			if (free_iri)
+				wget_iri_free(&iri);
 
-				const char *filename = blacklist_entry->local_filename;
+			if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {
+				// conversion takes place, write to disk
+				if (!fpout) {
+					if (config.backup_converted) {
+						char *dstfile = wget_aprintf("%s.orig", conversion->filename);
 
-				if (config.convert_links) {
-					convert_link_whole(filename, conversion, url, &buf);
-					if (iri->fragment) {
-						wget_buffer_memcat(&buf, "#", 1);
-						wget_buffer_strcat(&buf, iri->fragment);
-					}
-				} else if (config.convert_file_only)
-					convert_link_file_only(filename, url, &buf);
-
-				if (free_iri)
-					wget_iri_free(&iri);
-
-				if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {
-					// conversion takes place, write to disk
-					if (!fpout) {
-						if (config.backup_converted) {
-							char *dstfile = wget_aprintf("%s.orig", conversion->filename);
-
-							if (rename(conversion->filename, dstfile) == -1) {
-								wget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
-							}
-
-							xfree(dstfile);
+						if (rename(conversion->filename, dstfile) == -1) {
+							wget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
 						}
-						if (!(fpout = fopen(conversion->filename, "wb")))
-							wget_error_printf(_("Failed to write open %s (%d)"), conversion->filename, errno);
+
+						xfree(dstfile);
 					}
-					if (fpout) {
-						fwrite(data_ptr, 1, url->p - data_ptr, fpout);
-						fwrite(buf.data, 1, buf.length, fpout);
-						data_ptr = url->p + url->len;
-					}
+					if (!(fpout = fopen(conversion->filename, "wb")))
+						wget_error_printf(_("Failed to write open %s (%d)"), conversion->filename, errno);
+				}
+				if (fpout) {
+					fwrite(data_ptr, 1, url->p - data_ptr, fpout);
+					fwrite(buf.data, 1, buf.length, fpout);
+					data_ptr = url->p + url->len;
 				}
 			}
 		}
