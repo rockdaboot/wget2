@@ -790,6 +790,13 @@ skip_1xx:
 
 			debug_printf("# got header %zd bytes:\n%s\n\n", p - buf, buf);
 
+			wget_buffer *header = NULL;
+			if (req->response_keepheader) {
+				header = wget_buffer_alloc(p - buf + 4);
+				wget_buffer_memcpy(header, buf, p - buf);
+				wget_buffer_memcat(header, "\r\n", 2);
+			}
+
 			if (!(resp = wget_http_parse_response_header(buf)))
 				goto cleanup; // something is wrong with the header
 
@@ -804,12 +811,9 @@ skip_1xx:
 			}
 
 			if (req->response_keepheader) {
-				wget_buffer *header = wget_buffer_alloc(p - buf + 4);
-				wget_buffer_memcpy(header, buf, p - buf);
-				wget_buffer_memcat(header, "\r\n", 2);
-
 				resp->header = header;
-
+			} else {
+				xfree(header);
 			}
 
 			resp->req = req;
