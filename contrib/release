@@ -105,14 +105,13 @@ else
     if [ -n "${i//[0-9]/}" ]; then continue; fi
 
     if test $x -ge 1 || test $x -le ${#keys[@]}; then
-      IFS='/' arr=(${keys[$((x-1))]})
-      signing_key=${arr[1]}
+      signing_key=(${keys[$((x-1))]})
       break
     fi
   done
 fi
 unset IFS
-echo $signing_key
+echo Using key $signing_key
 
 # fetch app_version again, just in case
 app_ver=$(grep "^PACKAGE_VERSION='" configure|cut -d "'" -f2)
