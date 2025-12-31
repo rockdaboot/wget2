@@ -186,6 +186,7 @@ The versions are recommended, but older versions may also work.
 
 		(cd contrib; docker build -t wget2/static -f Dockerfile.win32.static .)
 		docker run --rm -v $PWD:/tmp wget2/static cp /usr/local/wget2/src/wget2.exe /tmp
+		sudo chown $USER: wget2.exe
 		# now you have `wget2.exe` with debug symbols in your current directory
 		# optional: remove debug symbols with
 		strip wget2.exe
