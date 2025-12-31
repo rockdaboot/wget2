@@ -1,4 +1,4 @@
-FROM debian:testing-slim
+FROM debian:trixie-slim
 
 LABEL maintainer "Tim Rühsen <tim.ruehsen@gmx.de>"
 
@@ -47,7 +47,7 @@ ENV PKG_CONFIG_PATH="$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig" \
 RUN git clone --recursive https://git.savannah.gnu.org/git/gnulib.git gnulib
 ENV GNULIB_REFDIR=/usr/local/gnulib
 
-RUN wget -q -O- https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz | tar xz
+RUN wget -q -O- https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz | tar xz
 RUN cd libiconv-* && \
     ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --prefix=$INSTALLDIR && \
     make -j$(nproc) && make install && cd .. && rm -rf libiconv-*
@@ -57,7 +57,7 @@ RUN cd libunistring-* && \
     ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --prefix=$INSTALLDIR && \
     make -j$(nproc) && make install && cd .. && rm -rf libunistring-*
 
-RUN wget -q -O- https://ftp.gnu.org/gnu/libidn/libidn2-2.3.3.tar.gz | tar xz
+RUN wget -q -O- https://ftp.gnu.org/gnu/libidn/libidn2-latest.tar.gz | tar xz
 RUN cd libidn2-* && \
     ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-doc \
     --disable-gcc-warnings --prefix=$INSTALLDIR && \
@@ -71,19 +71,19 @@ RUN cd libpsl && \
     make -j$(nproc) && make install && cd .. && rm -rf libpsl
 
 RUN git clone https://github.com/gmp-mirror/gmp-6.3
-RUN cd gmp-6.3 && \
+RUN cd gmp-* && \
     ./.bootstrap && \
 	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static && \
-	make -j$(nproc) && make install && cd .. && rm -rf gmp-6.3
+	make -j$(nproc) && make install && cd .. && rm -rf gmp-*
 
 RUN git clone https://git.lysator.liu.se/nettle/nettle.git
-RUN cd nettle && git checkout nettle_3.8.1_release_20220727 && \
+RUN cd nettle && git checkout nettle_3.10.2_release_20250626 && \
 	bash .bootstrap && \
 	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static \
 	--disable-documentation --prefix=$INSTALLDIR && \
 	make -j$(nproc) && make install && cd .. && rm -rf nettle
 
-RUN wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.10.tar.xz | tar x --xz
+RUN wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.11.tar.xz | tar x --xz
 RUN cd gnutls-* && \
 	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR \
     --with-nettle-mini --disable-shared --enable-static --with-included-libtasn1 \
@@ -104,7 +104,7 @@ RUN cd pcre2 && \
 	./configure --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static && \
 	make -j$(nproc) && make install && cd .. && rm -rf pcre2
 
-RUN wget -q -O- https://github.com/nghttp2/nghttp2/releases/download/v1.46.0/nghttp2-1.46.0.tar.gz | tar xz
+RUN wget -q -O- https://github.com/nghttp2/nghttp2/releases/download/v1.68.0/nghttp2-1.68.0.tar.gz | tar xz
 RUN cd nghttp2-* && \
 	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static \
 		--disable-python-bindings --disable-examples --disable-app --disable-failmalloc --disable-hpack-tools && \
