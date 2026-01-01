@@ -389,7 +389,7 @@ Go to background immediately after startup. If no output file is specified via t
       wget2 --retry-on-http-error=*,\!404 https://example.com/
 
   Please keep in mind that "200" is the only forbidden code. If it is included on the status list Wget2 will ignore it. The
-  max. number of download attempts is given by the `--tries` option.
+  max number of download attempts is given by the `--tries` option.
 
 ### `-O`, `--output-document=file`
 
