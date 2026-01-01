@@ -1,6 +1,6 @@
 FROM debian:trixie-slim
 
-LABEL maintainer "Tim Rühsen <tim.ruehsen@gmx.de>"
+LABEL maintainer="Tim Rühsen <tim.ruehsen@gmx.de>"
 
 WORKDIR /usr/local
 

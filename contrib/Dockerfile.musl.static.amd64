@@ -1,0 +1,100 @@
+FROM alpine:3.22
+
+LABEL maintainer="Tim Rühsen <tim.ruehsen@gmx.de>"
+
+WORKDIR /usr/local
+
+RUN apk add --no-cache \
+	git \
+	autoconf \
+	autoconf-archive \
+	automake \
+	libtool \
+	make \
+	flex \
+	bison \
+	gettext-dev \
+	gettext-static \
+	gperf \
+	gcc \
+	musl-dev \
+	pkgconf \
+	ca-certificates \
+	wget \
+	patch \
+	texinfo \
+	gengetopt \
+	curl \
+	lzip \
+	pandoc \
+	rsync \
+	python3 \
+	bc \
+	cmake \
+	gmp-static \
+	libunistring-dev \
+	libunistring-static \
+	pcre2-dev \
+	pcre2-static \
+	nghttp2-dev \
+	nghttp2-static \
+	libmicrohttpd-dev \
+	libmicrohttpd-static \
+	build-base \
+	bash
+
+ENV PREFIX=/usr/local
+ENV PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" \
+    PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig" \
+    CPPFLAGS="-I$PREFIX/include" \
+    LDFLAGS="-L$PREFIX/lib" \
+    CFLAGS="-O2 -g"
+
+RUN git clone --recursive https://git.savannah.gnu.org/git/gnulib.git gnulib
+ENV GNULIB_REFDIR=/usr/local/gnulib
+
+RUN wget -q -O- https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.18.tar.gz | tar xz
+RUN cd libiconv-* && \
+    ./configure --disable-shared --enable-static --prefix=$PREFIX && \
+    make -j$(nproc) && make install && cd .. && rm -rf libiconv-*
+
+RUN wget -q -O- https://ftp.gnu.org/gnu/libidn/libidn2-latest.tar.gz | tar xz
+RUN cd libidn2-* && \
+    ./configure --disable-shared --enable-static --disable-doc \
+    --disable-gcc-warnings --prefix=$PREFIX && \
+    make -j$(nproc) && make install && cd .. && rm -rf libidn2-*
+
+RUN git clone --recursive https://github.com/rockdaboot/libpsl.git
+RUN cd libpsl && \
+    ./autogen.sh && \
+    ./configure --disable-shared --enable-static \
+    --enable-runtime=libidn2 --enable-builtin --prefix=$PREFIX && \
+    make -j$(nproc) && make install && cd .. && rm -rf libpsl
+
+RUN git clone https://git.lysator.liu.se/nettle/nettle.git
+RUN cd nettle && git checkout nettle_3.10.2_release_20250626 && \
+	bash .bootstrap && \
+	./configure --disable-shared --enable-static \
+	--disable-documentation --prefix=$PREFIX && \
+	make -j$(nproc) && make install && cd .. && rm -rf nettle
+
+RUN wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.11.tar.xz | tar x --xz
+RUN cd gnutls-* && \
+	./configure --prefix=$PREFIX \
+    --with-nettle-mini --disable-shared --enable-static --with-included-libtasn1 \
+    --with-included-unistring --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite \
+    --disable-tools --disable-cxx --disable-maintainer-mode --disable-libdane --disable-hardware-acceleration \
+    --disable-guile --disable-gcc-warnings && \
+	make -j$(nproc) && make install && cd .. && rm -rf gnutls-*
+
+RUN git clone https://github.com/zlib-ng/zlib-ng
+RUN cd zlib-ng && \
+	CFLAGS="-O2" \
+	./configure --prefix=$PREFIX --static --zlib-compat && \
+	make -j$(nproc) && make install && cd .. && rm -rf zlib-ng
+
+RUN git clone https://gitlab.com/gnuwget/wget2.git
+RUN cd wget2 && ./bootstrap --skip-po && \
+	LDFLAGS="-static --static" CFLAGS="-O2 -DNGHTTP2_STATICLIB" \
+	./configure --disable-shared --enable-static --without-gpgme && \
+	make -C lib -j$(nproc) && make -C libwget -j$(nproc) && make -C src -j$(nproc)

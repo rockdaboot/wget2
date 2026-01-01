@@ -184,14 +184,25 @@ The versions are recommended, but older versions may also work.
 
 ### Build static wget2.exe on GNU/Linux for Windows
 
-		(cd contrib; docker build -t wget2/static -f Dockerfile.win32.static .)
-		docker run --rm -v $PWD:/tmp wget2/static cp /usr/local/wget2/src/wget2.exe /tmp
+		(cd contrib; docker build -t wget2/win32/static -f Dockerfile.win32.static .)
+		docker run --rm -v $PWD:/tmp wget2/win32/static cp /usr/local/wget2/src/wget2.exe /tmp
 		sudo chown $USER: wget2.exe
 		# now you have `wget2.exe` with debug symbols in your current directory
 		# optional: remove debug symbols with
-		strip wget2.exe
+		#   strip wget2.exe   # (needs mingw64 version of `strip`)
 		# optional: pack executable
 		upx wget2.exe
+
+### Build static wget2 on GNU/Linux for Linux/amd64
+
+		(cd contrib; docker build -t wget2/static/amd64 -f Dockerfile.musl.static.amd64 .)
+		docker run --rm -v $PWD:/tmp wget2/static/amd64 cp /usr/local/wget2/src/wget2 /tmp
+		sudo chown $USER: wget2
+		# now you have `wget2.exe` with debug symbols in your current directory
+		# optional: remove debug symbols with
+		strip wget2
+		# optional: pack executable
+		upx wget2
 
 # License
 
