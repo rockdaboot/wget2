@@ -610,6 +610,8 @@ int wget_decompress(wget_decompressor *dc, const char *src, size_t srclen)
 
 		if (rc && dc->error_handler)
 			dc->error_handler(dc, rc);
+
+		return rc;
 	}
 
 	return 0;

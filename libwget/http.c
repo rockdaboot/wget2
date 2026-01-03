@@ -1000,7 +1000,8 @@ skip_1xx:
 			if (p <= buf + body_len) {
 				// debug_printf("write full chunk, %zu bytes\n", chunk_size);
 				resp->cur_downloaded += chunk_size;
-				wget_decompress(dc, end, chunk_size);
+				if (wget_decompress(dc, end, chunk_size))
+					goto cleanup;
 				continue;
 			}
 
@@ -1009,10 +1010,12 @@ skip_1xx:
 
 			if ((uintptr_t)((buf + body_len) - end) > chunk_size) {
 				resp->cur_downloaded += chunk_size;
-				wget_decompress(dc, end, chunk_size);
+				if (wget_decompress(dc, end, chunk_size))
+					goto cleanup;
 			} else {
 				resp->cur_downloaded += (buf + body_len) - end;
-				wget_decompress(dc, end, (buf + body_len) - end);
+				if (wget_decompress(dc, end, (buf + body_len) - end))
+					goto cleanup;
 			}
 
 			chunk_size = (((uintptr_t) p) - ((uintptr_t) (buf + body_len))); // in fact needed bytes to have chunk_size+2 in buf
@@ -1039,7 +1042,8 @@ skip_1xx:
 					}
 					if (chunk_size > 2) {
 						resp->cur_downloaded += chunk_size - 2;
-						wget_decompress(dc, buf, chunk_size - 2);
+						if (wget_decompress(dc, buf, chunk_size - 2))
+							goto cleanup;
 					}
 					body_len = nbytes - chunk_size;
 					if (body_len)
@@ -1051,11 +1055,13 @@ skip_1xx:
 					chunk_size -= nbytes;
 					if (chunk_size >= 2) {
 						resp->cur_downloaded += nbytes;
-						wget_decompress(dc, buf, nbytes);
+						if (wget_decompress(dc, buf, nbytes))
+							goto cleanup;
 					} else {
 						// special case: we got a partial end-of-chunk
 						resp->cur_downloaded += nbytes - 1;
-						wget_decompress(dc, buf, nbytes - 1);
+						if (wget_decompress(dc, buf, nbytes - 1))
+							goto cleanup;
 					}
 				}
 			}
@@ -1064,8 +1070,10 @@ skip_1xx:
 		// read content_length bytes
 		debug_printf("method 2\n");
 
-		if (body_len)
-			wget_decompress(dc, buf, body_len);
+		if (body_len) {
+			if (wget_decompress(dc, buf, body_len))
+				goto cleanup;
+		}
 
 		while (body_len < resp->content_length) {
 			if (http_connection_is_aborted(conn))
@@ -1077,7 +1085,8 @@ skip_1xx:
 			body_len += nbytes;
 			// debug_printf("nbytes %zd total %zu/%zu\n", nbytes, body_len, resp->content_length);
 			resp->cur_downloaded += nbytes;
-			wget_decompress(dc, buf, nbytes);
+			if (wget_decompress(dc, buf, nbytes))
+				goto cleanup;
 		}
 		if (nbytes < 0) {
 			char *page = get_page(req);
@@ -1100,14 +1109,17 @@ skip_1xx:
 		// read as long as we can
 		debug_printf("method 3\n");
 
-		if (body_len)
-			wget_decompress(dc, buf, body_len);
+		if (body_len) {
+			if (wget_decompress(dc, buf, body_len))
+				goto cleanup;
+		}
 
 		while (!http_connection_is_aborted(conn) && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
 			// debug_printf("nbytes %zd total %zu\n", nbytes, body_len);
 			resp->cur_downloaded += nbytes;
-			wget_decompress(dc, buf, nbytes);
+			if (wget_decompress(dc, buf, nbytes))
+				goto cleanup;
 		}
 		resp->content_length = body_len;
 	}
