@@ -82,6 +82,32 @@ static int on_frame_recv_callback(nghttp2_session *session,
 		wget_http_response *resp = ctx ? ctx->resp : NULL;
 
 		if (resp) {
+			if (H_10X(resp->code)) {
+				// Can we use wget_http_free_response() here or have some sort of de-duplication?
+				xfree(resp->content_type);
+				xfree(resp->content_type_encoding);
+				xfree(resp->content_filename);
+				xfree(resp->etag);
+				xfree(resp->location);
+
+				wget_http_free_links(&resp->links);
+				wget_http_free_digests(&resp->digests);
+				wget_http_free_challenges(&resp->challenges);
+				wget_http_free_cookies(&resp->cookies);
+				wget_http_free_hpkp_entries(&resp->hpkp);
+
+				wget_buffer_reset(resp->header);
+				wget_buffer_reset(resp->body);
+
+				resp->code = 0;
+				resp->content_length = 0;
+				resp->content_length_valid = 0;
+				resp->last_modified = 0;
+				resp->content_encoding = 0;
+
+				return 0;
+			}
+
 			if (resp->header && resp->req->header_callback) {
 				resp->req->header_callback(resp, resp->req->header_user_data);
 			}
@@ -124,7 +150,7 @@ static int on_header_callback(nghttp2_session *session,
 	}
 
 	if (frame->hd.type == NGHTTP2_HEADERS) {
-		if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE) {
+		if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE || frame->headers.cat == NGHTTP2_HCAT_HEADERS) {
 			debug_printf("%.*s: %.*s\n", (int) namelen, name, (int) valuelen, value);
 
 			if (resp->header)

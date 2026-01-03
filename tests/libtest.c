@@ -943,6 +943,19 @@ static int h2_on_frame_recv_callback(nghttp2_session *session,
 	nghttp2_data_provider data_prov;
 	data_prov.read_callback = h2_data_read_callback;
 
+	// send 1xx response if requested
+	if (url && url->code_1xx) {
+		nghttp2_nv hdrs_1xx = {
+			.name = (uint8_t *) ":status",
+			.namelen = 7,
+			.value = (uint8_t *) url->code_1xx,
+			.valuelen = strlen(url->code_1xx),
+			.flags = NGHTTP2_NV_FLAG_NONE
+		};
+
+		nghttp2_submit_headers(session, NGHTTP2_FLAG_NONE, stream_data->stream_id, NULL, &hdrs_1xx, 1, NULL);
+	}
+
 	// Store allocated headers in stream_data so we can free them later
 	// (nghttp2 doesn't copy header data, so they must remain valid)
 	if (nhdrs > 2) {

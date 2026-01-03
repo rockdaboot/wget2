@@ -147,6 +147,8 @@ typedef struct {
 		auth_username;
 	const char *
 		auth_password;
+	const char *
+		code_1xx;
 	size_t
 		body_len; // The length of the body in bytes. 0 means use strlen(body)
 
