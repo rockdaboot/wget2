@@ -180,7 +180,8 @@ struct config {
 		chunk_size,
 		quota,
 		limit_rate, // bytes
-		start_pos; // bytes
+		start_pos, // bytes
+		dot_bytes;
 	int
 		http2_request_window,
 		backups,
@@ -195,7 +196,9 @@ struct config {
 		dns_timeout, // ms
 		read_timeout, // ms
 		max_redirect,
-		max_threads;
+		max_threads,
+		dots_in_line,
+		dot_spacing;
 	uint16_t
 		default_http_port,
 		default_https_port;

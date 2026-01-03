@@ -805,8 +805,27 @@ static int WGET_GCC_PURE WGET_GCC_NONNULL((1)) parse_progress_type(option_t opt,
 			config.force_progress = true;
 		}
 	} else if (!wget_strncasecmp_ascii(val, "dot", 3) && (val[3] == ':' || val[3] == 0)) {
-		// Wget compatibility, whether want to support 'dot' depends on user feedback.
-		info_printf(_("Progress type '%s' ignored. It is not implemented yet\n"), val);
+		*((char *)opt->var) = PROGRESS_TYPE_DOT;
+		const char *style = val[3] == ':' ? val + 4 : "default";
+		if (!wget_strcasecmp_ascii(style, "binary")) {
+			config.dot_bytes = 8192;
+			config.dots_in_line = 48;
+			config.dot_spacing = 16;
+		} else if (!wget_strcasecmp_ascii(style, "mega")) {
+			config.dot_bytes = 65536;
+			config.dots_in_line = 48;
+			config.dot_spacing = 8;
+		} else if (!wget_strcasecmp_ascii(style, "giga")) {
+			config.dot_bytes = 1048576;
+			config.dots_in_line = 32;
+			config.dot_spacing = 8;
+		} else {
+			if (wget_strcasecmp_ascii(style, "default"))
+				error_printf(_("Unknown dot style '%s', using default.\n"), style);
+			config.dot_bytes = 1024;
+			config.dots_in_line = 50;
+			config.dot_spacing = 10;
+		}
 	} else {
 		error_printf(_("Unknown progress type '%s'\n"), val);
 		return -1;
@@ -1334,6 +1353,9 @@ struct config config = {
 	.hyperlink = false,
 	.if_modified_since = 1,
 	.progress = PROGRESS_TYPE_BAR,
+	.dot_bytes = 1024,
+	.dots_in_line = 50,
+	.dot_spacing = 10,
 	.follow_sitemaps = true
 };
 

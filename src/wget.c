@@ -1461,11 +1461,13 @@ int main(int argc, const char **argv)
 		config.progress = PROGRESS_TYPE_NONE;
 	}
 
-	if (config.progress == PROGRESS_TYPE_BAR) {
+	if (config.progress != PROGRESS_TYPE_NONE) {
 		if (bar_init()) {
-			start_time = wget_get_timemillis();
-			if ((rc = wget_thread_start(&progress_thread, progress_report, NULL, 0)) != 0) {
-				error_printf(_("Failed to start progress report thread, error %d\n"), rc);
+			if (config.progress == PROGRESS_TYPE_BAR) {
+				start_time = wget_get_timemillis();
+				if ((rc = wget_thread_start(&progress_thread, progress_report, NULL, 0)) != 0) {
+					error_printf(_("Failed to start progress report thread, error %d\n"), rc);
+				}
 			}
 		}
 	}
@@ -1566,13 +1568,15 @@ int main(int argc, const char **argv)
  out:
 	if (is_testing() || wget_match_tail(argv[0], "wget2_noinstall")) {
 		// freeing to avoid disguising valgrind output
-		if ((rc = wget_thread_join(&progress_thread)) != 0)
-			error_printf(_("Failed to wait for progress thread (%d %d)\n"), rc, errno);
+		if (config.progress == PROGRESS_TYPE_BAR) {
+			if ((rc = wget_thread_join(&progress_thread)) != 0)
+				error_printf(_("Failed to wait for progress thread (%d %d)\n"), rc, errno);
+		}
 
 		blacklist_free();
 		hosts_free();
 		xfree(downloaders);
-		if (config.progress == PROGRESS_TYPE_BAR)
+		if (config.progress != PROGRESS_TYPE_NONE)
 			bar_deinit();
 		wget_vector_clear_nofree(parents);
 		wget_vector_free(&parents);
@@ -3771,7 +3775,7 @@ static int get_header(wget_http_response *resp, void *context)
 //	info_printf("Opened %d\n", ctx->outfd);
 
 out:
-	if (config.progress == PROGRESS_TYPE_BAR) {
+	if (config.progress != PROGRESS_TYPE_NONE) {
 		const char *filename = NULL;
 
 		if (!name) {
@@ -3843,7 +3847,6 @@ static void limit_transfer_rate(struct body_callback_context *ctx, size_t read_b
 	ctx->limit_debt_bytes = (sleep_ms - elapsed_ms) * thread_rate_limit / 1000;
 }
 
-
 static int get_body(wget_http_response *resp, void *context, const char *data, size_t length)
 {
 	struct body_callback_context *ctx = (struct body_callback_context *)context;
@@ -3882,7 +3885,7 @@ static int get_body(wget_http_response *resp, void *context, const char *data, s
 	if (ctx->max_memory == 0 || ctx->length < ctx->max_memory)
 		wget_buffer_memcat(ctx->body, data, length); // append new data to body
 
-	if (config.progress == PROGRESS_TYPE_BAR) {
+	if (config.progress != PROGRESS_TYPE_NONE) {
 		bar_set_downloaded(ctx->progress_slot, resp->cur_downloaded - resp->accounted_for);
 		resp->accounted_for = resp->cur_downloaded;
 	}
@@ -4283,7 +4286,7 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 		context->outfd = -1;
 	}
 
-	if (config.progress == PROGRESS_TYPE_BAR)
+	if (config.progress != PROGRESS_TYPE_NONE)
 		bar_slot_deregister(context->progress_slot);
 
 	if (resp->length_inconsistent)

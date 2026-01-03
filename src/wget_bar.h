@@ -30,6 +30,7 @@
 
 #define PROGRESS_TYPE_NONE  0
 #define PROGRESS_TYPE_BAR   1
+#define PROGRESS_TYPE_DOT   2
 
 bool bar_init(void);
 void bar_deinit(void);

@@ -674,5 +674,55 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// test --progress=dot
+	wget_test(
+		WGET_TEST_OPTIONS, "--progress=dot",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test --progress=dot:default
+	wget_test(
+		WGET_TEST_OPTIONS, "--progress=dot:default",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test --progress=dot:binary
+	wget_test(
+		WGET_TEST_OPTIONS, "--progress=dot:binary",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test --progress=dot:mega
+	wget_test(
+		WGET_TEST_OPTIONS, "--progress=dot:mega",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
+	// test --progress=dot:giga
+	wget_test(
+		WGET_TEST_OPTIONS, "--progress=dot:giga",
+		WGET_TEST_REQUEST_URL, "dummy.txt",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{	"dummy.txt", urls[3].body },
+			{	NULL } },
+		0);
+
 	exit(EXIT_SUCCESS);
 }
