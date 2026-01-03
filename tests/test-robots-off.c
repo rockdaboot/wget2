@@ -107,5 +107,20 @@ int main(void)
 			{	NULL } },
 		0);
 
+	// with robots=off and follow-sitemaps=off must NOT download robots.txt
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH --no-robots --no-follow-sitemaps",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
+			{ urls[5].name + 1, urls[5].body },
+			{ urls[6].name + 1, urls[6].body },
+			{	NULL } },
+		0);
+
 	exit(EXIT_SUCCESS);
 }

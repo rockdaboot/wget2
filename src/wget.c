@@ -778,7 +778,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 		if (config.recursive) {
 			if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 				debug_printf("not requesting '%s'. (Exclude Domains)\n", iri->safe_uri);
-			} else {
+			} else if (config.robots || config.follow_sitemaps) {
 				// create a special job for downloading robots.txt (before anything else)
 				host_add_robotstxt_job(host, iri, encoding, http_fallback);
 			}
@@ -983,7 +983,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		if (config.recursive) {
 			if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 				info_printf(_("URL '%s' not followed (file already exists)\n"), iri->safe_uri);
-			} else {
+			} else if (config.robots || config.follow_sitemaps) {
 				// create a special job for downloading robots.txt (before anything else)
 				host_add_robotstxt_job(host, iri, encoding, http_fallback);
 			}
