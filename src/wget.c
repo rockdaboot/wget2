@@ -865,7 +865,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	plugin_db_forward_url(iri, &plugin_verdict);
 
 	if (plugin_verdict.reject) {
-		info_printf(_("URL '%s' no followed (plugin verdict)\n"), iri->safe_uri);
+		info_printf(_("URL '%s' not followed (plugin verdict)\n"), iri->safe_uri);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		wget_iri_free(&iri);
 		return;
@@ -1027,7 +1027,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		}
 	}
 
-	info_printf(_("Enqueue %s\n"), iri->safe_uri);
+	info_printf(_("Enqueuing %s\n"), iri->safe_uri);
 
 	new_job = job_init(&job_buf, blacklistp, http_fallback);
 
@@ -2214,11 +2214,11 @@ static void process_response(wget_http_response *resp)
 		}
 		if (job->metalink) {
 			if (job->metalink->size <= 0) {
-				error_printf(_("File length %llu - remove job\n"), (unsigned long long)job->metalink->size);
+				error_printf(_("File length %llu - removing job\n"), (unsigned long long)job->metalink->size);
 			} else if (!job->metalink->mirrors) {
-				error_printf(_("No download mirrors found - remove job\n"));
+				error_printf(_("No download mirrors found - removing job\n"));
 			} else if (!job->metalink->name || !*job->metalink->name) {
-				error_printf(_("Metalink file name is invalid, missing or empty - remove job\n"));
+				error_printf(_("Metalink file name is invalid, missing or empty - removing job\n"));
 			} else {
 				// just loaded a metalink description, create parts and sort mirrors
 
@@ -2226,7 +2226,7 @@ static void process_response(wget_http_response *resp)
 				if (!job_validate_file(job)) {
 					// Account for retries
 					if (config.tries && ++job->failures > config.tries) {
-						error_printf(_("Metalink validation failed: max tries reached - remove job\n"));
+						error_printf(_("Metalink validation failed: max tries reached - removing job\n"));
 						job->done = 1;
 					} else {
 						// sort mirrors by priority to download from highest priority first
