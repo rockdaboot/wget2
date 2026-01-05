@@ -135,6 +135,12 @@ struct session_context {
 static WOLFSSL_CTX
 	*ssl_ctx;
 
+typedef struct {
+	WOLFSSL* wolf;
+	int tcp_fd;
+	int tcp_socket; //same as FD except on windows
+} wolf_extended_session;
+
 #define error_printf_check(...) if (config.report_invalid_cert) wget_error_printf(__VA_ARGS__)
 
 /**
@@ -904,7 +910,7 @@ static void ShowX509Chain(WOLFSSL_X509_CHAIN *chain, int count, const char *hdr)
  */
 int wget_ssl_open(wget_tcp *tcp)
 {
-	WOLFSSL *session;
+	wolf_extended_session * e_session = malloc(sizeof(wolf_extended_session));
 	wget_tls_stats_data stats = {
 			.alpn_protocol = NULL,
 			.version = -1,
@@ -930,14 +936,14 @@ int wget_ssl_open(wget_tcp *tcp)
 	sockfd= tcp->sockfd;
 	connect_timeout = tcp->connect_timeout;
 
-	if ((session = wolfSSL_new(ssl_ctx)) == NULL) {
+	if ((e_session->wolf = wolfSSL_new(ssl_ctx)) == NULL) {
 		error_printf(_("Failed to create WolfSSL session\n"));
 		return -1;
 	}
 
 	// RFC 6066 SNI Server Name Indication
 	if (hostname)
-		wolfSSL_UseSNI(session, WOLFSSL_SNI_HOST_NAME, hostname, (unsigned short) strlen(hostname));
+		wolfSSL_UseSNI(e_session->wolf, WOLFSSL_SNI_HOST_NAME, hostname, (unsigned short) strlen(hostname));
 
 //	if (tcp->tls_false_start)
 //		info_printf(_("WolfSSL doesn't support TLS False Start\n"));
@@ -949,7 +955,7 @@ int wget_ssl_open(wget_tcp *tcp)
 		// wolfSSL_UseALPN() destroys the ALPN string (bad design pattern !)
 		alpn = wget_strmemcpy_a(alpnbuf, sizeof(alpnbuf), config.alpn, strlen(config.alpn));
 
-		if (wolfSSL_UseALPN(session, alpn, (int) len, WOLFSSL_ALPN_CONTINUE_ON_MISMATCH) == WOLFSSL_SUCCESS) {
+		if (wolfSSL_UseALPN(e_session->wolf, alpn, (int) len, WOLFSSL_ALPN_CONTINUE_ON_MISMATCH) == WOLFSSL_SUCCESS) {
 			debug_printf("ALPN offering %s\n", config.alpn);
 		} else
 			debug_printf("WolfSSL: Failed to set ALPN: %s\n", config.alpn);
@@ -961,17 +967,20 @@ int wget_ssl_open(wget_tcp *tcp)
 	// struct session_context *ctx = wget_calloc(1, sizeof(struct session_context));
 	// ctx->hostname = wget_strdup(hostname);
 
-	tcp->ssl_session = session;
+	tcp->ssl_session = e_session;
 //	gnutls_session_set_ptr(session, ctx);
-	wolfSSL_set_fd(session, FD_TO_SOCKET(sockfd));
+	e_session->tcp_fd = sockfd;
+	e_session->tcp_socket = FD_TO_SOCKET(sockfd);
+	debug_printf("handing socket (fd: %d socket: %d) to wolfSSL_set_fd\n", e_session->tcp_fd, e_session->tcp_socket);
+	wolfSSL_set_fd(e_session->wolf, e_session->tcp_socket);
 
 	/* make wolfSSL object nonblocking */
-	wolfSSL_set_using_nonblock(session, 1);
+	wolfSSL_set_using_nonblock(e_session->wolf, 1);
 
 	if (tls_stats_callback)
 		before_millisecs = wget_get_timemillis();
 
-	ret = do_handshake(session, sockfd, connect_timeout);
+	ret = do_handshake(e_session->wolf, sockfd, connect_timeout);
 
 	if (tls_stats_callback) {
 		long long after_millisecs = wget_get_timemillis();
@@ -983,29 +992,29 @@ int wget_ssl_open(wget_tcp *tcp)
 	const char *name;
 	int bits;
 	WOLFSSL_CIPHER *cipher;
-	WOLFSSL_X509 *peer = wolfSSL_get_peer_certificate(session);
+	WOLFSSL_X509 *peer = wolfSSL_get_peer_certificate(e_session->wolf);
 	if (peer) {
 		ShowX509(peer, "Peer's cert info");
 		wolfSSL_FreeX509(peer);
 	} else
 		debug_printf("Peer has no cert!\n");
 
-	ShowX509(wolfSSL_get_certificate(session), "our cert info:");
-	debug_printf("Peer verify result = %ld\n", wolfSSL_get_verify_result(session));
-	debug_printf("SSL version %s\n", wolfSSL_get_version(session));
-	cipher = wolfSSL_get_current_cipher(session);
-//	printf("%s %s%s\n", words[1], (wolfSSL_isQSH(session)) ? "QSH:" : "", wolfSSL_CIPHER_get_name(cipher));
+	ShowX509(wolfSSL_get_certificate(e_session->wolf), "our cert info:");
+	debug_printf("Peer verify result = %ld\n", wolfSSL_get_verify_result(e_session->wolf));
+	debug_printf("SSL version %s\n", wolfSSL_get_version(e_session->wolf));
+	cipher = wolfSSL_get_current_cipher(e_session->wolf);
+//	printf("%s %s%s\n", words[1], (wolfSSL_isQSH(e_session->wolf)) ? "QSH:" : "", wolfSSL_CIPHER_get_name(cipher));
 	debug_printf("SSL cipher suite %s\n", wolfSSL_CIPHER_get_name(cipher));
-	if ((name = wolfSSL_get_curve_name(session)))
+	if ((name = wolfSSL_get_curve_name(e_session->wolf)))
 		debug_printf("SSL curve name %s\n", name);
-	else if ((bits = wolfSSL_GetDhKey_Sz(session)) > 0)
+	else if ((bits = wolfSSL_GetDhKey_Sz(e_session->wolf)) > 0)
 		debug_printf("SSL DH size %d bits\n", bits);
 
 	if (config.alpn) {
 		char *protocol;
 		uint16_t protocol_length;
 
-		if (wolfSSL_ALPN_GetProtocol(session, &protocol, &protocol_length) != WOLFSSL_SUCCESS)
+		if (wolfSSL_ALPN_GetProtocol(e_session->wolf, &protocol, &protocol_length) != WOLFSSL_SUCCESS)
 			debug_printf("WolfSSL: Failed to connect ALPN\n");
 		else {
 			debug_printf("WolfSSL: Server accepted ALPN protocol '%.*s'\n", (int) protocol_length, protocol);
@@ -1020,16 +1029,16 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 
 	if (ret == WGET_E_SUCCESS) {
-		int resumed = wolfSSL_session_reused(session);
+		int resumed = wolfSSL_session_reused(e_session->wolf);
 
-		WOLFSSL_X509_CHAIN *chain = (WOLFSSL_X509_CHAIN *) wolfSSL_get_peer_cert_chain(session);
+		WOLFSSL_X509_CHAIN *chain = (WOLFSSL_X509_CHAIN *) wolfSSL_get_peer_cert_chain(e_session->wolf);
 		ShowX509Chain(chain, wolfSSL_get_chain_count(chain), "Certificate chain");
 
 		if (tls_stats_callback) {
 			stats.resumed = resumed;
 			stats.cert_chain_size = wolfSSL_get_chain_count(chain);
 
-			const char *tlsver = wolfSSL_get_version(session);
+			const char *tlsver = wolfSSL_get_version(e_session->wolf);
 			if (!strcmp(tlsver, "TLSv1.2"))
 				stats.version = 4;
 			else if (!strcmp(tlsver, "TLSv1.3"))
@@ -1063,11 +1072,11 @@ int wget_ssl_open(wget_tcp *tcp)
 */		}
 	}
 
-	if ((rc = wolfSSL_connect(session)) != WOLFSSL_SUCCESS) {
-		rc = wolfSSL_get_error(session, rc);
+	if ((rc = wolfSSL_connect(e_session->wolf)) != WOLFSSL_SUCCESS) {
+		rc = wolfSSL_get_error(e_session->wolf, rc);
 		error_printf(_("failed to connect TLS (%d): %s\n"), rc, wolfSSL_ERR_reason_error_string(rc));
 
-		long res = wolfSSL_get_verify_result(session);
+		long res = wolfSSL_get_verify_result(e_session->wolf);
 		if (res >= 13 && res <= 29)
 			return WGET_E_CERTIFICATE;
 		else
@@ -1087,7 +1096,9 @@ int wget_ssl_open(wget_tcp *tcp)
 			debug_printf("Handshake timed out\n");
 		// xfree(ctx->hostname);
 		// xfree(ctx);
-		wolfSSL_free(session);
+		wolfSSL_free(e_session->wolf);
+		e_session->wolf = NULL;
+		free(e_session);
 		tcp->ssl_session = NULL;
 	}
 
@@ -1105,18 +1116,20 @@ int wget_ssl_open(wget_tcp *tcp)
 void wget_ssl_close(void **session)
 {
 	if (session && *session) {
-		WOLFSSL *s = *session;
+		wolf_extended_session *s = *session;
 		int ret;
 
 		do {
-			ret = wolfSSL_shutdown(s);
-			ret = wolfSSL_get_error(s, ret);
+			ret = wolfSSL_shutdown(s->wolf);
+			ret = wolfSSL_get_error(s->wolf, ret);
 		} while (ret == WOLFSSL_SHUTDOWN_NOT_DONE);
 
 		if (ret < 0)
 			debug_printf("TLS shutdown failed: %s\n", wolfSSL_ERR_reason_error_string(ret));
 
-		wolfSSL_free(s);
+		wolfSSL_free(s->wolf);
+		s->wolf = NULL;
+		free(s);
 		*session = NULL;
 	}
 }
@@ -1144,14 +1157,16 @@ void wget_ssl_close(void **session)
  */
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
-	int sockfd = SOCKET_TO_FD( wolfSSL_get_fd(session));
 	int rc;
-
-	while ((rc = wolfSSL_read(session, buf, (int) count)) < 0) {
-		rc =  wolfSSL_get_error(session, rc);
-		debug_printf("wolfSSL_read: (%d) (errno=%d) %s\n", rc, errno, wolfSSL_ERR_reason_error_string(rc));
+	wolf_extended_session* e_session = session;
+	if (wolfSSL_get_fd(e_session->wolf) != e_session->tcp_socket)
+		wget_error_printf_exit("wget_ssl_read_timeout: The socket wolfssl has is not the same one we handed it for the session");
+	while ((rc = wolfSSL_read(e_session->wolf, buf, (int) count)) < 0) {
+		rc =  wolfSSL_get_error(e_session->wolf, rc);
+		if (rc != SSL_ERROR_WANT_READ)
+			debug_printf("wolfSSL_read: (%d) (errno=%d) %s\n", rc, errno, wolfSSL_ERR_reason_error_string(rc));
 		if (rc == SSL_ERROR_WANT_READ) {
-			if ((rc = wget_ready_2_read(sockfd, timeout)) <= 0)
+			if ((rc = wget_ready_2_read(e_session->tcp_fd, timeout)) <= 0)
 				break;
 		} else
 			break;
@@ -1217,14 +1232,15 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
  */
 ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
 {
-	int sockfd = SOCKET_TO_FD(wolfSSL_get_fd(session));
+	wolf_extended_session* e_session = session;
+	if (wolfSSL_get_fd(e_session->wolf) != e_session->tcp_socket)
+		wget_error_printf_exit("wget_ssl_read_timeout: The socket wolfssl has is not the same one we handed it for the session");
 	int rc;
-
-	while ((rc = wolfSSL_write(session, buf, (int) count)) < 0) {
-		rc =  wolfSSL_get_error(session, rc);
+	while ((rc = wolfSSL_write(e_session->wolf, buf, (int) count)) < 0) {
+		rc =  wolfSSL_get_error(e_session->wolf, rc);
 		debug_printf("wolfSSL_write: (%d) (errno=%d) %s\n", rc, errno, wolfSSL_ERR_reason_error_string(rc));
 		if (rc == SSL_ERROR_WANT_WRITE) {
-			if ((rc = wget_ready_2_write(sockfd, timeout)) <= 0)
+			if ((rc = wget_ready_2_write(e_session->tcp_fd, timeout)) <= 0)
 				break;
 		} else
 			break;
