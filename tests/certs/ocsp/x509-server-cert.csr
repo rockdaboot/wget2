@@ -1,0 +1,76 @@
+PKCS #10 Certificate Request Information:
+	Version: 1
+	Subject: CN=localhost,OU=Wget,O=gnuwget
+	Subject Public Key Algorithm: RSA
+	Algorithm Security Level: High (3072 bits)
+		Modulus (bits 3072):
+			00:97:f4:d0:b5:3c:f6:11:e4:e9:76:05:16:fe:34:c0
+			c9:fd:20:6c:64:58:40:aa:d3:02:0c:96:01:7a:6b:67
+			68:ce:ac:3d:61:0a:57:66:47:8b:1d:1b:5c:ad:ff:cb
+			9e:bd:c8:fe:d2:99:de:90:69:12:50:dc:9e:94:6b:1f
+			3a:8c:3e:6e:4c:70:f3:d2:6d:a0:c7:88:a3:7a:34:b4
+			a9:2a:ff:80:b7:08:ad:df:3b:d1:a4:a1:cb:49:aa:65
+			fb:0b:c8:34:94:bc:37:6c:14:5c:68:9a:49:68:cb:31
+			2c:c6:c5:d5:c0:b5:8b:cc:a5:0b:f2:d9:e6:d0:ac:5c
+			f8:6c:2a:0e:25:d7:c4:be:6d:58:ba:ef:d5:c7:3e:36
+			e3:2c:92:fe:54:96:b9:52:50:4d:22:07:10:83:39:b2
+			89:8d:8e:54:fd:c8:86:48:68:b5:96:e0:82:cf:9e:07
+			64:29:9b:9f:d2:32:e0:9d:34:b0:7a:ec:1e:5d:d1:ed
+			e8:64:00:76:5f:78:8c:8d:4e:9e:53:c2:08:83:68:09
+			c3:f6:8c:89:0a:43:20:15:fe:26:85:3c:54:76:e4:ce
+			ac:c0:10:94:3c:fc:87:cc:1d:5b:71:17:10:a7:99:e6
+			58:cc:e7:d2:83:19:82:6e:32:32:07:3a:ef:fb:fe:56
+			32:1d:b8:23:3d:e3:67:11:46:62:16:db:be:49:b2:6d
+			2e:5f:ce:ca:e5:d2:4f:8b:e6:3d:b0:2a:4f:60:63:be
+			02:2c:c8:01:96:9f:33:07:09:aa:bb:2d:0c:7f:34:8a
+			b1:90:c8:1b:5a:9a:43:54:ea:fa:1c:b4:ee:ad:ac:7b
+			54:55:93:6a:4a:aa:31:f4:46:5f:9f:fd:aa:16:f1:b8
+			59:fe:1b:ab:5c:10:9c:69:5e:35:b9:ce:ef:fe:e1:c0
+			f2:2d:62:bd:71:bc:aa:57:33:20:b3:e6:e2:9d:60:34
+			20:0a:24:fd:54:2f:e1:74:2d:04:46:97:f5:33:db:8f
+			67
+		Exponent (bits 24):
+			01:00:01
+	Signature Algorithm: RSA-SHA256
+	Attributes:
+		Extensions:
+			Basic Constraints (critical):
+				Certificate Authority (CA): FALSE
+			Key Purpose (critical):
+				Time stamping.
+				OCSP signing.
+				TLS WWW Server.
+			Key Usage (critical):
+				Digital signature.
+Other Information:
+	Public Key ID:
+		sha1:b644f290bf003e5a1f2a65b89b81cc935633ae5f
+		sha256:a3584ef8a563b4882ba1c349bbdadb52f3b1d37d079e798297c10298f80d016d
+	Public Key PIN:
+		pin-sha256:o1hO+KVjtIgrocNJu9rbUvOx030HnnmCl8ECmPgNAW0=
+
+Self signature: verified
+
+-----BEGIN NEW CERTIFICATE REQUEST-----
+MIID1TCCAj0CAQAwNTEQMA4GA1UEChMHZ251d2dldDENMAsGA1UECxMEV2dldDES
+MBAGA1UEAxMJbG9jYWxob3N0MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKC
+AYEAl/TQtTz2EeTpdgUW/jTAyf0gbGRYQKrTAgyWAXprZ2jOrD1hCldmR4sdG1yt
+/8uevcj+0pnekGkSUNyelGsfOow+bkxw89JtoMeIo3o0tKkq/4C3CK3fO9GkoctJ
+qmX7C8g0lLw3bBRcaJpJaMsxLMbF1cC1i8ylC/LZ5tCsXPhsKg4l18S+bVi679XH
+PjbjLJL+VJa5UlBNIgcQgzmyiY2OVP3IhkhotZbggs+eB2Qpm5/SMuCdNLB67B5d
+0e3oZAB2X3iMjU6eU8IIg2gJw/aMiQpDIBX+JoU8VHbkzqzAEJQ8/IfMHVtxFxCn
+meZYzOfSgxmCbjIyBzrv+/5WMh24Iz3jZxFGYhbbvkmybS5fzsrl0k+L5j2wKk9g
+Y74CLMgBlp8zBwmquy0MfzSKsZDIG1qaQ1Tq+hy07q2se1RVk2pKqjH0Rl+f/aoW
+8bhZ/hurXBCcaV41uc7v/uHA8i1ivXG8qlczILPm4p1gNCAKJP1UL+F0LQRGl/Uz
+249nAgMBAAGgWzBZBgkqhkiG9w0BCQ4xTDBKMAwGA1UdEwEB/wQCMAAwKgYDVR0l
+AQH/BCAwHgYIKwYBBQUHAwgGCCsGAQUFBwMJBggrBgEFBQcDATAOBgNVHQ8BAf8E
+BAMCB4AwDQYJKoZIhvcNAQELBQADggGBAAbmNB3/RDC3BZ8B1cnAQKNXKlUlprL2
+RozuuvfVY1iFQHaF6zNPkqC6jcv84WOcDeTbAttck8E+Gn+A2VZYug0TsxIMIim7
+OMtsgU/t1AEdN5CAHpznoHVuZIKmQl1W/w9NMUG3zdLmsF2zj2fgqsVW0WDmU2oa
+FovbZPJsUhoGjCzIW+yco7y/e256CR1+4rMe/gid1jyRkyxhQpqVbNNmedtEfXwJ
+UFJ6rHHydtwrhlb6ywXwT8FYw60QFNdz5y/MWGgvDtd1TYxZrKkqUgnhApsMmswH
+By44t6q1mSISKe1uGnuACXskWD9+q8z2X3TWbGQyrakTDImkIw1/MTn/3lubgJMy
+wGmuoPIP+WRnY5SCGiTVm24IevR4qX4AOCHGu9cAa8/uKIE+tf00S8HIM5F4CZSC
+kvMxQk1ueTVKQvUbkEt53eP46StTqJNi7zGZW6z7uINJY/yNto/S2/ZcDF8RrJFr
+hYam2SS0oS/n73aqXVg5i8hQzz97ZlaBEg==
+-----END NEW CERTIFICATE REQUEST-----

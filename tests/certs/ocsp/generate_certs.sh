@@ -26,7 +26,7 @@ certtool --generate-privkey --outfile x509-server-key.pem --rsa
 certtool --generate-request --template server-template.txt --load-privkey x509-server-key.pem --outfile x509-server-cert.csr
 
 # Sign Server Certificate Request
-openssl ca -batch -days 36500 -keyfile x509-interm-key.pem -cert x509-interm-cert.pem -policy policy_anything -notext -out x509-server-cert.pem -infiles x509-server-cert.csr
+openssl ca -batch -days 36500 -config interm.cnf -keyfile x509-interm-key.pem -cert x509-interm-cert.pem -policy policy_anything -notext -out x509-server-cert.pem -infiles x509-server-cert.csr
 
 # == BIBLIOGRAPHY ==
 # 1. https://medium.com/@bhashineen/create-your-own-ocsp-server-ffb212df8e63

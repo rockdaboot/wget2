@@ -6,3 +6,4 @@ expiration_days = 36500
 #Key Usage
 ocsp_signing_key
 time_stamping_key
+tls_www_server
