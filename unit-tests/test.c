@@ -1171,10 +1171,18 @@ static void test_cookies(void)
 		},
 //#ifdef WITH_LIBPSL
 		{	// supercookie, accepted by normalization (rule 'com') but not by wget_cookie_check_psl())
-			"www.example.com",
+			"https://www.example.com",
 			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
 			"ID=65=abcd; expires=Mon, 29 Feb 2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
 			0, _PSL_RESULT_FAIL
+		},
+		{	// secure cookie, must not be accepted on HTTP, see RFC 6265 4.1.2.5:
+			// If the secure-only-flag is true, then the user agent MUST NOT save the
+			// cookie unless the request-uri's scheme is https.
+			"http://www.example.com",
+			"ID=65=abcd; expires=Mon, 29-Feb-2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
+			"ID=65=abcd; expires=Mon, 29 Feb 2016 07:48:54 GMT; path=/; domain=.com; HttpOnly; Secure",
+			-1, 0
 		},
 		{	// supercookie, accepted by normalization  (rule 'sa.gov.au') but not by wget_cookie_check_psl())
 			"www.sa.gov.au",

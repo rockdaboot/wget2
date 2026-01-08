@@ -401,6 +401,14 @@ static int cookie_normalize_cookie(const wget_iri *iri, wget_cookie *cookie)
 	if (iri) {
 		// cookies comes from a HTTP header and needs checking
 
+		// RFC 6265 4.1.2.5. The Secure Attribute
+		// If the secure-only-flag is true, then the user agent MUST NOT save the
+		// cookie unless the request-uri's scheme is https.
+		if (cookie->secure_only && iri->scheme != WGET_IRI_SCHEME_HTTPS) {
+			debug_printf("Secure cookie requires secure origin: %s %s\n", cookie->name, iri->host);
+			return -1; // ignore cookie
+		}
+
 		// check prefixes as proposed in https://tools.ietf.org/html/draft-ietf-httpbis-cookie-prefixes-00
 		if (!wget_strncmp(cookie->name, "__Secure-", 9)) {
 			if (!cookie->secure_only || iri->scheme != WGET_IRI_SCHEME_HTTPS) {
