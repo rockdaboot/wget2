@@ -936,8 +936,14 @@ int wget_ssl_open(wget_tcp *tcp)
 	}
 
 	// RFC 6066 SNI Server Name Indication
-	if (hostname)
+	if (hostname) {
 		wolfSSL_UseSNI(session, WOLFSSL_SNI_HOST_NAME, hostname, (unsigned short) strlen(hostname));
+
+		if (config.check_hostname) {
+			if (wolfSSL_check_domain_name(session, hostname) != SSL_SUCCESS)
+				debug_printf("WolfSSL: Failed to enable domain name check for %s\n", hostname);
+		}
+	}
 
 //	if (tcp->tls_false_start)
 //		info_printf(_("WolfSSL doesn't support TLS False Start\n"));
