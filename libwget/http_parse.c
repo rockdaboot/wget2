@@ -520,10 +520,10 @@ const char *wget_http_parse_content_type(const char *s, const char **content_typ
 
 const char *wget_http_parse_content_disposition(const char *s, const char **filename)
 {
-	wget_http_header_param param;
-	char *p;
-
 	if (filename) {
+		wget_http_header_param param;
+		char *p;
+
 		*filename = NULL;
 
 		while (*s && !*filename) {
@@ -531,8 +531,13 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 			if (param.value && !wget_strcasecmp_ascii("filename", param.name)) {
 				// just take the last path part as filename
 				if (!*filename) {
-					if ((p = strpbrk(param.value,"/\\"))) {
-						p = wget_strdup(p + 1);
+					if ((p = strrchr(param.value,'/'))) {
+						char *p2;
+						if ((p2 = strrchr(p + 1, '\\'))) {
+							p = wget_strdup(p2 + 1);
+						} else {
+							p = wget_strdup(p + 1);
+						}
 					} else {
 						p = (char *) param.value;
 						param.value = NULL;
@@ -592,10 +597,15 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 								*filename = wget_strdup(p);
 
 							// just take the last path part as filename
-							if (*filename && (p = strpbrk(*filename, "/\\"))) {
-								p = wget_strdup(p + 1);
-								xfree(*filename);
-								*filename = p;
+							if (*filename) {
+								if ((p = strrchr(*filename, '/'))) {
+									char *p2;
+									if ((p2 = strrchr(p + 1, '\\')))
+										p = p2;
+									p = wget_strdup(p + 1);
+									xfree(*filename);
+									*filename = p;
+								}
 							}
 
 							xfree(param.name);
