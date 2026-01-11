@@ -1713,7 +1713,7 @@ int wget_ssl_open(wget_tcp *tcp)
 					       tcp->ssl_hostname,
 					       vflags->ocsp_stapled_cache)) {
 			error_printf(_("Aborting handshake. Could not verify OCSP chain.\n"));
-			retval = WGET_E_HANDSHAKE;
+			retval = WGET_E_CERTIFICATE;
 			goto bail;
 		}
 	}

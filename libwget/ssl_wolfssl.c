@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #ifdef _WIN32
 #  include <w32sock.h>
@@ -103,13 +104,17 @@ static struct config {
 		check_hostname : 1,
 		print_info : 1,
 		ocsp : 1,
-		ocsp_stapling : 1;
+		ocsp_date : 1,
+		ocsp_stapling : 1,
+		ocsp_nonce : 1;
 } config = {
 	.check_certificate = 1,
 	.report_invalid_cert = 1,
 	.check_hostname = 1,
 	.ocsp = 0,
+	.ocsp_date = 1,
 	.ocsp_stapling = 1,
+	.ocsp_nonce = 1,
 	.ca_type = WGET_SSL_X509_FMT_PEM,
 	.cert_type = WGET_SSL_X509_FMT_PEM,
 	.key_type = WGET_SSL_X509_FMT_PEM,
@@ -275,15 +280,17 @@ void wget_ssl_set_config_object(int key, void *value)
 void wget_ssl_set_config_int(int key, int value)
 {
 	switch (key) {
-	case WGET_SSL_CHECK_CERTIFICATE: config.check_certificate = (char)value; break;
+	case WGET_SSL_CHECK_CERTIFICATE: config.check_certificate = (bool) value; break;
 	case WGET_SSL_REPORT_INVALID_CERT: config.report_invalid_cert = (char)value; break;
-	case WGET_SSL_CHECK_HOSTNAME: config.check_hostname = (char)value; break;
-	case WGET_SSL_CA_TYPE: config.ca_type = (char)value; break;
-	case WGET_SSL_CERT_TYPE: config.cert_type = (char)value; break;
-	case WGET_SSL_KEY_TYPE: config.key_type = (char)value; break;
-	case WGET_SSL_PRINT_INFO: config.print_info = (char)value; break;
-	case WGET_SSL_OCSP: config.ocsp = (char)value; break;
-	case WGET_SSL_OCSP_STAPLING: config.ocsp_stapling = (char)value; break;
+	case WGET_SSL_CHECK_HOSTNAME: config.check_hostname = (bool) value; break;
+	case WGET_SSL_CA_TYPE: config.ca_type = (char) value; break;
+	case WGET_SSL_CERT_TYPE: config.cert_type = (char) value; break;
+	case WGET_SSL_KEY_TYPE: config.key_type = (char) value; break;
+	case WGET_SSL_PRINT_INFO: config.print_info = (bool) value; break;
+	case WGET_SSL_OCSP: config.ocsp = (bool) value; break;
+	case WGET_SSL_OCSP_DATE: config.ocsp_date = (bool) value; break;
+	case WGET_SSL_OCSP_STAPLING: config.ocsp_stapling = (bool) value; break;
+	case WGET_SSL_OCSP_NONCE: config.ocsp_nonce = (bool) value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
 }
@@ -655,6 +662,32 @@ void wget_ssl_init(void)
 
 		if (config.check_certificate) {
 			wolfSSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
+
+#ifdef HAVE_OCSP
+			if (config.ocsp) {
+				int options = WOLFSSL_OCSP_CHECKALL;
+
+				if (!config.ocsp_nonce)
+					options |= WOLFSSL_OCSP_NO_NONCE;
+
+				if (config.ocsp_server) {
+					debug_printf("WolfSSL: Setting OCSP override URL: %s\n", config.ocsp_server);
+					wolfSSL_CTX_SetOCSP_OverrideURL(ssl_ctx, config.ocsp_server);
+					options |= WOLFSSL_OCSP_URL_OVERRIDE;
+				}
+
+				if (wolfSSL_CTX_EnableOCSP(ssl_ctx, options) != WOLFSSL_SUCCESS)
+					error_printf(_("WolfSSL: Failed to enable OCSP\n"));
+				else
+					debug_printf("WolfSSL: Enabled OCSP (options %0x)\n", (unsigned) options);
+			}
+
+			if (config.ocsp_stapling) {
+				if (wolfSSL_CTX_EnableOCSPStapling(ssl_ctx) != WOLFSSL_SUCCESS)
+					error_printf(_("WolfSSL: Failed to enable OCSP stapling\n"));
+			}
+#endif
+
 			bool system_certs_loaded = false;
 
 #ifdef WOLFSSL_SYS_CA_CERTS
@@ -772,29 +805,8 @@ static int do_handshake(WOLFSSL *session, int sockfd, int timeout)
 		}
 
 		rc =  wolfSSL_get_error(session, rc);
-		debug_printf("wolfSSL_connect2: (%d) (errno=%d) %s\n", rc, errno, wolfSSL_ERR_reason_error_string(rc));
+		debug_printf("do_handshake: (%d) (errno=%d) %s\n", rc, errno, wolfSSL_ERR_reason_error_string(rc));
 
-/*			if (rc == GNUTLS_E_CERTIFICATE_ERROR) {
-				ret = WGET_E_CERTIFICATE;
-			} else if (rc == GNUTLS_E_PUSH_ERROR && (errno == ECONNREFUSED || errno == ENOTCONN)) {
-				// ECONNREFUSED: on Linux
-				// ENOTCONN: MinGW (in out Gitlab CI runner)
-				ret = WGET_E_CONNECT;
-			} else if (rc == GNUTLS_E_PULL_ERROR && errno == 61) {
-				// ENODATA, but not on OSX/Travis ?
-				// We see this with older versions of GnuTLS, e.g. on TravisCI. (Tim, 11.4.2018)
-				// It happens when trying to connect to a port without a listener
-				ret = WGET_E_CONNECT;
-			} else if (rc == GNUTLS_E_PREMATURE_TERMINATION && errno == EAGAIN) {
-				// It happens when trying to connect to a closed port
-				ret = WGET_E_CONNECT;
-			} else if (rc == GNUTLS_E_UNEXPECTED_PACKET_LENGTH && errno == EAGAIN) {
-				// We see this with older versions of GnuTLS, e.g. on TravisCI. (Tim, 11.4.2018)
-				// It happens when trying to connect to a port without a listener
-				ret = WGET_E_CONNECT;
-			} else
-				ret = WGET_E_HANDSHAKE;
-*/
 		if (rc == WOLFSSL_ERROR_WANT_WRITE) {
 			// wait for writeability
 			rc = wget_ready_2_write(sockfd, timeout);
@@ -810,8 +822,7 @@ static int do_handshake(WOLFSSL *session, int sockfd, int timeout)
 	return ret;
 }
 
-static void ShowX509(WOLFSSL_X509 *x509, const char *hdr)
-{
+static void ShowX509(WOLFSSL_X509 *x509, const char *hdr){
 	char *altName;
 	char *issuer;
 	char *subject;
@@ -1073,8 +1084,12 @@ int wget_ssl_open(wget_tcp *tcp)
 		rc = wolfSSL_get_error(session, rc);
 		error_printf(_("failed to connect TLS (%d): %s\n"), rc, wolfSSL_ERR_reason_error_string(rc));
 
+		if  (rc == OCSP_INVALID_STATUS)
+			return WGET_E_CERTIFICATE;
+
 		long res = wolfSSL_get_verify_result(session);
-		if (res >= 13 && res <= 29)
+		error_printf(_("cert verification result: %ld"), res);
+		if ((res >= 13 && res <= 29))
 			return WGET_E_CERTIFICATE;
 		else
 			return WGET_E_CONNECT;
@@ -1114,10 +1129,23 @@ void wget_ssl_close(void **session)
 		WOLFSSL *s = *session;
 		int ret;
 
-		do {
+		// It's unclear how to see if the shutdown is finished.
+		// a) WOLFSSL_SHUTDOWN_NOT_DONE is 0
+		// b) wolfSSL_shutdown(s) always returns 0 if OCSP validation fails
+		// c) wolfSSL_get_error() also always return 0
+		for (int i = 0; i < 10; i++) {
 			ret = wolfSSL_shutdown(s);
+			if (ret == WOLFSSL_SUCCESS)
+		        break; // Shutdown complete
+
 			ret = wolfSSL_get_error(s, ret);
-		} while (ret == WOLFSSL_SHUTDOWN_NOT_DONE);
+			if (ret == WOLFSSL_ERROR_WANT_READ || ret == WOLFSSL_ERROR_WANT_WRITE) {
+				wget_ready_2_transfer(wolfSSL_get_fd(s), 50, WGET_IO_READABLE | WGET_IO_WRITABLE);
+		        continue;
+			}
+
+			break;
+		};
 
 		if (ret < 0)
 			debug_printf("TLS shutdown failed: %s\n", wolfSSL_ERR_reason_error_string(ret));

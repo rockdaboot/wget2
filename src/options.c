@@ -3800,15 +3800,15 @@ int init(int argc, const char **argv)
 	wget_ssl_set_config_int(WGET_SSL_CHECK_HOSTNAME, config.check_hostname);
 	wget_ssl_set_config_int(WGET_SSL_CERT_TYPE, config.cert_type);
 #ifdef WITH_LIBDANE
+#ifndef WITH_LIBWOLFCRYPT
 	wget_ssl_set_config_int(WGET_SSL_DANE, config.dane);
+#endif
 #endif
 	wget_ssl_set_config_int(WGET_SSL_KEY_TYPE, config.private_key_type);
 	wget_ssl_set_config_int(WGET_SSL_PRINT_INFO, config.debug);
 	wget_ssl_set_config_int(WGET_SSL_OCSP, config.ocsp);
-#ifndef WITH_LIBWOLFCRYPT
 	wget_ssl_set_config_int(WGET_SSL_OCSP_DATE, config.ocsp_date);
 	wget_ssl_set_config_int(WGET_SSL_OCSP_NONCE, config.ocsp_nonce);
-#endif
 	wget_ssl_set_config_int(WGET_SSL_OCSP_STAPLING, config.ocsp_stapling);
 	wget_ssl_set_config_string(WGET_SSL_OCSP_SERVER, config.ocsp_server);
 	wget_ssl_set_config_string(WGET_SSL_SECURE_PROTOCOL, config.secure_protocol);
