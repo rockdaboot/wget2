@@ -617,6 +617,22 @@ static void _set_async(int fd)
 #endif
 }
 
+void set_socket_timeout(int fd, int timeout)
+{
+	// Synchronous socket read and write timeout
+	struct timeval tv = (struct timeval) { .tv_sec = 0, .tv_usec = 0 };
+
+	if (timeout > 0) {
+		tv =  (struct timeval) { .tv_sec = timeout/1000, .tv_usec = timeout % 1000 * 1000 };
+	}
+
+	if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) == -1)
+		error_printf(_("Failed to set socket option SO_SNDTIMEO\n"));
+
+	if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == -1)
+		error_printf(_("Failed to set socket option SO_RCVTIMEO\n"));
+}
+
 static void set_socket_options(const wget_tcp *tcp, int fd)
 {
 	int on = 1;
@@ -647,12 +663,7 @@ static void set_socket_options(const wget_tcp *tcp, int fd)
 	}
 #endif
 
-	// Synchronous socket connection timeout
-	if (tcp->connect_timeout > 0) {
-		struct timeval tv = { .tv_sec = tcp->connect_timeout/1000, .tv_usec = tcp->connect_timeout % 1000 * 1000 };
-		if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) == -1)
-			error_printf(_("Failed to set socket option SO_SNDTIMEO\n"));
-	}
+	set_socket_timeout(fd, tcp->timeout);
 }
 
 /**
@@ -693,6 +704,8 @@ static int tcp_connect(wget_tcp *tcp, struct addrinfo *ai, int sockfd)
 {
 	int rc;
 
+	set_socket_timeout(sockfd, tcp->connect_timeout);
+
 	/* Enable TCP Fast Open, if required by the user and available */
 #ifdef TCP_FASTOPEN_OSX
 	if (tcp->tcp_fastopen) {
@@ -718,6 +731,8 @@ static int tcp_connect(wget_tcp *tcp, struct addrinfo *ai, int sockfd)
 		rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
 		tcp->first_send = 0;
 	}
+
+	set_socket_timeout(sockfd, tcp->timeout);
 
 	return rc;
 }
@@ -970,7 +985,12 @@ ssize_t wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count)
 				/* fallback from fastopen, e.g. when fastopen is disabled in system */
 				tcp->tcp_fastopen = 0;
 
+				set_socket_timeout(sockfd, tcp->connect_timeout);
+
 				int rc = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
+
+				set_socket_timeout(sockfd, tcp->timeout);
+
 				if (rc < 0
 					&& errno != EAGAIN
 					&& errno != ENOTCONN

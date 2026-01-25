@@ -1659,8 +1659,8 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	do {
 		/* Wait for socket to become ready */
-		if (tcp->connect_timeout &&
-			(retval = wait_2_read_and_write(tcp->sockfd, tcp->connect_timeout)) < 0)
+		if (tcp->timeout &&
+			(retval = wait_2_read_and_write(tcp->sockfd, tcp->timeout)) < 0)
 			goto bail;
 
 		/* Run TLS handshake */

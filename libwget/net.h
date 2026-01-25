@@ -69,4 +69,6 @@ struct wget_tcp_st {
 		first_send : 1; // TCP_FASTOPEN's first packet is sent different
 };
 
+void set_socket_timeout(int fd, int timeout);
+
 #endif /* LIBWGET_NET_H */

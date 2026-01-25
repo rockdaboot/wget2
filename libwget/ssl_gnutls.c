@@ -1509,7 +1509,9 @@ static ssize_t ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int io
 				// fallback from fastopen, e.g. when fastopen is disabled in system
 				debug_printf("Fallback from TCP Fast Open... TFO is disabled at system level\n");
 				tcp->tcp_fastopen = 0;
+				set_socket_timeout(tcp->sockfd, tcp->connect_timeout);
 				ret = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
+				set_socket_timeout(tcp->sockfd, tcp->timeout);
 				if (ret < 0 && (errno == ENOTCONN || errno == EINPROGRESS))
 					errno = EAGAIN;
 			}
@@ -1580,7 +1582,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	};
 
 	int ret = WGET_E_UNKNOWN;
-	int rc, sockfd, connect_timeout;
+	int rc, sockfd, tls_connect_timeout;
 	const char *hostname;
 	long long before_millisecs = 0;
 
@@ -1596,7 +1598,7 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	hostname = tcp->ssl_hostname;
 	sockfd= tcp->sockfd;
-	connect_timeout = tcp->connect_timeout;
+	tls_connect_timeout = tcp->timeout;
 
 	unsigned int flags = GNUTLS_CLIENT | GNUTLS_AUTO_REAUTH | GNUTLS_POST_HANDSHAKE_AUTH;
 
@@ -1712,7 +1714,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (tls_stats_callback)
 		before_millisecs = wget_get_timemillis();
 
-	ret = do_handshake(session, sockfd, connect_timeout);
+	ret = do_handshake(session, sockfd, tls_connect_timeout);
 
 	if (tls_stats_callback) {
 		long long after_millisecs = wget_get_timemillis();

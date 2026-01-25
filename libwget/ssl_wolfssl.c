@@ -936,7 +936,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	};
 
 	int rc, ret = WGET_E_UNKNOWN;
-	int sockfd, connect_timeout;
+	int sockfd, tls_connect_timeout;
 	const char *hostname;
 	long long before_millisecs = 0;
 
@@ -948,7 +948,7 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	hostname = tcp->ssl_hostname;
 	sockfd= tcp->sockfd;
-	connect_timeout = tcp->connect_timeout;
+	tls_connect_timeout = tcp->timeout;
 
 	if ((session = wolfSSL_new(ssl_ctx)) == NULL) {
 		error_printf(_("Failed to create WolfSSL session\n"));
@@ -997,7 +997,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (tls_stats_callback)
 		before_millisecs = wget_get_timemillis();
 
-	ret = do_handshake(session, sockfd, connect_timeout);
+	ret = do_handshake(session, sockfd, tls_connect_timeout);
 
 	if (tls_stats_callback) {
 		long long after_millisecs = wget_get_timemillis();
