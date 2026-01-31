@@ -1309,6 +1309,8 @@ static int openssl_init(SSL_CTX *ctx)
 
 	retval = openssl_set_priorities(ctx, config.secure_protocol);
 
+	SSL_CTX_set_purpose(ctx, X509_PURPOSE_SSL_SERVER);
+
 end:
 	return retval;
 }

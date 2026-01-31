@@ -1,0 +1,23 @@
+organization = "GNU"
+unit = "Wget"
+state = "Sunshine"
+country = Freeland
+cn = "Wget"
+expiration_days = -1
+dns_name="127.0.0.1"
+dns_name="::1"
+dns_name="localhost"
+dns_name = "WgetTestingServer"
+
+# WRONG KEY USAGE: 
+# Omit digitalSignature and keyEncipherment.
+# Include something irrelevant like non_repudiation.
+key_encipherment
+# Or simply leave key_usage out entirely if the client requires it,
+# but explicitly setting a 'wrong' one is better for testing.
+
+# 2. KEY PURPOSE (Application level)
+# This adds the 'Extended Key Usage' (EKU) extension.
+# If you omit this, many clients will mark the cert as 'Insecure' 
+# or 'Not intended for this use'.
+tls_www_client

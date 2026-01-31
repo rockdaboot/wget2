@@ -106,6 +106,10 @@ static char
 	tmpdir[128];
 static char
 	server_send_content_length = 1;
+static const char
+	*custom_server_key,
+	*custom_server_cert;
+static bool atexit_registered;
 
 #if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
 static enum CHECK_POST_HANDSHAKE_AUTH {
@@ -1278,8 +1282,8 @@ static int _http_server_start(int SERVER_MODE)
 		size_t size;
 
 		if (!ocspdaemon) {
-			key_pem = wget_read_file(SRCDIR "/certs/x509-server-key.pem", &size);
-			cert_pem = wget_read_file(SRCDIR "/certs/x509-server-cert.pem", &size);
+			key_pem = wget_read_file(custom_server_key, &size);
+			cert_pem = wget_read_file(custom_server_cert, &size);
 
 			if ((key_pem == NULL) || (cert_pem == NULL))
 			{
@@ -1694,6 +1698,10 @@ void wget_test_start_server(int first_key, ...)
 	int rc, key;
 	va_list args;
 	bool start_http = 1;
+
+	custom_server_key = SRCDIR "/certs/x509-server-key.pem";
+	custom_server_cert = SRCDIR "/certs/x509-server-cert.pem";
+
 #ifdef WITH_TLS
 	bool start_https = 1;
 #ifdef WITH_GNUTLS_OCSP
@@ -1841,13 +1849,22 @@ void wget_test_start_server(int first_key, ...)
 			start_h2 = 0;
 #endif
 			break;
+		case WGET_TEST_HTTPS_CERT_FILE:
+			custom_server_cert = va_arg(args, const char *);
+			break;
+		case WGET_TEST_HTTPS_KEY_FILE:
+			custom_server_key = va_arg(args, const char *);
+			break;
 		default:
 			wget_error_printf("Unknown option %d\n", key);
 		}
 	}
 	va_end(args);
 
-	atexit(wget_test_stop_server);
+	if (!atexit_registered) {
+		atexit(wget_test_stop_server);
+		atexit_registered = true;
+	}
 
 	wget_snprintf(tmpdir, sizeof(tmpdir), ".test_%d", (int) getpid());
 

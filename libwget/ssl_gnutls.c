@@ -1114,6 +1114,16 @@ static int verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
+#if GNUTLS_VERSION_NUMBER >= 0x030400
+	if (config.check_certificate) {
+		int rc;
+		if ((rc = gnutls_x509_crt_check_key_purpose(cert, GNUTLS_KP_TLS_WWW_SERVER, 0)) == 0) {
+			error_printf_check(_("%s: The certificate is not authorized for server authentication.\n"), tag);
+			goto out;
+		}
+	}
+#endif
+
 	if (!config.check_hostname || (config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname)))
 		ret = 0;
 	else
@@ -1515,7 +1525,7 @@ static int do_handshake(gnutls_session_t session, int sockfd, int timeout)
 		}
 
 		if (gnutls_error_is_fatal(rc)) {
-			debug_printf("gnutls_handshake: (%d) %s (errno=%d)\n", rc, gnutls_strerror(rc),errno);
+			debug_printf("gnutls_handshake: (%d) %s (errno=%d)\n", rc, gnutls_strerror(rc), errno);
 
 			if (rc == GNUTLS_E_CERTIFICATE_ERROR) {
 				ret = WGET_E_CERTIFICATE;
@@ -1718,7 +1728,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	if ((rc = gnutls_priority_set(session, priority_cache)) != GNUTLS_E_SUCCESS)
 		error_printf(_("GnuTLS: Failed to set priorities: %s\n"), gnutls_strerror(rc));
 
-	if (!wget_strcasecmp_ascii(config.secure_protocol, "auto"))
+	if (!config.check_certificate && !wget_strcasecmp_ascii(config.secure_protocol, "auto"))
 		gnutls_session_enable_compatibility_mode(session);
 
 	// RFC 6066 SNI Server Name Indication

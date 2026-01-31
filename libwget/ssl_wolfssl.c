@@ -814,7 +814,16 @@ static int do_handshake(WOLFSSL *session, int sockfd, int timeout)
 			// wait for readability
 			rc = wget_ready_2_read(sockfd, timeout);
 		} else {
-			ret = WGET_E_CONNECT;
+			// WOLFSSL error are negative
+			if ((rc <= WOLFSSL_FIRST_E && rc >= WOLFSSL_LAST_E)
+				|| (rc <= WC_SPAN1_FIRST_E && rc >= WC_SPAN1_LAST_E)
+				|| (rc <= WC_SPAN2_FIRST_E && rc >= WC_SPAN2_LAST_E))
+			{
+				// there are some error codes that could be mapped to WGET_E_CONNECT, though
+				ret = WGET_E_CERTIFICATE;
+			} else
+				ret = WGET_E_CONNECT;
+
 			break;
 		}
 	}
@@ -1011,12 +1020,15 @@ int wget_ssl_open(wget_tcp *tcp)
 	debug_printf("Peer verify result = %ld\n", wolfSSL_get_verify_result(session));
 	debug_printf("SSL version %s\n", wolfSSL_get_version(session));
 	cipher = wolfSSL_get_current_cipher(session);
-//	printf("%s %s%s\n", words[1], (wolfSSL_isQSH(session)) ? "QSH:" : "", wolfSSL_CIPHER_get_name(cipher));
 	debug_printf("SSL cipher suite %s\n", wolfSSL_CIPHER_get_name(cipher));
 	if ((name = wolfSSL_get_curve_name(session)))
 		debug_printf("SSL curve name %s\n", name);
 	else if ((bits = wolfSSL_GetDhKey_Sz(session)) > 0)
 		debug_printf("SSL DH size %d bits\n", bits);
+
+	if (ret != WGET_E_SUCCESS) {
+		goto out;
+	}
 
 	if (config.alpn) {
 		char *protocol;
@@ -1103,6 +1115,7 @@ int wget_ssl_open(wget_tcp *tcp)
 
 	// tcp->hpkp = ctx->stats_hpkp;
 
+out:
 	if (ret != WGET_E_SUCCESS) {
 		if (ret == WGET_E_TIMEOUT)
 			debug_printf("Handshake timed out\n");

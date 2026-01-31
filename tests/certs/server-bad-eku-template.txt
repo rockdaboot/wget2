@@ -1,0 +1,17 @@
+organization = "GNU"
+unit = "Wget"
+state = "Sunshine"
+country = Freeland
+cn = "Wget"
+expiration_days = -1
+dns_name="127.0.0.1"
+dns_name="::1"
+dns_name="localhost"
+dns_name = "WgetTestingServer"
+
+signing_key
+encryption_key
+#time_stamping_key
+
+# Leaving away extended key usage won't let MHD/GnuTLS test server start.
+tls_www_client
