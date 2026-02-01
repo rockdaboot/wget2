@@ -61,18 +61,6 @@ int main(void)
 		WGET_TEST_FEATURE_TLS,
 		0);
 
-#if MHD_VERSION >= 0x00096701 && MHD_VERSION <= 0x00096702
-#ifdef __clang__
-	#pragma clang diagnostic ignored "-Wunreachable-code"
-#endif
-
-	// the logging is enabled after wget_test_start_server()
-	wget_error_printf("SKIP due to MHD 0x%08x issue\n", (unsigned) MHD_VERSION);
-	exit(WGET_TEST_EXIT_SKIP);
-#else
-	wget_error_printf("Built with MHD 0x%08x\n", (unsigned) MHD_VERSION);
-#endif
-
 	// wget2 downloads recursively from HTTPS though we give an http:// URL.
 	wget_test(
 		// WGET_TEST_KEEP_TMPFILES, 1,

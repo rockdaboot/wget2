@@ -60,14 +60,6 @@
 #ifndef MHD_USE_TLS
 #  define MHD_USE_TLS MHD_USE_SSL
 #endif
-#if MHD_VERSION <= 0x00097000
-#undef MHD_NO
-#undef MHD_YES
-enum MHD_Result {
-	MHD_NO = 0,
-	MHD_YES = 1
-};
-#endif
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -111,13 +103,11 @@ static const char
 	*custom_server_cert;
 static bool atexit_registered;
 
-#if MHD_VERSION >= 0x00096302
 static enum CHECK_POST_HANDSHAKE_AUTH {
 	CHECK_ENABLED,
 	CHECK_PASSED,
 	CHECK_FAILED
 } *post_handshake_auth;
-#endif
 
 // MHD_Daemon instance
 static struct MHD_Daemon
@@ -138,9 +128,7 @@ typedef struct {
 #endif
 
 #ifdef WITH_GNUTLS_OCSP
-#if MHD_VERSION >= 0x00096502
 static gnutls_ocsp_data_st *ocsp_stap_resp;
-#endif
 #endif
 
 #ifdef WITH_LIBNGHTTP2
@@ -381,7 +369,6 @@ static int _ocsp_cert_callback(
 	return 0;
 }
 
-#if MHD_VERSION >= 0x00096502
 static int _ocsp_stap_cert_callback(
 	gnutls_session_t session WGET_GCC_UNUSED,
 	const struct gnutls_cert_retr_st *info WGET_GCC_UNUSED,
@@ -404,7 +391,6 @@ static int _ocsp_stap_cert_callback(
 	return 0;
 }
 #endif
-#endif
 
 static enum MHD_Result _answer_to_connection(
 	void *cls WGET_GCC_UNUSED,
@@ -416,7 +402,6 @@ static enum MHD_Result _answer_to_connection(
 	size_t *upload_data_size WGET_GCC_UNUSED,
 	void **con_cls WGET_GCC_UNUSED)
 {
-#if MHD_VERSION >= 0x00096302
 	if (post_handshake_auth) {
 		gnutls_session_t tls_sess;
 		const union MHD_ConnectionInfo *conn_info = MHD_get_connection_info (connection, MHD_CONNECTION_INFO_GNUTLS_SESSION);
@@ -432,7 +417,6 @@ static enum MHD_Result _answer_to_connection(
 			*post_handshake_auth = (check_auth == GNUTLS_E_SUCCESS) ? CHECK_PASSED : CHECK_FAILED;
 		}
 	}
-#endif
 
 	struct MHD_Response *response = NULL;
 	struct query_string query;
@@ -702,12 +686,10 @@ static enum MHD_Result _answer_to_connection(
 				ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
 			}
 
-	// switch off Content-Length sanity checks
-#if MHD_VERSION >= 0x00096800
+			// switch off Content-Length sanity checks
 			MHD_set_response_options(response,
 				MHD_RF_INSANITY_HEADER_CONTENT_LENGTH,
 				MHD_RO_END);
-#endif
 
 			// add available headers
 			for (const char **header = request_url->headers; *header; header++) {
@@ -1268,12 +1250,8 @@ static int _http_server_start(int SERVER_MODE)
 			(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
-#if MHD_VERSION >= 0x00095400
 			MHD_OPTION_STRICT_FOR_CLIENT, 1,
-#endif
-#if MHD_VERSION >= 0x00096800
 			MHD_OPTION_SERVER_INSANITY, 1,
-#endif
 			MHD_OPTION_END);
 
 		if (!httpdaemon)
@@ -1292,23 +1270,16 @@ static int _http_server_start(int SERVER_MODE)
 			}
 
 			if (SERVER_MODE == HTTPS_MODE) {
-				httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
-#if MHD_VERSION >= 0x00096302
-						| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
-#endif
-					,
+				httpsdaemon = MHD_start_daemon(
+					MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS	| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT,
 					port_num, _check_to_accept,
 					(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
 					MHD_OPTION_HTTPS_MEM_CERT, cert_pem,
-#if MHD_VERSION >= 0x00095400
 					MHD_OPTION_STRICT_FOR_CLIENT, 1,
-#endif
-#if MHD_VERSION >= 0x00096800
-			MHD_OPTION_SERVER_INSANITY, 1,
-#endif
-				MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
-				MHD_OPTION_END);
+					MHD_OPTION_SERVER_INSANITY, 1,
+					MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
+					MHD_OPTION_END);
 
 				if (!httpsdaemon) {
 					wget_error_printf("Cannot start the HTTPS server.\n");
@@ -1318,20 +1289,13 @@ static int _http_server_start(int SERVER_MODE)
 		}
 #ifdef WITH_GNUTLS_OCSP
 		else {
-			httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
-#if MHD_VERSION >= 0x00096302
-					| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
-#endif
-				,
+			httpsdaemon = MHD_start_daemon(
+				MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT,
 				port_num, _check_to_accept,
 				(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 				MHD_OPTION_HTTPS_CERT_CALLBACK, _ocsp_cert_callback,
-#if MHD_VERSION >= 0x00095400
 				MHD_OPTION_STRICT_FOR_CLIENT, 1,
-#endif
-#if MHD_VERSION >= 0x00096800
-			MHD_OPTION_SERVER_INSANITY, 1,
-#endif
+				MHD_OPTION_SERVER_INSANITY, 1,
 				MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
 				MHD_OPTION_END);
 
@@ -1376,12 +1340,8 @@ static int _http_server_start(int SERVER_MODE)
 			port_num, NULL, NULL, _ocsp_ahc, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
-#if MHD_VERSION >= 0x00095400
 			MHD_OPTION_STRICT_FOR_CLIENT, 1,
-#endif
-#if MHD_VERSION >= 0x00096800
 			MHD_OPTION_SERVER_INSANITY, 1,
-#endif
 			MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
 			MHD_OPTION_END);
 #endif
@@ -1390,7 +1350,6 @@ static int _http_server_start(int SERVER_MODE)
 			return 1;
 	}
 #ifdef WITH_GNUTLS_OCSP
-#if MHD_VERSION >= 0x00096502
 	else if (SERVER_MODE == OCSP_STAP_MODE) {
 		int rc;
 
@@ -1433,28 +1392,20 @@ static int _http_server_start(int SERVER_MODE)
 		ocsp_stap_resp->exptime = 0;
 
 		/* Start HTTPS daemon with stapled OCSP responses */
-		httpsdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS
-				| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT
-			,
+		httpsdaemon = MHD_start_daemon(
+			MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT,
 			port_num, _check_to_accept,
 			(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_CERT_CALLBACK2, _ocsp_stap_cert_callback,
-#if MHD_VERSION >= 0x00095400
-				MHD_OPTION_STRICT_FOR_CLIENT, 1,
-#endif
-#if MHD_VERSION >= 0x00096800
+			MHD_OPTION_STRICT_FOR_CLIENT, 1,
 			MHD_OPTION_SERVER_INSANITY, 1,
-#endif
 			MHD_OPTION_CONNECTION_MEMORY_LIMIT, (size_t) 1*1024*1024,
 			MHD_OPTION_END);
 	}
 #endif
-#endif
 
 	// get open random port number
-	if (0) {}
-#if MHD_VERSION >= 0x00095501
-	else if (MHD_NO != MHD_is_feature_supported(MHD_FEATURE_AUTODETECT_BIND_PORT))
+	if (MHD_NO != MHD_is_feature_supported(MHD_FEATURE_AUTODETECT_BIND_PORT))
 	{
 		const union MHD_DaemonInfo *dinfo = NULL;
 		if (SERVER_MODE == HTTP_MODE)
@@ -1484,7 +1435,6 @@ static int _http_server_start(int SERVER_MODE)
 		}
 #endif
 	}
-#endif /* MHD_VERSION >= 0x00095501 */
 	else
 	{
 		const union MHD_DaemonInfo *dinfo = NULL;
@@ -1720,16 +1670,8 @@ void wget_test_start_server(int first_key, ...)
 		0);
 
 	wget_debug_printf("MHD compiled with 0x%08x, linked with %s\n", (unsigned) MHD_VERSION, MHD_get_version());
-#if MHD_VERSION >= 0x00095400
 	wget_debug_printf("MHD_OPTION_STRICT_FOR_CLIENT: yes\n");
-#else
-	wget_debug_printf("MHD_OPTION_STRICT_FOR_CLIENT: no\n");
-#endif
-#if MHD_VERSION >= 0x00096800
 	wget_debug_printf("MHD_OPTION_SERVER_INSANITY: yes\n");
-#else
-	wget_debug_printf("MHD_OPTION_SERVER_INSANITY: no\n");
-#endif
 #ifdef WITH_LIBNGHTTP2
 	wget_debug_printf("WITH_LIBNGHTTP2: yes\n");
 #else
@@ -1826,7 +1768,7 @@ void wget_test_start_server(int first_key, ...)
 			break;
 #endif
 		case WGET_TEST_FEATURE_OCSP_STAPLING:
-#if !defined WITH_GNUTLS_OCSP || MHD_VERSION < 0x00096502
+#if !defined WITH_GNUTLS_OCSP
 			wget_error_printf("MHD or GnuTLS version insufficient. Skipping\n");
 			exit(WGET_TEST_EXIT_SKIP);
 #else
@@ -2138,9 +2080,7 @@ void wget_test(int first_key, ...)
 				break;
 			case WGET_TEST_POST_HANDSHAKE_AUTH:
 				if (va_arg(args, int)) {
-#if MHD_VERSION >= 0x00096302
 					post_handshake_auth = wget_malloc(sizeof(enum CHECK_POST_HANDSHAKE_AUTH));
-#endif
 				}
 				break;
 			case WGET_TEST_OCSP_RESP_FILES:
@@ -2339,13 +2279,12 @@ void wget_test(int first_key, ...)
 		// look if there are unexpected files in our working dir
 		_scan_for_unexpected(".", expected_files);
 
-#if MHD_VERSION >= 0x00096302
 		if (post_handshake_auth && *post_handshake_auth == CHECK_FAILED) {
 			wget_free(post_handshake_auth);
 			wget_error_printf_exit("Post-handshake authentication failed\n");
-		} else if (post_handshake_auth)
+		} else if (post_handshake_auth) {
 			wget_free(post_handshake_auth);
-#endif
+		}
 
 #ifdef WITH_GNUTLS_OCSP
 		for (int i = 0; i < wget_vector_size(ocsp_responses); i++) {

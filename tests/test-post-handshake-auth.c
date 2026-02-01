@@ -36,9 +36,6 @@
 
 int main(void)
 {
-#if !(MHD_VERSION >= 0x00096302)
-	exit(WGET_TEST_EXIT_SKIP);
-#else
 	wget_test_url_t urls[]={
 		{	.name = "/index.html",
 			.code = "200",
@@ -68,5 +65,4 @@ int main(void)
 		0);
 
 	exit(EXIT_SUCCESS);
-#endif
 }
