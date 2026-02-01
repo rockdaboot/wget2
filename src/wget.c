@@ -1430,6 +1430,7 @@ int main(int argc, const char **argv)
 
 	if (queue_size() == 0 && !input_tid) {
 		error_printf(_("Nothing to do - goodbye\n"));
+		set_exit_status(EXIT_STATUS_GENERIC);
 		goto out;
 	}
 
