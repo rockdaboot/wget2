@@ -542,7 +542,7 @@ AS_IF([test "$with_ssl" = "gnutls" || test "$with_ssl" = "yes"], [
       [AC_DEFINE([WITH_OCSP], [1], [OCSP is supported.])
        AC_DEFINE([WITH_GNUTLS_OCSP], [1], [GnuTLS OCSP is supported for test suite.])],
       [AC_MSG_WARN(*** Header file gnutls/ocsp.h was not found. OCSP will be disabled.)])
-    AC_CHECK_FUNCS(gnutls_srp_server_get_username gnutls_transport_get_int)
+    AC_CHECK_FUNCS(gnutls_srp_server_get_username)
   ], [
     OLD_LIBS="$LIBS"
     LIBS=

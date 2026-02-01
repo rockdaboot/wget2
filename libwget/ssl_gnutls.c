@@ -1524,12 +1524,7 @@ static ssize_t ssl_writev(gnutls_transport_ptr_t *p, const giovec_t *iov, int io
 	// info_printf("errno=%d ret=%d\n", errno, ret);
 
 	// after the first write we set back the transport push function and the transport pointer to standard functions
-#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
-	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
 	gnutls_transport_set_int(tcp->ssl_session, tcp->sockfd);
-#else
-	gnutls_transport_set_ptr(tcp->ssl_session, (gnutls_transport_ptr_t)(ptrdiff_t)tcp->sockfd);
-#endif
 
 #if defined __clang__
   #pragma clang diagnostic push
@@ -1698,12 +1693,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	gnutls_transport_set_pull_function(session, (gnutls_pull_func) win32_recv);
 #endif
 
-#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
-	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
 	gnutls_transport_set_int(session, sockfd);
-#else
-	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t)(ptrdiff_t)sockfd);
-#endif
 
 #ifdef MSG_FASTOPEN
 	}
@@ -1855,12 +1845,7 @@ void wget_ssl_close(void **session)
  */
 ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeout)
 {
-#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
-	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
 	int sockfd = gnutls_transport_get_int(session);
-#else
-	int sockfd = (int)(ptrdiff_t)gnutls_transport_get_ptr(session);
-#endif
 
 	ssize_t nbytes;
 
@@ -1921,12 +1906,7 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
  */
 ssize_t wget_ssl_write_timeout(void *session, const char *buf, size_t count, int timeout)
 {
-#ifdef HAVE_GNUTLS_TRANSPORT_GET_INT
-	// since GnuTLS 3.1.9, avoid warnings about illegal pointer conversion
 	int sockfd = gnutls_transport_get_int(session);
-#else
-	int sockfd = (int)(ptrdiff_t)gnutls_transport_get_ptr(session);
-#endif
 
 	for (;;) {
 		ssize_t nbytes;
