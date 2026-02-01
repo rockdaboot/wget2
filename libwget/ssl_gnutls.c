@@ -1451,11 +1451,9 @@ static int do_handshake(gnutls_session_t session, int sockfd, int timeout)
 				// We see this with older versions of GnuTLS, e.g. on TravisCI. (Tim, 11.4.2018)
 				// It happens when trying to connect to a port without a listener
 				ret = WGET_E_CONNECT;
-#ifdef GNUTLS_E_PREMATURE_TERMINATION
 			} else if (rc == GNUTLS_E_PREMATURE_TERMINATION && errno == EAGAIN) {
 				// It happens when trying to connect to a closed port
 				ret = WGET_E_CONNECT;
-#endif
 			} else if (rc == GNUTLS_E_UNEXPECTED_PACKET_LENGTH && errno == EAGAIN) {
 				// We see this with older versions of GnuTLS, e.g. on TravisCI. (Tim, 11.4.2018)
 				// It happens when trying to connect to a port without a listener
