@@ -422,9 +422,7 @@ static int print_info(gnutls_session_t session)
 	gnutls_credentials_type_t cred;
 	gnutls_kx_algorithm_t kx;
 	int dhe = 0;
-#if GNUTLS_VERSION_MAJOR >= 3
 	int ecdh = 0;
-#endif
 
 	kx = gnutls_kx_get(session);
 
@@ -458,10 +456,8 @@ static int print_info(gnutls_session_t session)
 
 		if (kx == GNUTLS_KX_DHE_PSK)
 			dhe = 1;
-#if GNUTLS_VERSION_MAJOR >= 3
 		else if (kx == GNUTLS_KX_ECDHE_PSK)
 			ecdh = 1;
-#endif
 		break;
 
 	case GNUTLS_CRD_ANON: /* anonymous authentication */
@@ -469,10 +465,8 @@ static int print_info(gnutls_session_t session)
 		info_printf(_("Anonymous authentication.\n"));
 		if (kx == GNUTLS_KX_ANON_DH)
 			dhe = 1;
-#if GNUTLS_VERSION_MAJOR >= 3
 		else if (kx == GNUTLS_KX_ANON_ECDH)
 			ecdh = 1;
-#endif
 		break;
 
 	case GNUTLS_CRD_CERTIFICATE: /* certificate authentication */
@@ -481,10 +475,8 @@ static int print_info(gnutls_session_t session)
 		 */
 		if (kx == GNUTLS_KX_DHE_RSA || kx == GNUTLS_KX_DHE_DSS)
 			dhe = 1;
-#if GNUTLS_VERSION_MAJOR >= 3
 		else if (kx == GNUTLS_KX_ECDHE_RSA || kx == GNUTLS_KX_ECDHE_ECDSA)
 			ecdh = 1;
-#endif
 
 		/* if the certificate list is available, then
 		 * print some information about it.
@@ -504,10 +496,8 @@ static int print_info(gnutls_session_t session)
 
 	if (dhe != 0)
 		info_printf(_("Ephemeral DH using prime of %d bits\n"), gnutls_dh_get_prime_bits(session));
-#if GNUTLS_VERSION_MAJOR >= 3
 	else if (ecdh != 0)
 		info_printf(_("Ephemeral ECDH using curve %s\n"), gnutls_ecc_curve_get_name(gnutls_ecc_curve_get(session)));
-#endif
 
 	/* print the key exchange's algorithm name */
 	tmp = gnutls_kx_get_name(kx);
@@ -719,7 +709,6 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 		goto cleanup;
 	}
 
-#if GNUTLS_VERSION_NUMBER >= 0x030103
 	if ((rc = gnutls_ocsp_resp_check_crt(resp, 0, cert)) < 0) {
 		if (rc == GNUTLS_E_REQUESTED_DATA_NOT_AVAILABLE) {
 			debug_printf("got OCSP response with no data (ignoring)\n");
@@ -728,7 +717,6 @@ static int check_ocsp_response(gnutls_x509_crt_t cert,
 		}
 		goto cleanup;
 	}
-#endif
 
 	if ((rc = gnutls_ocsp_resp_verify_direct(resp, issuer, &status, 0)) < 0) {
 		debug_printf("gnutls_ocsp_resp_verify_direct: %s", gnutls_strerror(rc));
@@ -889,7 +877,6 @@ static int cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutls
 		return 0;
 	}
 
-#if GNUTLS_VERSION_NUMBER >= 0x030103
 	gnutls_datum_t pubkey;
 
 	if ((rc = gnutls_pubkey_export2(key, GNUTLS_X509_FMT_DER, &pubkey)) != GNUTLS_E_SUCCESS) {
@@ -900,27 +887,6 @@ static int cert_verify_hpkp(gnutls_x509_crt_t cert, const char *hostname, gnutls
 
 	rc = wget_hpkp_db_check_pubkey(config.hpkp_cache, hostname, pubkey.data, pubkey.size);
 	xfree(pubkey.data);
-#else
-	size_t size = 0;
-	void *data = NULL;
-
-	if ((rc = gnutls_pubkey_export(key, GNUTLS_X509_FMT_DER, NULL, &size)) != GNUTLS_E_SHORT_MEMORY_BUFFER) {
-		error_printf(_("Failed to export pubkey: %s\n"), gnutls_strerror(rc));
-		ret = 0;
-		goto out;
-	}
-
-	data = wget_malloc(size);
-
-	if ((rc = gnutls_pubkey_export(key, GNUTLS_X509_FMT_DER, data, &size)) == GNUTLS_E_SHORT_MEMORY_BUFFER) {
-		error_printf(_("Failed to export pubkey: %s\n"), gnutls_strerror(rc));
-		ret = 0;
-		goto out;
-	}
-
-	rc = wget_hpkp_db_check_pubkey(config.hpkp_cache, hostname, data, size);
-	xfree(data);
-#endif
 
 	if (rc != -2) {
 		if (rc == 0) {
@@ -976,11 +942,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 	/* This verification function uses the trusted CAs in the credentials
 	 * structure. So you must have installed one or more CA certificates.
 	 */
-#if GNUTLS_VERSION_NUMBER >= 0x030104
 	if (gnutls_certificate_verify_peers3(session, hostname, &status) != GNUTLS_E_SUCCESS) {
-#else
-	if (gnutls_certificate_verify_peers2(session, &status) != GNUTLS_E_SUCCESS) {
-#endif
 //		if (wget_get_logger(WGET_LOGGER_DEBUG))
 //			_print_info(session);
 		error_printf_check(_("%s: Certificate verification error\n"), tag);
@@ -1007,7 +969,6 @@ static int verify_certificate_callback(gnutls_session_t session)
 	}
 #endif
 
-#if GNUTLS_VERSION_NUMBER >= 0x030104
 #ifdef WITH_LIBDANE
 	// If CA cert verification failed due to missing certificates, we try DANE verification (if requested by the user).
 	if (status) {
@@ -1051,43 +1012,6 @@ static int verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 #endif
-#else
-	if (status) {
-		if (status & GNUTLS_CERT_INVALID)
-			error_printf_check(_("%s: The certificate is not trusted.\n"), tag);
-		if (status & GNUTLS_CERT_REVOKED)
-			error_printf_check(_("%s: The certificate has been revoked.\n"), tag);
-		if (status & GNUTLS_CERT_SIGNER_NOT_FOUND)
-			error_printf_check(_("%s: The certificate doesn't have a known issuer.\n"), tag);
-		if (status & GNUTLS_CERT_SIGNER_NOT_CA)
-			error_printf_check(_("%s: The certificate signer was not a CA.\n"), tag);
-		if (status & GNUTLS_CERT_INSECURE_ALGORITHM)
-			error_printf_check(_("%s: The certificate was signed using an insecure algorithm.\n"), tag);
-		if (status & GNUTLS_CERT_NOT_ACTIVATED)
-			error_printf_check(_("%s: The certificate is not yet activated.\n"), tag);
-		if (status & GNUTLS_CERT_EXPIRED)
-			error_printf_check(_("%s: The certificate has expired.\n"), tag);
-#if GNUTLS_VERSION_NUMBER >= 0x030100
-		if (status & GNUTLS_CERT_SIGNATURE_FAILURE)
-			error_printf_check(_("%s: The certificate signature is invalid.\n"), tag);
-		if (status & GNUTLS_CERT_UNEXPECTED_OWNER)
-			error_printf_check(_("%s: The certificate's owner does not match hostname '%s'.\n"), tag, hostname);
-#endif
-
-		// any other reason
-		if (status & ~(GNUTLS_CERT_INVALID|GNUTLS_CERT_REVOKED|GNUTLS_CERT_SIGNER_NOT_FOUND|
-			GNUTLS_CERT_SIGNER_NOT_CA|GNUTLS_CERT_INSECURE_ALGORITHM|GNUTLS_CERT_NOT_ACTIVATED|
-			GNUTLS_CERT_EXPIRED
-#if GNUTLS_VERSION_NUMBER >= 0x030100
-			|GNUTLS_CERT_SIGNATURE_FAILURE
-			|GNUTLS_CERT_UNEXPECTED_OWNER
-#endif
-			))
-			error_printf_check(_("%s: The certificate could not be verified (0x%X).\n"), tag, status);
-
-		goto out;
-	}
-#endif
 
 	/* Up to here the process is the same for X.509 certificates and
 	 * OpenPGP keys. From now on X.509 certificates are assumed. This can
@@ -1114,7 +1038,6 @@ static int verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
-#if GNUTLS_VERSION_NUMBER >= 0x030400
 	if (config.check_certificate) {
 		int rc;
 		if ((rc = gnutls_x509_crt_check_key_purpose(cert, GNUTLS_KP_TLS_WWW_SERVER, 0)) == 0) {
@@ -1122,7 +1045,6 @@ static int verify_certificate_callback(gnutls_session_t session)
 			goto out;
 		}
 	}
-#endif
 
 	if (!config.check_hostname || (config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname)))
 		ret = 0;
@@ -1134,7 +1056,6 @@ static int verify_certificate_callback(gnutls_session_t session)
 #ifdef WITH_OCSP
 	if (config.ocsp_stapling) {
 		if (!ctx->valid && ctx->ocsp_stapling) {
-#if GNUTLS_VERSION_NUMBER >= 0x030103
 			if (gnutls_ocsp_status_request_is_checked(session, 0)) {
 				debug_printf("Server certificate is valid regarding OCSP stapling\n");
 //				_get_cert_fingerprint(cert, fingerprint, sizeof(fingerprint)); // calc hexadecimal fingerprint string
@@ -1142,19 +1063,16 @@ static int verify_certificate_callback(gnutls_session_t session)
 				nvalid = 1;
 				skip_server_cert_check = true;
 			}
-#if GNUTLS_VERSION_NUMBER >= 0x030400
 			else if (gnutls_ocsp_status_request_is_checked(session, GNUTLS_OCSP_SR_IS_AVAIL)) {
 				error_printf_check(_("WARNING: The certificate's (stapled) OCSP status is invalid\n"));
 				skip_server_cert_check = true;
 			}
-#endif
 			else if (!config.ocsp) {
 				debug_printf("OCSP stapling is not supported by '%s'\n", hostname);
 			} else {
 				error_printf_check(_("WARNING: OCSP stapling is not supported by '%s', but OCSP validation has been requested.\n"), hostname);
 				error_printf_check(_("WARNING: This implies a privacy leak: the client sends the certificate serial ID over HTTP to the CA.\n"));
 			}
-#endif
 		} else if (ctx->valid)
 			debug_printf("OCSP: Host '%s' is valid (from cache)\n", hostname);
 	}
@@ -1364,7 +1282,6 @@ void wget_ssl_init(void)
 		gnutls_certificate_set_verify_function(credentials, verify_certificate_callback);
 
 		if (config.ca_directory && *config.ca_directory && config.check_certificate) {
-#if GNUTLS_VERSION_NUMBER >= 0x03000d
 			if (!strcmp(config.ca_directory, "system")) {
 				ncerts = gnutls_certificate_set_x509_system_trust(credentials);
 				if (ncerts < 0)
@@ -1372,7 +1289,6 @@ void wget_ssl_init(void)
 				else
 					debug_printf("GnuTLS system certificate store is empty\n");
 			}
-#endif
 
 			if (ncerts < 0) {
 				DIR *dir;
@@ -1436,11 +1352,7 @@ void wget_ssl_init(void)
 					rc = gnutls_priority_init(&priority_cache, priorities, NULL);
 				}
 			} else {
-#if GNUTLS_VERSION_NUMBER >= 0x030603
 #define TLS13_PRIO ":+VERS-TLS1.3"
-#else
-#define TLS13_PRIO ""
-#endif
 				if (!wget_strncasecmp_ascii(config.secure_protocol, "SSL", 3))
 					priorities = "NORMAL:-VERS-TLS-ALL:+VERS-SSL3.0";
 				else if (!wget_strcasecmp_ascii(config.secure_protocol, "TLSv1"))
@@ -1455,7 +1367,7 @@ void wget_ssl_init(void)
 					/* use system default, priorities = NULL */
 				} else if (*config.secure_protocol)
 					priorities = config.secure_protocol;
-
+#undef TLS13_PRIO
 				rc = gnutls_priority_init(&priority_cache, priorities, NULL);
 			}
 
@@ -1563,11 +1475,9 @@ static int do_handshake(gnutls_session_t session, int sockfd, int timeout)
 		}
 	}
 
-#if GNUTLS_VERSION_NUMBER >= 0x030500
 	if (ret == WGET_E_SUCCESS)
 		debug_printf("TLS False Start: %s\n",
 			(gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) ? "on" : "off");
-#endif
 
 	return ret;
 }
@@ -1695,12 +1605,7 @@ int wget_ssl_open(wget_tcp *tcp)
 	sockfd= tcp->sockfd;
 	connect_timeout = tcp->connect_timeout;
 
-	unsigned int flags = GNUTLS_CLIENT;
-
-#if GNUTLS_VERSION_NUMBER >= 0x030500
-#if GNUTLS_VERSION_NUMBER >= 0x030605
-	flags |= GNUTLS_AUTO_REAUTH | GNUTLS_POST_HANDSHAKE_AUTH;
-#endif
+	unsigned int flags = GNUTLS_CLIENT | GNUTLS_AUTO_REAUTH | GNUTLS_POST_HANDSHAKE_AUTH;
 
 	if (tcp->tls_false_start) {
 		debug_printf("TLS False Start requested\n");
@@ -1713,17 +1618,6 @@ int wget_ssl_open(wget_tcp *tcp)
 
 		gnutls_init(&session, flags);
 	}
-#elif defined GNUTLS_NONBLOCK
-	if (tcp->tls_false_start)
-		error_printf(_("TLS False Start requested but libwget built with insufficient GnuTLS version\n"));
-	flags |= GNUTLS_NONBLOCK;
-	gnutls_init(&session, flags);
-#else
-	// very old gnutls version, likely to not work.
-	if (tcp->tls_false_start)
-		error_printf(_("TLS False Start requested but libwget built with insufficient GnuTLS version\n"));
-	gnutls_init(&session, flags);
-#endif
 
 	if ((rc = gnutls_priority_set(session, priority_cache)) != GNUTLS_E_SUCCESS)
 		error_printf(_("GnuTLS: Failed to set priorities: %s\n"), gnutls_strerror(rc));
@@ -1748,13 +1642,11 @@ int wget_ssl_open(wget_tcp *tcp)
 	// we fallback to OCSP responder request later (if enabled).
 	if (hostname) {
 		if (!(ctx->valid = wget_ocsp_hostname_is_valid(config.ocsp_host_cache, hostname))) {
-#if GNUTLS_VERSION_NUMBER >= 0x030103
 			if ((rc = gnutls_ocsp_status_request_enable_client(session, NULL, 0, NULL)) == GNUTLS_E_SUCCESS) {
 				debug_printf("OCSP stapling requested for %s\n", hostname);
 				ctx->ocsp_stapling = 1;
 			} else
 				error_printf("GnuTLS: %s\n", gnutls_strerror(rc)); // no translation
-#endif
 		}
 	}
 #else
@@ -1762,7 +1654,6 @@ int wget_ssl_open(wget_tcp *tcp)
 		error_printf(_("WARNING: OCSP is not available in this version of GnuTLS.\n"));
 #endif
 
-#if GNUTLS_VERSION_NUMBER >= 0x030200
 	if (config.alpn) {
 		unsigned nprot;
 		const char *e, *s;
@@ -1787,7 +1678,6 @@ int wget_ssl_open(wget_tcp *tcp)
 				debug_printf("GnuTLS: Set ALPN: %s\n", gnutls_strerror(rc));
 		}
 	}
-#endif
 
 	tcp->ssl_session = session;
 	gnutls_session_set_ptr(session, ctx);
@@ -1840,12 +1730,9 @@ int wget_ssl_open(wget_tcp *tcp)
 		long long after_millisecs = wget_get_timemillis();
 		stats.tls_secs = after_millisecs - before_millisecs;
 		stats.tls_con = 1;
-#if GNUTLS_VERSION_NUMBER >= 0x030500
 		stats.false_start = (gnutls_session_get_flags(session) & GNUTLS_SFLAGS_FALSE_START) != 0;
-#endif
 	}
 
-#if GNUTLS_VERSION_NUMBER >= 0x030200
 	if (config.alpn) {
 		gnutls_datum_t protocol;
 		if ((rc = gnutls_alpn_get_selected_protocol(session, &protocol))) {
@@ -1864,7 +1751,6 @@ int wget_ssl_open(wget_tcp *tcp)
 			}
 		}
 	}
-#endif
 
 	if (config.print_info)
 		print_info(session);
@@ -1976,32 +1862,6 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 	int sockfd = (int)(ptrdiff_t)gnutls_transport_get_ptr(session);
 #endif
 
-// #if GNUTLS_VERSION_NUMBER >= 0x030107
-#if 0
-	// GnuTLS <= 3.4.5 becomes slow with large timeouts (see loop in gnutls_system_recv_timeout()).
-	// A fix is proposed for 3.5.x, as well as a value for indefinite timeouts (-1).
-	ssize_t nbytes;
-
-	gnutls_record_set_timeout(session, timeout);
-
-	for (;;) {
-		if ((nbytes = gnutls_record_recv(session, buf, count)) >= 0)
-			return nbytes;
-
-		if (nbytes == GNUTLS_E_REHANDSHAKE) {
-			debug_printf("*** REHANDSHAKE while reading\n");
-			if ((nbytes = do_handshake(session, sockfd, timeout)) == 0)
-				continue; /* restart reading */
-		}
-
-		if (nbytes == GNUTLS_E_AGAIN)
-			return 0; // indicate timeout
-
-		return -1;
-	}
-
-	return -1;
-#else
 	ssize_t nbytes;
 
 	for (;;) {
@@ -2037,7 +1897,6 @@ ssize_t wget_ssl_read_timeout(void *session, char *buf, size_t count, int timeou
 	}
 
 	return nbytes < -1 ? -1 : nbytes;
-#endif
 }
 
 /**

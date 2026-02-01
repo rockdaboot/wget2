@@ -111,7 +111,7 @@ static const char
 	*custom_server_cert;
 static bool atexit_registered;
 
-#if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
+#if MHD_VERSION >= 0x00096302
 static enum CHECK_POST_HANDSHAKE_AUTH {
 	CHECK_ENABLED,
 	CHECK_PASSED,
@@ -138,7 +138,7 @@ typedef struct {
 #endif
 
 #ifdef WITH_GNUTLS_OCSP
-#if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
+#if MHD_VERSION >= 0x00096502
 static gnutls_ocsp_data_st *ocsp_stap_resp;
 #endif
 #endif
@@ -381,7 +381,7 @@ static int _ocsp_cert_callback(
 	return 0;
 }
 
-#if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
+#if MHD_VERSION >= 0x00096502
 static int _ocsp_stap_cert_callback(
 	gnutls_session_t session WGET_GCC_UNUSED,
 	const struct gnutls_cert_retr_st *info WGET_GCC_UNUSED,
@@ -416,7 +416,7 @@ static enum MHD_Result _answer_to_connection(
 	size_t *upload_data_size WGET_GCC_UNUSED,
 	void **con_cls WGET_GCC_UNUSED)
 {
-#if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
+#if MHD_VERSION >= 0x00096302
 	if (post_handshake_auth) {
 		gnutls_session_t tls_sess;
 		const union MHD_ConnectionInfo *conn_info = MHD_get_connection_info (connection, MHD_CONNECTION_INFO_GNUTLS_SESSION);
@@ -1390,7 +1390,7 @@ static int _http_server_start(int SERVER_MODE)
 			return 1;
 	}
 #ifdef WITH_GNUTLS_OCSP
-#if MHD_VERSION >= 0x00096502 && GNUTLS_VERSION_NUMBER >= 0x030603
+#if MHD_VERSION >= 0x00096502
 	else if (SERVER_MODE == OCSP_STAP_MODE) {
 		int rc;
 
@@ -1826,7 +1826,7 @@ void wget_test_start_server(int first_key, ...)
 			break;
 #endif
 		case WGET_TEST_FEATURE_OCSP_STAPLING:
-#if !defined WITH_GNUTLS_OCSP || MHD_VERSION < 0x00096502 || GNUTLS_VERSION_NUMBER < 0x030603
+#if !defined WITH_GNUTLS_OCSP || MHD_VERSION < 0x00096502
 			wget_error_printf("MHD or GnuTLS version insufficient. Skipping\n");
 			exit(WGET_TEST_EXIT_SKIP);
 #else
@@ -2138,7 +2138,7 @@ void wget_test(int first_key, ...)
 				break;
 			case WGET_TEST_POST_HANDSHAKE_AUTH:
 				if (va_arg(args, int)) {
-#if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
+#if MHD_VERSION >= 0x00096302
 					post_handshake_auth = wget_malloc(sizeof(enum CHECK_POST_HANDSHAKE_AUTH));
 #endif
 				}
@@ -2339,7 +2339,7 @@ void wget_test(int first_key, ...)
 		// look if there are unexpected files in our working dir
 		_scan_for_unexpected(".", expected_files);
 
-#if MHD_VERSION >= 0x00096302 && GNUTLS_VERSION_NUMBER >= 0x030603
+#if MHD_VERSION >= 0x00096302
 		if (post_handshake_auth && *post_handshake_auth == CHECK_FAILED) {
 			wget_free(post_handshake_auth);
 			wget_error_printf_exit("Post-handshake authentication failed\n");
