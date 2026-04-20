@@ -108,16 +108,16 @@ EXTRA_DIST = valgrind-suppressions
 # $(wildcard *.in) $(wildcard *.repro)
 
 dist-hook:
-	find $(srcdir) -name '*.options' -exec cp -v '{}' $(distdir) ';'
-	find $(srcdir) -name '*.dict' -exec cp -v '{}' $(distdir) ';'
-#	find $(srcdir) -name '*.in' -exec cp -vr '{}' $(distdir) ';'
-	find $(srcdir) -name '*.repro' -exec cp -vr '{}' $(distdir) ';'
+	$(AM_V_at)find $(srcdir) -name '*.options' -exec cp -v '{}' $(distdir) ';'
+	$(AM_V_at)find $(srcdir) -name '*.dict' -exec cp -v '{}' $(distdir) ';'
+#	$(AM_V_at)find $(srcdir) -name '*.in' -exec cp -vr '{}' $(distdir) ';'
+	$(AM_V_at)find $(srcdir) -name '*.repro' -exec cp -vr '{}' $(distdir) ';'
 
 clean-local:
-	rm -rf *.gc?? *.log lcov
+	$(AM_V_at)rm -rf *.gc?? *.log lcov
 
 oss-fuzz:
-	if test "$$OUT" != ""; then \
+	$(AM_V_at)if test "$$OUT" != ""; then \
 	XLIBS="-lpsl -lgnutls -lhogweed -lnettle -lgmp -lidn2 -lunistring -lz"; \
 	for ccfile in libwget*_fuzzer.c; do \
 	fuzzer=$$(basename $$ccfile .c); \

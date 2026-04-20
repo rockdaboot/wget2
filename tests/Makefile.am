@@ -66,7 +66,7 @@ libtest_la_LIBADD = ../src/libtest-utils.la ../lib/libgnu.la ../libwget/libwget.
 EXTRA_DIST = certs gpg valgrind-suppressions clang-asan-suppressions
 
 clean-local:
-	rm -rf $(srcdir)/.test_*
+	$(AM_V_at)rm -rf $(srcdir)/.test_*
 
 AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";\
  export LSAN_OPTIONS=suppressions="$(abs_srcdir)/clang-asan-suppressions";

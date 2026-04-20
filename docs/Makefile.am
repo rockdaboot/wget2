@@ -33,8 +33,8 @@ man3_MANS =\
 $(man3_MANS): libwget.stamp
 
 libwget.stamp:
-	$(DOXYGEN) $(builddir)/libwget.doxy
-	echo > libwget.stamp
+	$(AM_V_at)$(DOXYGEN) $(builddir)/libwget.doxy
+	$(AM_V_at)echo > libwget.stamp
 
 EXTRA_DIST += $(man3_MANS)
 STAMPS += libwget.stamp
@@ -47,11 +47,11 @@ man1_MANS = $(builddir)/man/man1/wget2.1
 $(man1_MANS): wget2.stamp
 
 wget2.stamp:
-	mkdir -p $(builddir)/man/man1
-	PANDOC=$(PANDOC) sh $(builddir)/wget2_md2man.sh $(srcdir)/wget2.md $(builddir)/man/man1/wget2.1
-	$(PANDOC) -s -f markdown -t texinfo -o $(builddir)/wget2.texi $(srcdir)/wget2.md
-	$(MAKEINFO) --force -o $(builddir)/wget2.info $(builddir)/wget2.texi
-	echo > wget2.stamp
+	$(AM_V_at)mkdir -p $(builddir)/man/man1
+	$(AM_V_at)PANDOC=$(PANDOC) sh $(builddir)/wget2_md2man.sh $(srcdir)/wget2.md $(builddir)/man/man1/wget2.1
+	$(AM_V_at)$(PANDOC) -s -f markdown -t texinfo -o $(builddir)/wget2.texi $(srcdir)/wget2.md
+	$(AM_V_at)$(MAKEINFO) --force -o $(builddir)/wget2.info $(builddir)/wget2.texi
+	$(AM_V_at)echo > wget2.stamp
 
 DISTCLEANFILES += wget2.texi wget2.info
 EXTRA_DIST += wget2.info $(man1_MANS)
@@ -67,4 +67,4 @@ README.md: $(top_srcdir)/README.md
 all-local: README.md $(STAMPS)
 
 distclean-local:
-	rm -rf $(LOCAL_DISTCLEAN)
+	$(AM_V_at)rm -rf $(LOCAL_DISTCLEAN)
