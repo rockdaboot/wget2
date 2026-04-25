@@ -455,8 +455,6 @@ AM_CONDITIONAL([WITH_PANDOC], [ test -n "$PANDOC" ])
 #
 # enable creation of man pages
 #
-#AC_ARG_ENABLE(man,[AS_HELP_STRING([--enable-man],
-#                                  [generate man pages [default=auto]])],enable_man=yes,enable_man=no)
 
 #AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" != "no")
 #AC_MSG_CHECKING([whether to generate man pages])
@@ -618,13 +616,6 @@ AS_IF([test "$with_gnutls" = "yes" || test "$with_wolfssl" = "yes" || test "$wit
   ])
   ssl_enabled="none"
 ])
-
-#AS_IF([test "$with_gnutls" != "yes" && test "$with_openssl" != "yes" && test "$with_wolfssl" != "yes"], [
-#  AS_IF([test "$with_ssl" != "none"], [
-#    AC_MSG_ERROR([*** Unsupported value for --with-ssl. Use 'gnutls' (default), 'openssl', 'wolfssl' or 'none'])
-#  ])
-#  ssl_enabled="(not found)"
-#])
 
 AM_CONDITIONAL([WITH_GNUTLS], [test "$with_gnutls" = "yes"])
 AM_CONDITIONAL([WITH_OPENSSL], [test "$with_openssl" = "yes"])
