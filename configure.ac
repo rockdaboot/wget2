@@ -27,7 +27,7 @@ AC_INIT([wget2],[2.2.1],[bug-wget@gnu.org],[wget2],[https://savannah.gnu.org/pro
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
-AM_INIT_AUTOMAKE([subdir-objects parallel-tests gnu -Wno-portability dist-lzip])
+AM_INIT_AUTOMAKE([subdir-objects parallel-tests gnu -Wno-portability dist-lzip silent-rules])
 
 AC_CANONICAL_HOST
 case $host_os in
@@ -93,9 +93,6 @@ AC_CONFIG_FILES([include/wget/wgetver.h])
 
 AC_CONFIG_SRCDIR([src/wget.c])
 AC_CONFIG_HEADERS([config.h])
-
-# Non-verbose make
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Checks for programs.
 
