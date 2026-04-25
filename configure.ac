@@ -989,7 +989,6 @@ AS_IF([test "${enable_libproxy}" = "yes"], [
 
 
 # Check for plugin support
-AC_CANONICAL_HOST
 case "$host_os" in
 	mingw*)
 		dl_impl="windows";
