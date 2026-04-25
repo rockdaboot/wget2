@@ -48,6 +48,13 @@ esac
 AC_SUBST([AM_CFLAGS])
 
 AC_USE_SYSTEM_EXTENSIONS
+
+# Check for large file support.  This check needs to come fairly
+# early because it could (in principle) affect whether functions and
+# headers are available, whether they work, etc.
+AC_SYS_LARGEFILE
+AC_CHECK_SIZEOF(off_t)
+
 AC_PROG_CC
 if test "x$ac_cv_prog_cc_c11" = "xno"; then
   AC_MSG_ERROR([C11 compiler is required. Aborting.])
@@ -89,12 +96,6 @@ AC_CONFIG_HEADERS([config.h])
 
 # Non-verbose make
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-
-# Check for large file support.  This check needs to come fairly
-# early because it could (in principle) affect whether functions and
-# headers are available, whether they work, etc.
-AC_SYS_LARGEFILE
-AC_CHECK_SIZEOF(off_t)
 
 # Checks for programs.
 
