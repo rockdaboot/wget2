@@ -707,7 +707,7 @@ AS_IF([test "$with_libhsts" != "no"], [
     LIBS="$OLD_LIBS"
   ])
 ])
-AM_CONDITIONAL([WITH_LIBHSTS], [test "$with_libHSTS" = "yes"])
+AM_CONDITIONAL([WITH_LIBHSTS], [test "$with_libhsts" = "yes"])
 
 AC_ARG_WITH(libnghttp2, AS_HELP_STRING([--without-libnghttp2], [disable support for libnghttp2]), with_libnghttp2=$withval, with_libnghttp2=yes)
 AS_IF([test "$with_libnghttp2" != "no"], [
