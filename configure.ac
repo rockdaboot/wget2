@@ -28,6 +28,7 @@ AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
 AM_INIT_AUTOMAKE([subdir-objects parallel-tests gnu -Wno-portability dist-lzip silent-rules])
+AM_SILENT_RULES([yes]) # set default to 'make V=0'
 
 AC_CANONICAL_HOST
 case $host_os in
