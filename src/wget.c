@@ -3727,6 +3727,10 @@ static int get_header(wget_http_response *resp, void *context)
 		&& (!wget_strcasecmp_ascii(resp->content_type, "application/metalink4+xml") ||
 		!wget_strcasecmp_ascii(resp->content_type, "application/metalink+xml"));
 
+	if (config.server_response && config.spider && resp->header) {
+		info_printf(_("# got header %zu bytes:\n%s\n"), resp->header->length, resp->header->data);
+	}
+
 	if (ctx->job->head_first || (config.metalink && metalink)) {
 		name = ctx->job->blacklist_entry->local_filename;
 	} else if ((part = ctx->job->part)) {
