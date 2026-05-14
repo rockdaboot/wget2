@@ -54,6 +54,7 @@ const char *wget_strerror(wget_error err)
 	case WGET_E_OPEN: return _("Failed to open file");
 	case WGET_E_IO: return _("I/O error");
 	case WGET_E_UNSUPPORTED: return _("Unsupported function");
+	case WGET_E_XML_MAX_DEPTH: return _("Maximum XML depth of 1024 was reached");
 	default: return _("Unknown error");
 	}
 }

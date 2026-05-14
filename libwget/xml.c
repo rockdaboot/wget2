@@ -47,6 +47,8 @@
 #include <wget.h>
 #include "private.h"
 
+#define MAX_XML_DEPTH 1024
+
 typedef struct {
 	const char
 		*buf, //!< pointer to original start of buffer (0-terminated)
@@ -436,7 +438,7 @@ static const char *getContent(xml_context *context, const char *directory)
 	return context->token;
 }
 
-static int parseXML(const char *dir, xml_context *context)
+static int parseXML(const char *dir, xml_context *context, int depth)
 {
 	const char *tok;
 	char directory[256] = "";
@@ -500,8 +502,13 @@ static int parseXML(const char *dir, xml_context *context)
 							if (context->token_len)
 								debug_printf("%s=%.*s\n", directory, (int)context->token_len, context->token);
 						}
-					} else
-						parseXML(directory, context); // descend one level
+					} else {
+						if (depth >= MAX_XML_DEPTH) return WGET_E_XML_MAX_DEPTH;
+						
+						int ret = parseXML(directory, context, depth + 1);
+						if (ret != WGET_E_SUCCESS)
+							return ret;
+					}
 					break;
 				} else {
 					char attribute[256];
@@ -610,7 +617,7 @@ int wget_xml_parse_buffer(
 	context.callback = callback;
 	context.hints = hints;
 
-	return parseXML ("/", &context);
+	return parseXML ("/", &context, 0);
 }
 
 /**

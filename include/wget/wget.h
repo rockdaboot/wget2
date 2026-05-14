@@ -267,6 +267,7 @@ typedef enum {
 	WGET_E_OPEN = -10, /* Failed to open file */
 	WGET_E_IO = -11, /* General I/O error (read/write/stat/...) */
 	WGET_E_UNSUPPORTED = -12, /* Unsupported function */
+	WGET_E_XML_MAX_DEPTH = -13, /* XML max depth was reached*/
 } wget_error;
 
 WGETAPI const char *
