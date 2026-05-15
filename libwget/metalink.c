@@ -46,6 +46,7 @@
 
 #include <wget.h>
 #include "private.h"
+#include "filename.h"
 
 typedef struct {
 	wget_metalink
@@ -176,14 +177,37 @@ static const char *sanitized_filename(const char *in)
 	//   directives or information.  The path MUST be relative.  The path
 	//   MUST NOT begin with a "/", "./", or "../"; contain "/../"; or end
 	//   with "/..".
-	if (*in == '/'
-	    || !strncmp(in, "./", 2)
-	    || !strncmp(in, "../", 3)
-	    || strstr(in, "/../")
-	    || wget_match_tail(in, "/../"))
-	{
+	const char *p = in + FILE_SYSTEM_PREFIX_LEN(in); // skip drive letter on Windows
+
+	// Reject absolute paths (leading "/" or "\\")
+	if (ISSLASH(*p))
 		return NULL;
-	}
+
+	// Reject "../" at the start
+	if (!strncmp(p, "./", 2) || !strncmp(p, "../", 3))
+		return NULL;
+
+	// Reject "/../" anywhere in the path
+	if (strstr(p, "/../"))
+		return NULL;
+
+	// Reject trailing "/.."
+	if (wget_match_tail(p, "/.."))
+		return NULL;
+
+#ifdef WIN32
+	// Reject "..\\" at the start
+	if (!strncmp(p, ".\\", 2) || !strncmp(p, "..\\", 3))
+		return NULL;
+
+	// Reject "\\../" or "\\..\\" or "/..\\" anywhere in the path
+	if (strstr(p, "\\../") || strstr(p, "\\..\\") || strstr(p, "/..\\"))
+		return NULL;
+
+	// Reject trailing "\\.."
+	if (wget_match_tail(p, "\\.."))
+		return NULL;
+#endif
 
 	return wget_strdup(in);
 }
