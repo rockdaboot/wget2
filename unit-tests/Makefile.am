@@ -30,7 +30,8 @@ WGET_TESTS = \
  test$(EXEEXT) \
  test-parse-html$(EXEEXT) \
  test-cond$(EXEEXT) \
- test-decompress$(EXEEXT)
+ test-decompress$(EXEEXT) \
+ test-http-parse$(EXEEXT)
 
 if PLUGIN_SUPPORT
  WGET_TESTS += test-dl$(EXEEXT)
@@ -43,6 +44,8 @@ test_SOURCES = test.c
 test_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 test_parse_html_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 test_dl_LDADD = ../src/dl.o ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
+test_http_parse_SOURCES = test-http-parse.c
+test_http_parse_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 EXTRA_DIST = files
 
