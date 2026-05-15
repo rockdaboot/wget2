@@ -504,7 +504,7 @@ static int parseXML(const char *dir, xml_context *context, int depth)
 						}
 					} else {
 						if (depth >= MAX_XML_DEPTH) return WGET_E_XML_MAX_DEPTH;
-						
+
 						int ret = parseXML(directory, context, depth + 1);
 						if (ret != WGET_E_SUCCESS)
 							return ret;
