@@ -435,7 +435,7 @@ void host_increase_failure(HOST *host)
 {
 	wget_thread_mutex_lock(hosts_mutex);
 	host->failures++;
-	host->retry_ts = wget_get_timemillis() + host->failures * 1000;
+	host->retry_ts = wget_get_timemillis() + host->failures * config.waitretry;
 	debug_printf("%s: %s failures=%d\n", __func__, host->host, host->failures);
 
 	if (config.tries && host->failures >= config.tries) {

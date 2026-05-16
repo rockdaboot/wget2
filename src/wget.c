@@ -1813,7 +1813,7 @@ static int process_response_header(wget_http_response *resp)
 
 			// retry later
 			job->done = 0;
-			job->retry_ts = wget_get_timemillis() + job->failures * 1000;
+			job->retry_ts = wget_get_timemillis() + job->failures * config.waitretry;
 		}
 		return 1; // skip further processing of the request
 	}
@@ -2579,7 +2579,7 @@ void *downloader_thread(void *p)
 						set_exit_status(EXIT_STATUS_NETWORK);
 				} else if (check_status_code_list(config.retry_on_http_error, resp->code)) {
 					job->done = 0;
-					job->retry_ts = wget_get_timemillis() + job->failures * 1000;
+					job->retry_ts = wget_get_timemillis() + job->failures * config.waitretry;
 				}
 			}
 

@@ -2459,7 +2459,7 @@ static const struct optionw options[] = {
 		  "(per thread). (default: 0)\n"
 		}
 	},
-	{ "waitretry", &config.waitretry, parse_timeout, 1, 0,
+	{ "waitretry", &config.waitretry, parse_timeout, 10, 0,
 		SECTION_DOWNLOAD,
 		{ "Wait up to number of seconds after error\n",
 		  "(per thread). (default: 10)\n"
