@@ -78,6 +78,7 @@ static const char attrs[][12] = {
 	"background",
 	"code", "codebase", "cite", "classid",
 	"data",
+	"data-src", "data-srcset",
 	"formaction",
 	"href",
 	"icon",
@@ -308,7 +309,7 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 
 			wget_html_parsed_url url;
 
-			if (!wget_strcasecmp_ascii(attr, "srcset")) {
+			if (!wget_strcasecmp_ascii(attr, "srcset") || !wget_strcasecmp_ascii(attr, "data-srcset")) {
 				// value is a list of URLs, see https://html.spec.whatwg.org/multipage/embedded-content.html#attr-img-srcset
 				// See also https://html.spec.whatwg.org/multipage/images.html#srcset-attribute
 				while (len) {
