@@ -587,17 +587,19 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 						param.value = NULL;
 					}
 
-					wget_percent_unescape(p);
-					// Strip directory traversal sequences to prevent path traversal attacks
-					char *f = sanitize_filename(p);
-					xfree(p);
-					if (!wget_str_is_valid_utf8(f)) {
-						// if it is not UTF-8, assume ISO-8859-1
-						// see https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
-						*filename = wget_str_to_utf8(f, "iso-8859-1");
-						xfree(f);
-					} else
-						*filename = f;
+					if (p) {
+						wget_percent_unescape(p);
+						// Strip directory traversal sequences to prevent path traversal attacks
+						char *f = sanitize_filename(p);
+						xfree(p);
+						if (!wget_str_is_valid_utf8(f)) {
+							// if it is not UTF-8, assume ISO-8859-1
+							// see https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
+							*filename = wget_str_to_utf8(f, "iso-8859-1");
+							xfree(f);
+						} else
+							*filename = f;
+					}
 				}
 			} else if (param.value && !wget_strcasecmp_ascii("filename*", param.name)) {
 				// RFC5987
