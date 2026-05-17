@@ -2034,7 +2034,7 @@ static const struct optionw options[] = {
 	{ "ocsp", &config.ocsp, parse_bool, -1, 0,
 		SECTION_SSL,
 		{ "Use OCSP server access to verify server's\n",
-		  "certificate. (default: on)\n"
+		  "certificate. (default: off)\n"
 		}
 	},
 	{ "ocsp-date", &config.ocsp_date, parse_bool, -1, 0,
@@ -2148,7 +2148,7 @@ static const struct optionw options[] = {
 	{ "progress", &config.progress, parse_progress_type, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Type of progress bar (bar, none).\n",
-		  "(default: none)\n"
+		  "(default: bar)\n"
 		}
 	},
 	{ "protocol-directories", &config.protocol_directories, parse_bool, -1, 0,
@@ -2359,7 +2359,7 @@ static const struct optionw options[] = {
 	},
 	{ "tcp-fastopen", &config.tcp_fastopen, parse_bool, -1, 0,
 		SECTION_DOWNLOAD,
-		{ "Enable TCP Fast Open (TFO). (default: on)\n"
+		{ "Enable TCP Fast Open (TFO). (default: off)\n"
 		}
 	},
 	{ "timeout", NULL, parse_timeout, 1, 'T',
@@ -2427,7 +2427,7 @@ static const struct optionw options[] = {
 	{ "user-agent", &config.user_agent, parse_string, 1, 'U',
 		SECTION_HTTP,
 		{ "HTTP User Agent string.\n",
-		  "(default: wget)\n"
+		  "(default: Wget/version)\n"
 		}
 	},
 	{ "verbose", &config.verbose, parse_bool, -1, 'v',

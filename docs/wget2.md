@@ -197,12 +197,12 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--force-atom`
 
-  Read and parse the input file as Atom Feed XML.  This enables you to retrieve links from existing sitemap files on your local disk.
+  Read and parse the input file as Atom Feed XML.  This enables you to retrieve links from existing Atom Feed files on your local disk.
   You will need `--base` to handle relative links correctly.
 
 ### `--force-rss`
 
-  Read and parse the input file as RSS Feed XML.  This enables you to retrieve links from existing sitemap files on your local disk.
+  Read and parse the input file as RSS Feed XML.  This enables you to retrieve links from existing RSS Feed files on your local disk.
   You will need `--base` to handle relative links correctly.
 
 ### `--force-metalink`
@@ -508,7 +508,10 @@ Go to background immediately after startup. If no output file is specified via t
 
   Type `bar` draws an ASCII progress bar graphics (a.k.a "thermometer" display) indicating the status of retrieval.
 
-  If the output is a TTY, `bar` is the default. Else, the progress bar will be switched off, except when using `--force-progress`.
+  The default is `bar`.
+
+  The progress bar is disabled when output is redirected to a logfile (`-o`). Use `--force-progress` to force
+  the progress bar even with a logfile.
 
   The type 'dot' is currently not supported, but won't trigger an error to not break wget command lines.
 
@@ -891,7 +894,7 @@ Go to background immediately after startup. If no output file is specified via t
 
 ### `--xattr`
 
-  Saves documents metadata as "user POSIX Extended Attributes" (default: on). This feature only works if the file system
+  Saves documents metadata as "user POSIX Extended Attributes" (default: off). This feature only works if the file system
   supports it. More info on https://freedesktop.org/wiki/CommonExtendedAttributes.
 
   Wget2 currently sets
