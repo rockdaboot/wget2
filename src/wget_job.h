@@ -110,7 +110,8 @@ struct JOB {
 		ignore_patterns : 1, // Ignore accept/reject patterns
 		http_fallback : 1, // When true, we try again on error, using HTTP (instead of HTTPS)
 		recursive_send_head : 1, // Indicate whether the HEAD request is sent by the recursive mode
-		redirect_get : 1; // Indicate whether to use GET method for redirection request
+		redirect_get : 1, // Indicate whether to use GET method for redirection request
+		parse_only : 1; // When true, we only parse the file to queue up the containing links to other files as jobs
 };
 
 struct DOWNLOADER {

@@ -702,6 +702,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	HOST *host;
 	struct plugin_db_forward_url_verdict plugin_verdict;
 	bool http_fallback = 0;
+	bool parse_only = 0;
 
 	iri = wget_iri_parse_base(base, url, encoding);
 
@@ -778,12 +779,9 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 
 	if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 		debug_printf("not requesting '%s'. (Exclude Domains)\n", iri->safe_uri);
-		wget_thread_mutex_unlock(downloader_mutex);
 		if (config.recursive || config.page_requisites) {
-			parse_localfile(NULL, blacklistp->local_filename, NULL, NULL, iri);
+			parse_only = 1;
 		}
-		plugin_db_forward_url_verdict_free(&plugin_verdict);
-		return;
 	}
 
 	if ((host = host_add(iri))) {
@@ -800,6 +798,8 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 		host = host_get(iri);
 
 	new_job = job_init(&job_buf, blacklistp, http_fallback);
+
+	new_job->parse_only = parse_only;
 
 	if (plugin_verdict.accept) {
 		new_job->ignore_patterns = 1;
@@ -847,6 +847,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	blacklist_entry *blacklistp;
 	struct plugin_db_forward_url_verdict plugin_verdict;
 	bool http_fallback = 0;
+	bool parse_only = 0;
 
 	const char *p = NULL;
 
@@ -981,13 +982,9 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 
 		if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
 			info_printf(_("URL '%s' not followed (file already exists)\n"), iri->safe_uri);
-			wget_thread_mutex_unlock(downloader_mutex);
 			if (config.recursive && (!config.level || !job || (job && job->level < config.level + config.page_requisites))) {
-				parse_localfile(job, blacklistp->local_filename, encoding, NULL, iri);
+				parse_only = 1;
 			}
-			// do not 'goto out;' here
-			plugin_db_forward_url_verdict_free(&plugin_verdict);
-			return;
 		}
 	}
 
@@ -1043,6 +1040,8 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 	info_printf(_("Enqueuing %s\n"), iri->safe_uri);
 
 	new_job = job_init(&job_buf, blacklistp, http_fallback);
+
+	new_job->parse_only = parse_only;
 
 	if (job) {
 		if (flags & URL_FLG_REDIRECTION) {
@@ -2489,6 +2488,18 @@ void *downloader_thread(void *p)
 					}
 					wget_thread_cond_wait(worker_cond, main_mutex, pause); locked = 1;
 				}
+				break;
+			}
+
+			// if parse_only is true for this job, skip requests, just parse the localfile and mark the job as done.
+			if (job->parse_only) { const char *local_filename = job->blacklist_entry->local_filename;
+
+				if (local_filename && (config.recursive || config.page_requisites)) {
+					parse_localfile(job, local_filename, NULL, NULL, job->iri);
+				}
+				job->done = 1;
+				host_remove_job(job->host, job);
+				wget_thread_cond_signal(main_cond);
 				break;
 			}
 
