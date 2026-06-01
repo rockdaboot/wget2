@@ -93,6 +93,8 @@ void freeaddrinfo(struct addrinfo *res)
 
 #if defined __OpenBSD__ || defined __FreeBSD__
 int getnameinfo(const struct sockaddr *addr, socklen_t addrlen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
+#elif defined _AIX
+int getnameinfo(const struct sockaddr *addr, size_t addrlen, char *host, size_t hostlen, char *serv, size_t servlen, int flags)
 #else
 int getnameinfo(const struct sockaddr *addr, socklen_t addrlen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags)
 #endif
