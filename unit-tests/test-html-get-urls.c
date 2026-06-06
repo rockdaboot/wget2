@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <wget.h>
 #include "../libwget/private.h"
@@ -41,7 +42,7 @@ static int
 	ok,
 	failed;
 
-static void check(int result, int line, const char *msg)
+static void check(bool result, int line, const char *msg)
 {
 	if (result) {
 		ok++;
@@ -187,8 +188,12 @@ static void test_iframe_srcdoc_with_base(void)
 
 	wget_html_parsed_result *res = wget_html_get_urls_inline(html, NULL, NULL);
 	CHECK(res != NULL);
-	CHECK(res->base.p != NULL);
-	CHECK(memcmp(res->base.p, "https://example.com/", res->base.len) == 0);
+	if (res) {
+		CHECK(res->base.p != NULL);
+		if (res->base.p) {
+			CHECK(memcmp(res->base.p, "https://example.com/", res->base.len) == 0);
+		}
+	}
 
 	int n = count_uris(res);
 	wget_info_printf("iframe srcdoc with base: %d URIs\n", n);
