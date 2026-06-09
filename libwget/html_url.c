@@ -89,6 +89,15 @@ static const char attrs[][12] = {
 	"usemap"
 };
 
+// Destructor for wget_html_parsed_url: frees url->url.p before freeing the struct
+static void html_free_url(void *elem)
+{
+	wget_html_parsed_url *url = elem;
+	if (url->url_heap_allocated && url->url.p)
+		wget_free((char *) url->url.p);
+	xfree(url);
+}
+
 static void css_parse_uri(void *context, const char *url WGET_GCC_UNUSED, size_t len, size_t pos)
 {
 	html_context *ctx = context;
@@ -315,6 +324,7 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 				char *srcdoc = wget_strmemdup(val, len);
 				if (srcdoc) {
 					wget_xml_decode_entities_inline(srcdoc); // do we need this?
+					wget_vector_set_destructor(res->uris, html_free_url);
 					// TODO: limit recursion depth
 					// TODO: wget_html_get_urls_inline() could also take pointer+len
 					wget_html_parsed_result *srcdoc_res = wget_html_get_urls_inline(srcdoc, ctx->additional_tags, ctx->ignore_tags);
@@ -322,6 +332,7 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 						for (int it = 0; it < wget_vector_size(srcdoc_res->uris); it++) {
 							wget_html_parsed_url *url = wget_vector_get(srcdoc_res->uris, it);
 							url->url.p = wget_memdup(url->url.p, url->url.len);
+							url->url_heap_allocated = true;
 							wget_vector_add(res->uris, url);
 						}
 						wget_vector_clear_nofree(srcdoc_res->uris);
@@ -329,6 +340,9 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 					wget_html_free_urls_inline(&srcdoc_res);
 				}
 				xfree(srcdoc);
+
+				// set up destructor for uris that frees url->url.p before freeing url structs
+				wget_vector_set_destructor(res->uris, html_free_url);
 				return;
 			}
 
