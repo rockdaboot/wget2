@@ -251,7 +251,6 @@ Sanitizers/Debian:
   tags:
     - saas-linux-large-amd64  # Fix illegal instruction failures on base runner
   script:
-    - export CFLAGS="$CFLAGS_DEFAULT"
     - tar xf wget2-*.gz && rm wget2-*.gz
     - cd wget2-*
     - git clone https://gitlab.com/gnuwget/wget2
@@ -260,7 +259,10 @@ Sanitizers/Debian:
     - export UBSAN_OPTIONS=print_stacktrace=1:report_error_type=1
     - export LSAN_OPTIONS=suppressions="$PWD/tests/clang-asan-suppressions"
     - export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
-    - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
+# The following generates illegal instruction on Gitlab CI runners.
+#    - ./configure $CONFIGURE_BASE_FLAGS --enable-fsanitize-asan --enable-fsanitize-ubsan
+    - export CFLAGS="$CFLAGS_DEFAULT -fsanitize=address,undefined -fno-sanitize=function -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+    - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) -C lib
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT"
 
