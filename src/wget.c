@@ -2240,6 +2240,7 @@ static void process_response(wget_http_response *resp)
 					// Account for retries
 					if (config.tries && ++job->failures > config.tries) {
 						error_printf(_("Metalink validation failed: max tries reached - removing job\n"));
+						set_exit_status(EXIT_STATUS_PROTOCOL);
 						job->done = 1;
 					} else {
 						// sort mirrors by priority to download from highest priority first

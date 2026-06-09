@@ -442,6 +442,7 @@ void host_increase_failure(HOST *host)
 		if (!host->blocked) {
 			host->blocked = 1;
 			qsize -= host->qsize;
+			set_exit_status(EXIT_STATUS_NETWORK);
 			debug_printf("%s: qsize=%d\n", __func__, qsize);
 		}
 	}
