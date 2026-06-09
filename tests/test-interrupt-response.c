@@ -103,7 +103,7 @@ int main(void)
 
 	// Test interrupt connection immediately
 	wget_test(
-		WGET_TEST_OPTIONS, "--tries=2",
+		WGET_TEST_OPTIONS, "--tries=2 --waitretry=1",
 		WGET_TEST_REQUEST_URL, "file2.bin",
 		WGET_TEST_EXPECTED_ERROR_CODE, 7,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -114,7 +114,7 @@ int main(void)
 	// test interrupting connection during headers transfer
 	wget_test(
 //		WGET_TEST_EXECUTABLE, "/usr/bin/wget",
-		WGET_TEST_OPTIONS, "--tries=2",
+		WGET_TEST_OPTIONS, "--tries=2 --waitretry=1",
 		WGET_TEST_REQUEST_URL, "file3.bin",
 		WGET_TEST_EXPECTED_ERROR_CODE, 7,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
@@ -130,7 +130,7 @@ int main(void)
 	// Wget1.x fails here
 	wget_test(
 //		WGET_TEST_EXECUTABLE, "/usr/bin/wget -d",
-		WGET_TEST_OPTIONS, "-c --tries=2",
+		WGET_TEST_OPTIONS, "-c --tries=2 --waitretry=1",
 		WGET_TEST_REQUEST_URL, "file3.bin",
 		WGET_TEST_EXPECTED_ERROR_CODE, 0,
 		WGET_TEST_EXISTING_FILES, &(wget_test_file_t []) {
@@ -146,7 +146,7 @@ int main(void)
 	// Wget1.x leaves the partial file with a current timestamp (ignoring Last-Modified header)
 	wget_test(
 //		WGET_TEST_EXECUTABLE, "/usr/bin/wget",
-		WGET_TEST_OPTIONS, "-N --tries=2",
+		WGET_TEST_OPTIONS, "-N --tries=2 --waitretry=1",
 		WGET_TEST_REQUEST_URL, "file4.bin",
 		WGET_TEST_EXPECTED_ERROR_CODE, 7,
 		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
