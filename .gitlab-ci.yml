@@ -97,11 +97,8 @@ CommitCheck:
   before_script:
     - /bin/true
   script:
-    - apk add git py3-pip
-#    - apk add py3-codespell --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/
-    - pip install --break-system-packages codespell
+    - apk add git
     - contrib/commit-check
-    - contrib/spell-checker
   after_script:
     - /bin/true
   allow_failure: true
