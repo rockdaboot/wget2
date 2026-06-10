@@ -3883,6 +3883,8 @@ static int get_body(wget_http_response *resp, void *context, const char *data, s
 
 	if (ctx->length == 0) {
 		// first call to get_body
+		ctx->limit_prev_time_ms = wget_get_timemillis();
+
 		if (config.server_response)
 			info_printf(_("# got header %zu bytes:\n%s\n"), resp->header->length, resp->header->data);
 	}
@@ -4278,7 +4280,7 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 	context->progress_slot = downloader->id;
 	context->job->original_url = original_url;
 	context->limit_debt_bytes = 0;
-	context->limit_prev_time_ms = wget_get_timemillis();
+	context->limit_prev_time_ms = 0;
 
 	// set callback functions
 	wget_http_request_set_header_cb(req, get_header, context);
