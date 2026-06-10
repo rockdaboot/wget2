@@ -106,3 +106,8 @@ exclude_file_name_regexp--sc_gettext_printf = ^(tests|unit-tests|examples|fuzz)/
 exclude_file_name_regexp--sc_prohibit_alloc = ^(fuzz/.*\.c)$$
 exclude_file_name_regexp--sc_prohibit_free = ^(cfg.mk|fuzz/.*\.c|unit-tests/.*\.c)$$
 exclude_file_name_regexp--sc_prohibit_printf = ^(unit-tests/.*\.c|examples/.*\.c|libwget/strlcpy\.c)$$
+
+# Codespell configuration - mirrors contrib/spell-checker exceptions
+codespell_ignore_words_list = tim,gonna,cas,te,referer,ist,fpr,vas,anull,aNULL
+exclude_file_name_regexp--sc_codespell = \
+  ^gnulib/.*|ChangeLog$$|tests/gpg/.*|\.png$$|\.dat$$|contrib/spell-checker$$|tests/certs/ocsp/.*|NEWS$$|bootstrap\.conf$$|_fuzzer\.(in|repro)$$|\.der$$|\.pem$$|cfg\.mk$$
