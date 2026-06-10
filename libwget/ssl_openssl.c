@@ -1026,8 +1026,10 @@ static int verify_ocsp(const char *ocsp_uri,
 	certid = OCSP_cert_to_id(EVP_sha1(), subject_cert, issuer_cert);
 
 	/* Send OCSP request to server, via HTTP */
-	if (!(ocspreq = send_ocsp_request(ocsp_uri, certid, &resp)) || !resp || !resp->body)
+	if (!(ocspreq = send_ocsp_request(ocsp_uri, certid, &resp)) || !resp || !resp->body) {
+		wget_http_free_response(&resp);
 		return -1;
+	}
 
 	/* Check server's OCSP response */
 	body = (const unsigned char *) resp->body->data;

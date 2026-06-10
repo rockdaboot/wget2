@@ -3977,6 +3977,16 @@ static void add_authorize_header(
 	}
 }
 
+static void free_user_data(wget_http_request *req)
+{
+	struct body_callback_context *context = req->body_user_data;
+
+	if (context) {
+		wget_buffer_free(&context->body);
+		xfree(req->body_user_data);
+	}
+}
+
 static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 {
 	wget_http_request *req;
@@ -4249,10 +4259,12 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 
 	wget_http_request_set_ptr(req, WGET_HTTP_USER_DATA, downloader->job);
 
-	if ((rc = wget_http_send_request(conn, req))) {
-		wget_http_free_request(&req);
-		return rc;
-	}
+	// keep the received response header in 'resp->header'
+	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER,
+		config.save_headers || config.server_response
+		|| (config.progress == PROGRESS_TYPE_BAR && (config.spider || config.chunk_size)));
+
+	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_IGNORELENGTH, config.ignore_length);
 
 	struct body_callback_context *context = wget_calloc(1, sizeof(struct body_callback_context));
 
@@ -4269,13 +4281,15 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 	// set callback functions
 	wget_http_request_set_header_cb(req, get_header, context);
 	wget_http_request_set_body_cb(req, get_body, context);
+	wget_http_request_set_free_user_data_cb(req, free_user_data);
 
-	// keep the received response header in 'resp->header'
-	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER,
-		config.save_headers || config.server_response
-		|| (config.progress == PROGRESS_TYPE_BAR && (config.spider || config.chunk_size)));
-	wget_http_request_set_int(req, WGET_HTTP_RESPONSE_IGNORELENGTH, config.ignore_length);
-	return WGET_E_SUCCESS;
+	if ((rc = wget_http_send_request(conn, &req)) != WGET_E_SUCCESS) {
+		wget_buffer_free(&context->body);
+		xfree(context);
+		wget_http_free_request(&req);
+	}
+
+	return rc;
 }
 
 wget_http_response *http_receive_response(wget_http_connection *conn)
@@ -4291,6 +4305,7 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 	struct body_callback_context *context = resp->req->body_user_data;
 
 	resp->body = context->body;
+	context->body = NULL;
 
 	if (context->outfd >= 0) {
 		if (resp->last_modified) {
@@ -4321,8 +4336,6 @@ wget_http_response *http_receive_response(wget_http_connection *conn)
 
 	if (resp->length_inconsistent)
 		set_exit_status(EXIT_STATUS_PROTOCOL);
-
-	xfree(context);
 
 	return resp;
 }

@@ -61,7 +61,7 @@ int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 	wget_http_open(&conn, iri);
 
 	if (conn) {
-		if (wget_http_send_request(conn, req))
+		if (wget_http_send_request(conn, &req) != WGET_E_SUCCESS)
 			goto out;
 
 		resp = wget_http_get_response(conn);
@@ -82,14 +82,13 @@ int main(int argc WGET_GCC_UNUSED, const char *const *argv WGET_GCC_UNUSED)
 		wget_buffer_printf(url, "https://www.websequencediagrams.com/%.*s", (int) (e - p), p);
 
 		wget_http_free_response(&resp);
-		wget_http_free_request(&req);
 		wget_iri_free(&iri);
 
 		iri = wget_iri_parse(url->data, NULL);
 		req = wget_http_create_request(iri, "GET");
 		wget_http_add_header(req, "Accept-Encoding", "gzip");
 
-		if (wget_http_send_request(conn, req))
+		if (wget_http_send_request(conn, &req))
 			goto out;
 
 		resp = wget_http_get_response(conn);

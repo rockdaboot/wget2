@@ -238,38 +238,37 @@ wget_http_response *wget_http_get(int first_key, ...)
 		}
 
 		if (conn) {
-			int rc;
+			FILE *fp = NULL;
 
 			if (body && bodylen)
 				wget_http_request_set_body(req, NULL, wget_memdup(body, bodylen), bodylen);
 
 			req->debug_skip_body = debug_skip_body;
 
-			rc = wget_http_send_request(conn, req);
+			wget_http_request_set_header_cb(req, header_callback, header_user_data);
+			wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, 1);
 
-			if (rc == 0) {
-				wget_http_request_set_header_cb(req, header_callback, header_user_data);
-				wget_http_request_set_int(req, WGET_HTTP_RESPONSE_KEEPHEADER, 1);
-				if (saveas_name) {
-					FILE *fp;
-					if ((fp = fopen(saveas_name, "wb"))) {
-						wget_http_request_set_body_cb(req, stream_callback, fp);
-						resp = wget_http_get_response(conn);
-						fclose(fp);
-					} else
-						debug_printf("Failed to open '%s' for writing\n", saveas_name);
-				}
-				else if (saveas_stream)  {
-					wget_http_request_set_body_cb(req, stream_callback, saveas_stream);
-					resp = wget_http_get_response(conn);
-				} else if (saveas_callback) {
-					wget_http_request_set_body_cb(req, saveas_callback, body_user_data);
-					resp = wget_http_get_response(conn);
-				} else if (saveas_fd != -1) {
-					wget_http_request_set_body_cb(req, fd_callback, &saveas_fd);
-					resp = wget_http_get_response(conn);
+			if (saveas_name) {
+				if ((fp = fopen(saveas_name, "wb"))) {
+					wget_http_request_set_body_cb(req, stream_callback, fp);
 				} else
+					debug_printf("Failed to open '%s' for writing\n", saveas_name);
+			}
+			else if (saveas_stream)  {
+				wget_http_request_set_body_cb(req, stream_callback, saveas_stream);
+			} else if (saveas_callback) {
+				wget_http_request_set_body_cb(req, saveas_callback, body_user_data);
+			} else if (saveas_fd != -1) {
+				wget_http_request_set_body_cb(req, fd_callback, &saveas_fd);
+			}
+
+			if (!saveas_name || (saveas_name && fp)) {
+				if (wget_http_send_request(conn, &req) == WGET_E_SUCCESS) {
 					resp = wget_http_get_response(conn);
+				}
+
+				if (fp)
+					fclose(fp);
 			}
 		}
 

@@ -105,7 +105,7 @@ int main(void)
 	if (conn) {
 		wget_http_response *resp;
 
-		if (wget_http_send_request(conn, req) == 0) {
+		if (wget_http_send_request(conn, &req) == WGET_E_SUCCESS) {
 			resp = wget_http_get_response(conn);
 
 			if (!resp)

@@ -1442,6 +1442,7 @@ void wget_http_free_response(wget_http_response **resp)
 		// xfree((*resp)->reason);
 		wget_buffer_free(&(*resp)->header);
 		wget_buffer_free(&(*resp)->body);
+		wget_http_free_request(&(*resp)->req);
 		xfree(*resp);
 	}
 }
@@ -1450,6 +1451,8 @@ void wget_http_free_response(wget_http_response **resp)
 void wget_http_free_request(wget_http_request **req)
 {
 	if (req && *req) {
+		if ((*req)->user_data_callback)
+			(*req)->user_data_callback(*req);
 		wget_buffer_deinit(&(*req)->esc_resource);
 		wget_buffer_deinit(&(*req)->esc_host);
 		wget_vector_free(&(*req)->headers);

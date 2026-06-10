@@ -2091,10 +2091,13 @@ typedef struct wget_http_response_st wget_http_response;
 typedef int wget_http_header_callback(wget_http_response *, void *);
 typedef int wget_http_body_callback(wget_http_response *, void *, const char *, size_t);
 
+typedef struct wget_http_request_st wget_http_request;
+typedef void wget_http_free_user_data_callback(wget_http_request *);
+
 /**
  * HTTP request data
  */
-typedef struct {
+struct wget_http_request_st {
 	wget_vector *
 		headers; //!< list of HTTP headers
 	const char *
@@ -2103,6 +2106,8 @@ typedef struct {
 		*header_callback; //!< called after HTTP header has been received
 	wget_http_body_callback
 		*body_callback; //!< called for each body data packet received
+	wget_http_free_user_data_callback
+		*user_data_callback; //!< called when request object is free'd
 	void *
 		user_data; //!< user data for the request (used by async application code)
 	void *
@@ -2136,7 +2141,7 @@ typedef struct {
 	long long
 		first_response_start; //!< The time we read the first bytes back
 
-} wget_http_request;
+};
 
 /**
  * HTTP response data
@@ -2344,6 +2349,8 @@ WGETAPI void
 WGETAPI void
 	wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callback *cb, void *user_data) WGET_GCC_NONNULL((1));
 WGETAPI void
+	wget_http_request_set_free_user_data_cb(wget_http_request *req, wget_http_free_user_data_callback *cb) WGET_GCC_NONNULL((1));
+WGETAPI void
 	wget_http_request_set_int(wget_http_request *req, int key, int value) WGET_GCC_NONNULL((1));
 WGETAPI int
 	wget_http_request_get_int(wget_http_request *req, int key) WGET_GCC_NONNULL((1));
@@ -2354,7 +2361,7 @@ WGETAPI void *
 WGETAPI void
 	wget_http_request_set_body(wget_http_request *req, const char *mimetype, char *body, size_t length) WGET_GCC_NONNULL((1));
 WGETAPI int
-	wget_http_send_request(wget_http_connection *conn, wget_http_request *req) WGET_GCC_NONNULL_ALL;
+	wget_http_send_request(wget_http_connection *conn, wget_http_request **req) WGET_GCC_NONNULL_ALL;
 WGETAPI ssize_t
 	wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied, int port) WGET_GCC_NONNULL_ALL;
 

@@ -100,7 +100,7 @@ int main(void)
 		goto out;
 
 	for (unsigned it = 0; it < countof(urls); it++) {
-		if (wget_http_send_request(conn, reqs[it]))
+		if (wget_http_send_request(conn, &reqs[it]) != WGET_E_SUCCESS)
 			goto out;
 	}
 

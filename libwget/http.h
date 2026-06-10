@@ -92,7 +92,7 @@ int http_decompress_error_handler_cb(wget_decompressor *dc, int err);
 
 int wget_http2_open(wget_http_connection *conn);
 void wget_http2_close(wget_http_connection **conn);
-int wget_http2_send_request(wget_http_connection *conn, wget_http_request *req);
+int wget_http2_send_request(wget_http_connection *conn, wget_http_request **req);
 wget_http_response *wget_http2_get_response_cb(wget_http_connection *conn,
 					       wget_server_stats_callback *server_stats_callback);
 

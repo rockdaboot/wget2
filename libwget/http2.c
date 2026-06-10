@@ -280,33 +280,35 @@ static void init_nv(nghttp2_nv *nv, const char *name, const char *value)
 	nv->flags = NGHTTP2_NV_FLAG_NONE;
 }
 
-int wget_http2_send_request(wget_http_connection *conn, wget_http_request *req)
+// Takes ownership of req on success, means the caller's req will be set to NULL to avoid
+// double-free and free-after-use failures.
+int wget_http2_send_request(wget_http_connection *conn, wget_http_request **req)
 {
 	char length_str[32];
 	nghttp2_nv *nvs, *nvp;
 	char *resource;
 
-	if (!(nvs = wget_malloc(sizeof(nghttp2_nv) * (4 + wget_vector_size(req->headers))))) {
-		error_printf(_("Failed to allocate nvs[%d]\n"), 4 + wget_vector_size(req->headers));
+	if (!(nvs = wget_malloc(sizeof(nghttp2_nv) * (4 + wget_vector_size((*req)->headers))))) {
+		error_printf(_("Failed to allocate nvs[%d]\n"), 4 + wget_vector_size((*req)->headers));
 		return -1;
 	}
 
-	if (!(resource = wget_malloc(req->esc_resource.length + 2))) {
+	if (!(resource = wget_malloc((*req)->esc_resource.length + 2))) {
 		xfree(nvs);
-		error_printf(_("Failed to allocate resource[%zu]\n"), req->esc_resource.length + 2);
+		error_printf(_("Failed to allocate resource[%zu]\n"), (*req)->esc_resource.length + 2);
 		return -1;
 	}
 
 	resource[0] = '/';
-	memcpy(resource + 1, req->esc_resource.data, req->esc_resource.length + 1);
-	init_nv(&nvs[0], ":method", req->method);
+	memcpy(resource + 1, (*req)->esc_resource.data, (*req)->esc_resource.length + 1);
+	init_nv(&nvs[0], ":method", (*req)->method);
 	init_nv(&nvs[1], ":path", resource);
 	init_nv(&nvs[2], ":scheme", "https");
-	// init_nv(&nvs[3], ":authority", req->esc_host.data);
+	// init_nv(&nvs[3], ":authority", (*req)->esc_host.data);
 	nvp = &nvs[4];
 
-	for (int it = 0; it < wget_vector_size(req->headers); it++) {
-		wget_http_header_param *param = wget_vector_get(req->headers, it);
+	for (int it = 0; it < wget_vector_size((*req)->headers); it++) {
+		wget_http_header_param *param = wget_vector_get((*req)->headers, it);
 		if (!param)
 			continue;
 		if (!wget_strcasecmp_ascii(param->name, "Connection"))
@@ -321,8 +323,8 @@ int wget_http2_send_request(wget_http_connection *conn, wget_http_request *req)
 		init_nv(nvp++, param->name, param->value);
 	}
 
-	if (req->body_length) {
-		wget_snprintf(length_str, sizeof(length_str), "%zu", req->body_length);
+	if ((*req)->body_length) {
+		wget_snprintf(length_str, sizeof(length_str), "%zu", (*req)->body_length);
 		init_nv(nvp++, "Content-Length", length_str);
 	}
 
@@ -337,36 +339,37 @@ int wget_http2_send_request(wget_http_connection *conn, wget_http_request *req)
 		xfree(ctx);
 		return -1;
 	}
-	ctx->resp->req = req;
 	ctx->resp->major = 2;
 	// we do not get a Keep-Alive header in HTTP2 - let's assume the connection stays open
 	ctx->resp->keep_alive = 1;
-	req->request_start = wget_get_timemillis();
+	(*req)->request_start = wget_get_timemillis();
 
-	if (req->body_length) {
+	if ((*req)->body_length) {
 		nghttp2_data_provider data_prd;
-		data_prd.source.ptr = (void *) req->body;
-		debug_printf("body length: %zu %zu\n", req->body_length, ctx->resp->req->body_length);
+		data_prd.source.ptr = (void *) (*req)->body;
+		debug_printf("body length: %zu %zu\n", (*req)->body_length, (*req)->body_length);
 		data_prd.read_callback = data_prd_read_callback;
-		req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, &data_prd, ctx);
+		(*req)->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, &data_prd, ctx);
 	} else {
 		// nghttp2 does strdup of name+value and lowercase conversion of 'name'
-		req->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, ctx);
+		(*req)->stream_id = nghttp2_submit_request(conn->http2_session, NULL, nvs, nvp - nvs, NULL, ctx);
 	}
 
 	xfree(resource);
 	xfree(nvs);
 
-	if (req->stream_id < 0) {
+	if ((*req)->stream_id < 0) {
 		error_printf(_("Failed to submit HTTP2 request\n"));
 		wget_http_free_response(&ctx->resp);
 		xfree(ctx);
 		return -1;
 	}
 
-	conn->pending_http2_requests++;
+	debug_printf("HTTP2 stream id %d\n", (*req)->stream_id);
 
-	debug_printf("HTTP2 stream id %d\n", req->stream_id);
+	ctx->resp->req = *req;
+	*req = NULL;
+	conn->pending_http2_requests++;
 
 	return 0;
 }

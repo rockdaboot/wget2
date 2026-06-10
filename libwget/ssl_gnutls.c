@@ -624,7 +624,7 @@ static int send_ocsp_request(const char *server,
 	if (wget_http_open(&conn, iri) == WGET_E_SUCCESS) {
 		wget_http_request_set_body(req, "application/ocsp-request", wget_memdup(body.data, body.size), body.size);
 		req->debug_skip_body = 1;
-		if (wget_http_send_request(conn, req) == 0) {
+		if (wget_http_send_request(conn, &req) == WGET_E_SUCCESS) {
 			wget_http_response *resp;
 
 			if ((resp = wget_http_get_response(conn))) {

@@ -27,6 +27,7 @@
 
 #include "wget.h"
 #include "fuzzer.h"
+#include "../libwget/http.h"
 
 static uint8_t *g_data;
 static size_t g_size;
@@ -209,7 +210,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 			// wget_http_add_header(req, "User-Agent", "TheUserAgent/0.5");
 
 			if (wget_http_open(&conn, uri) == WGET_E_SUCCESS) {
-				if (wget_http_send_request(conn, req) == WGET_E_SUCCESS) {
+				if (wget_http_send_request(conn, &req) == WGET_E_SUCCESS) {
 					wget_http_response *resp = wget_http_get_response(conn);
 					wget_http_free_response(&resp);
 				}

@@ -176,6 +176,11 @@ void wget_http_request_set_body_cb(wget_http_request *req, wget_http_body_callba
 	req->body_user_data = user_data;
 }
 
+void wget_http_request_set_free_user_data_cb(wget_http_request *req, wget_http_free_user_data_callback *callback)
+{
+	req->user_data_callback = callback;
+}
+
 void wget_http_request_set_int(wget_http_request *req, int key, int value)
 {
 	switch (key) {
@@ -654,7 +659,9 @@ void wget_http_close(wget_http_connection **conn)
 	}
 }
 
-int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
+// Takes ownership of req on success, means the caller's req will be set to NULL to avoid
+// double-free and free-after-use failures.
+int wget_http_send_request(wget_http_connection *conn, wget_http_request **req)
 {
 	ssize_t nbytes;
 
@@ -664,27 +671,28 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request *req)
 	}
 #endif
 
-	if ((nbytes = wget_http_request_to_buffer(req, conn->buf, conn->proxied, conn->port)) < 0) {
+	if ((nbytes = wget_http_request_to_buffer(*req, conn->buf, conn->proxied, conn->port)) < 0) {
 		error_printf(_("Failed to create request buffer\n"));
-		return -1;
+		return WGET_E_UNKNOWN;
 	}
 
-	req->request_start = wget_get_timemillis();
+	(*req)->request_start = wget_get_timemillis();
 
 	if (wget_tcp_write(conn->tcp, conn->buf->data, nbytes) != nbytes) {
 		// An error will be written by the wget_tcp_write function.
 		// error_printf(_("Failed to send %zd bytes (%d)\n"), nbytes, errno);
-		return -1;
+		return WGET_E_UNKNOWN;
 	}
 
-	wget_vector_add(conn->pending_requests, req);
-
-	if (req->debug_skip_body)
-		debug_printf("# sent %zd bytes:\n%.*s<body skipped>", nbytes, (int)(conn->buf->length - req->body_length), conn->buf->data);
+	if ((*req)->debug_skip_body)
+		debug_printf("# sent %zd bytes:\n%.*s<body skipped>", nbytes, (int) (conn->buf->length - (*req)->body_length), conn->buf->data);
 	else
-		debug_printf("# sent %zd bytes:\n%.*s", nbytes, (int)conn->buf->length, conn->buf->data);
+		debug_printf("# sent %zd bytes:\n%.*s", nbytes, (int) conn->buf->length, conn->buf->data);
 
-	return 0;
+	wget_vector_add(conn->pending_requests, *req);
+	*req = NULL;
+
+	return WGET_E_SUCCESS;
 }
 
 ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied, int port)
@@ -797,8 +805,10 @@ skip_1xx:
 				wget_buffer_memcat(header, "\r\n", 2);
 			}
 
-			if (!(resp = wget_http_parse_response_header(buf)))
+			if (!(resp = wget_http_parse_response_header(buf))) {
+				debug_printf("failed to parse response header");
 				goto cleanup; // something is wrong with the header
+			}
 
 			if (H_10X(resp->code)) {
 				wget_http_free_response(&resp);
@@ -825,8 +835,10 @@ skip_1xx:
 				req->header_callback(resp, req->header_user_data);
 			}
 
-			if (!wget_strcasecmp_ascii(req->method, "HEAD"))
+			if (!wget_strcasecmp_ascii(req->method, "HEAD")) {
+				debug_printf("HEAD response with a body");
 				goto cleanup; // a HEAD response won't have a body
+			}
 
 			http_fix_broken_server_encoding(resp);
 
@@ -843,8 +855,14 @@ skip_1xx:
 			bufsize = conn->buf->size;
 		}
 	}
-	if (!nread) goto cleanup;
-	if (!p) goto cleanup;
+	if (!nread) {
+		debug_printf("incomplete response data");
+		goto cleanup;
+	}
+	if (!p) {
+		debug_printf("missing end-of-header");
+		goto cleanup;
+	}
 
 	if (resp && resp->code == HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
 		/*
@@ -857,6 +875,7 @@ skip_1xx:
 		       requested has been rejected due to invalid ranges or an excessive
 		       request of small or overlapping ranges.
 		*/
+		debug_printf("range request is not satisfiable");
 		goto cleanup;
 	}
 	if (!resp
@@ -865,6 +884,7 @@ skip_1xx:
 	 || (resp->transfer_encoding == wget_transfer_encoding_identity && resp->content_length == 0 && resp->content_length_valid)) {
 		// - body not included, see RFC 2616 4.3
 		// - body empty, see RFC 2616 4.4
+		debug_printf("response with no body");
 		goto cleanup;
 	}
 
@@ -939,8 +959,10 @@ skip_1xx:
 					bufsize = conn->buf->size;
 				}
 
-				if ((nbytes = wget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
+				if ((nbytes = wget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0) {
+					debug_printf("failed to read data (%zd)", nbytes);
 					goto cleanup;
+				}
 
 				body_len += nbytes;
 				buf[body_len] = 0;
@@ -961,8 +983,10 @@ skip_1xx:
 			// debug_printf("chunk size is %zu\n", chunk_size);
 			if (chunk_size == 0) {
 				// now read 'trailer CRLF' which is '*(entity-header CRLF) CRLF'
-				if (*end == '\r' && end[1] == '\n') // shortcut for the most likely case (empty trailer)
+				if (*end == '\r' && end[1] == '\n') { // shortcut for the most likely case (empty trailer)
+					debug_printf("missing CRLF chunk trailer");
 					goto cleanup;
+				}
 
 				debug_printf("reading trailer\n");
 				while (!strstr(end, "\r\n\r\n")) {
@@ -972,11 +996,15 @@ skip_1xx:
 						body_len = 3;
 					}
 
-					if (http_connection_is_aborted(conn))
+					if (http_connection_is_aborted(conn)) {
+						debug_printf("connection was aborted");
 						goto cleanup;
+					}
 
-					if ((nbytes = wget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0)
+					if ((nbytes = wget_tcp_read(conn->tcp, buf + body_len, bufsize - body_len)) <= 0) {
+						debug_printf("failed to read data (%zd)", nbytes);
 						goto cleanup;
+					}
 
 					body_len += nbytes;
 					buf[body_len] = 0;
@@ -1000,8 +1028,10 @@ skip_1xx:
 			if (p <= buf + body_len) {
 				// debug_printf("write full chunk, %zu bytes\n", chunk_size);
 				resp->cur_downloaded += chunk_size;
-				if (wget_decompress(dc, end, chunk_size))
+				if (wget_decompress(dc, end, chunk_size)) {
+					debug_printf("failed to decompress chunk data");
 					goto cleanup;
+				}
 				continue;
 			}
 
@@ -1010,12 +1040,16 @@ skip_1xx:
 
 			if ((uintptr_t)((buf + body_len) - end) > chunk_size) {
 				resp->cur_downloaded += chunk_size;
-				if (wget_decompress(dc, end, chunk_size))
+				if (wget_decompress(dc, end, chunk_size)) {
+					debug_printf("failed to decompress chunk data");
 					goto cleanup;
+				}
 			} else {
 				resp->cur_downloaded += (buf + body_len) - end;
-				if (wget_decompress(dc, end, (buf + body_len) - end))
+				if (wget_decompress(dc, end, (buf + body_len) - end)) {
+					debug_printf("failed to decompress chunk data");
 					goto cleanup;
+				}
 			}
 
 			chunk_size = (((uintptr_t) p) - ((uintptr_t) (buf + body_len))); // in fact needed bytes to have chunk_size+2 in buf
@@ -1023,11 +1057,15 @@ skip_1xx:
 			debug_printf("need at least %zu more bytes\n", chunk_size);
 
 			while (chunk_size > 0) {
-				if (http_connection_is_aborted(conn))
+				if (http_connection_is_aborted(conn)) {
+					debug_printf("connection was aborted");
 					goto cleanup;
+				}
 
-				if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0)
+				if ((nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) <= 0) {
+					debug_printf("failed to read data (%zd)", nbytes);
 					goto cleanup;
+				}
 				// debug_printf("a nbytes=%zd chunk_size=%zu\n", nread, chunk_size);
 
 				if (chunk_size <= (size_t)nbytes) {
@@ -1042,8 +1080,10 @@ skip_1xx:
 					}
 					if (chunk_size > 2) {
 						resp->cur_downloaded += chunk_size - 2;
-						if (wget_decompress(dc, buf, chunk_size - 2))
+						if (wget_decompress(dc, buf, chunk_size - 2)) {
+							debug_printf("failed to decompress chunk data");
 							goto cleanup;
+						}
 					}
 					body_len = nbytes - chunk_size;
 					if (body_len)
@@ -1055,13 +1095,17 @@ skip_1xx:
 					chunk_size -= nbytes;
 					if (chunk_size >= 2) {
 						resp->cur_downloaded += nbytes;
-						if (wget_decompress(dc, buf, nbytes))
+						if (wget_decompress(dc, buf, nbytes)) {
+							debug_printf("failed to decompress chunk data");
 							goto cleanup;
+						}
 					} else {
 						// special case: we got a partial end-of-chunk
 						resp->cur_downloaded += nbytes - 1;
-						if (wget_decompress(dc, buf, nbytes - 1))
+						if (wget_decompress(dc, buf, nbytes - 1)) {
+							debug_printf("failed to decompress chunk data");
 							goto cleanup;
+						}
 					}
 				}
 			}
@@ -1071,8 +1115,10 @@ skip_1xx:
 		debug_printf("method 2\n");
 
 		if (body_len) {
-			if (wget_decompress(dc, buf, body_len))
+			if (wget_decompress(dc, buf, body_len)) {
+				debug_printf("failed to decompress data");
 				goto cleanup;
+			}
 		}
 
 		while (body_len < resp->content_length) {
@@ -1085,8 +1131,10 @@ skip_1xx:
 			body_len += nbytes;
 			// debug_printf("nbytes %zd total %zu/%zu\n", nbytes, body_len, resp->content_length);
 			resp->cur_downloaded += nbytes;
-			if (wget_decompress(dc, buf, nbytes))
+			if (wget_decompress(dc, buf, nbytes)) {
+				debug_printf("failed to decompress data");
 				goto cleanup;
+			}
 		}
 		if (nbytes < 0) {
 			char *page = get_page(req);
@@ -1110,16 +1158,20 @@ skip_1xx:
 		debug_printf("method 3\n");
 
 		if (body_len) {
-			if (wget_decompress(dc, buf, body_len))
+			if (wget_decompress(dc, buf, body_len)) {
+				debug_printf("failed to decompress data");
 				goto cleanup;
+			}
 		}
 
 		while (!http_connection_is_aborted(conn) && (nbytes = wget_tcp_read(conn->tcp, buf, bufsize)) > 0) {
 			body_len += nbytes;
 			// debug_printf("nbytes %zd total %zu\n", nbytes, body_len);
 			resp->cur_downloaded += nbytes;
-			if (wget_decompress(dc, buf, nbytes))
+			if (wget_decompress(dc, buf, nbytes)) {
+				debug_printf("failed to decompress data");
 				goto cleanup;
+			}
 		}
 		resp->content_length = body_len;
 	}
@@ -1128,6 +1180,8 @@ cleanup:
 
 	if (resp)
 		resp->response_end = wget_get_timemillis();
+	else
+		wget_http_free_request(&req);
 
 	wget_decompress_close(dc);
 
