@@ -4032,7 +4032,9 @@ static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 		if (config.start_pos)
 			wget_http_add_header_printf(req, "Range", "bytes=%lld-", config.start_pos);
 
-		if (config.timestamping && config.if_modified_since) {
+		// When resuming (--continue or --start-position), do NOT send If-Modified-Since.
+		// If-Modified-Since causes a 304 Not Modified response instead of 206 Partial Content.
+		if (config.timestamping && config.if_modified_since && !config.continue_download && !config.start_pos) {
 			int64_t mtime = get_file_lmtime(local_filename);
 
 			if (mtime) {
