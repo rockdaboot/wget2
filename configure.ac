@@ -215,6 +215,11 @@ AS_IF([test -n "$WARN_CFLAGS"], [
       WARN_CFLAGS="$WARN_CFLAGS -Wno-unsafe-buffer-usage -Wno-cast-function-type-strict"
     ])
 
+    AS_IF([test $CLANG_VERSION -ge 21], [
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-global-constructors -Wno-c++-keyword"
+      WARN_CFLAGS="$WARN_CFLAGS -Wno-implicit-int-enum-cast -Wno-implicit-void-ptr-cast"
+    ])
+
     # remove all flags from WARN_FLAGS that are already in CFLAGS
     # wget_WORD_REMOVE([WARN_CFLAGS], [$WARN_CFLAGS], [$CFLAGS])
 
