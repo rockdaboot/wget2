@@ -152,7 +152,7 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 	if ((flags & XML_FLG_ATTRIBUTE) && val) {
 		wget_html_parsed_result *res = &ctx->result;
 
-		debug_printf("%02X %s %s '%.*s' %zu %zu\n", (unsigned) flags, tag, attr, (int) len, val, len, pos);
+		// debug_printf("%02X %s %s '%.*s' %zu %zu\n", (unsigned) flags, tag, attr, (int) len, val, len, pos);
 
 		if ((*tag|0x20) == 'm' && !wget_strcasecmp_ascii(tag, "meta")) {
 			if (!ctx->found_robots) {
@@ -330,10 +330,10 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 					wget_html_parsed_result *srcdoc_res = wget_html_get_urls_inline(srcdoc, ctx->additional_tags, ctx->ignore_tags);
 					if (srcdoc_res && srcdoc_res->uris) {
 						for (int it = 0; it < wget_vector_size(srcdoc_res->uris); it++) {
-							wget_html_parsed_url *url = wget_vector_get(srcdoc_res->uris, it);
-							url->url.p = wget_memdup(url->url.p, url->url.len);
-							url->url_heap_allocated = true;
-							wget_vector_add(res->uris, url);
+							wget_html_parsed_url *u = wget_vector_get(srcdoc_res->uris, it);
+							u->url.p = wget_memdup(u->url.p, u->url.len);
+							u->url_heap_allocated = true;
+							wget_vector_add(res->uris, u);
 						}
 						wget_vector_clear_nofree(srcdoc_res->uris);
 					}
