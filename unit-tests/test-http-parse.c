@@ -78,6 +78,7 @@ static void test_content_disposition(void)
 	check_filename("attachment; filename=\"../evil.txt\"", "evil.txt");
 	check_filename("attachment; filename=\"../../evil.txt\"", "evil.txt");
 	check_filename("attachment; filename=\"foo/../evil.txt\"", "evil.txt");
+	check_filename("attachment; filename=\"foo/bar/../evil.txt\"", "foo/evil.txt");
 	check_filename("attachment; filename=\"foo/..\"", "");
 	check_filename("attachment; filename=\"..\"", "");
 
@@ -88,9 +89,9 @@ static void test_content_disposition(void)
 	check_filename("attachment; filename=\"C:foo\\..\\evil.txt\"", "evil.txt");
 #endif
 
-	// Absolute paths (leading "/" stripped, basename kept)
-	check_filename("attachment; filename=\"/etc/passwd\"", "passwd");
-	check_filename("attachment; filename=\"/foo/bar\"", "bar");
+	// Absolute paths converted to relative paths
+	check_filename("attachment; filename=\"/etc/passwd\"", "etc/passwd");
+	check_filename("attachment; filename=\"/foo/bar\"", "foo/bar");
 
 	// Empty and edge cases
 	check_filename("attachment; filename=\"\"", "");

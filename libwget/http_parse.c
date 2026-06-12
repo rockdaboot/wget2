@@ -528,36 +528,46 @@ const char *wget_http_parse_content_type(const char *s, const char **content_typ
 WGET_GCC_NONNULL_ALL
 static char *sanitize_filename(const char *fname)
 {
-	size_t len = strlen(fname);
-
 	// Handle ".." as a special case (entire input is traversal)
-	if (len == 2 && fname[0] == '.' && fname[1] == '.')
+	if (streq(fname, ".."))
 		return wget_strdup("");
+
+	size_t len = strlen(fname);
 
 	char *sanitized = wget_malloc(len + 1);
 	if (!sanitized)
 		return wget_strdup("");
 
 	size_t j = 0;
-	size_t i = FILE_SYSTEM_PREFIX_LEN(fname); /* skip drive letter on Windows */
+	size_t i = FILE_SYSTEM_PREFIX_LEN(fname); // skip drive letter on Windows
 
-	for (; i < len; i++) {
-		// Skip "../" or "..\\" sequences
+	while (i < len) {
+		// Skip "../" (and "..\\" on Win32) sequences (and preceding separator)
 		if (i + 3 <= len && fname[i] == '.' && fname[i + 1] == '.'
 		    && ISSLASH(fname[i + 2])) {
-			i += 2;
+			i += 3;
+			// Skip preceding separator to handle "foo\.." → "foo" not "foo\"
+			if (j > 0 && ISSLASH(sanitized[j - 1]))
+				j--;
+			while (j > 0 && !ISSLASH(sanitized[j - 1]))
+				j--;
 			continue;
 		}
 		// Skip leading "/" or "\\" (absolute path)
-		if (j == 0 && ISSLASH(fname[i]))
-			continue;
-		// Skip ".." at end of string (trailing ".." without separator)
-		if (i == len - 2 && fname[i] == '.' && fname[i + 1] == '.' && j >= 2) {
-			j -= 2;
-			i += 1;
+		if (j == 0 && ISSLASH(fname[i])) {
+			i++;
 			continue;
 		}
-		sanitized[j++] = fname[i];
+		// Skip "/.." (and "\\.." on Win32) at end of string
+		if (i == len - 3 && ISSLASH(fname[i]) && fname[i + 1] == '.' && fname[i + 2] == '.') {
+			i += 3;
+			if (j > 0 && ISSLASH(sanitized[j - 1]))
+				j--;
+			while (j > 0 && !ISSLASH(sanitized[j - 1]))
+				j--;
+			continue;
+		}
+		sanitized[j++] = fname[i++];
 	}
 
 	sanitized[j] = '\0';
@@ -577,29 +587,22 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 			if (param.value && !wget_strcasecmp_ascii("filename", param.name)) {
 				// just take the last path part as filename
 				if (!*filename) {
-					if ((p = strrchr(param.value,'/'))) {
-						char *p2;
-						if ((p2 = strrchr(p + 1, '\\')))
-							p = p2;
-						p = wget_strdup(p + 1);
-					} else {
-						p = (char *) param.value;
-						param.value = NULL;
+					p = wget_strdup(param.value);
+					if (!p) {
+						xfree(param.name);
+						xfree(param.value);
+						break; // stop looping
 					}
-
-					if (p) {
-						wget_percent_unescape(p);
-						// Strip directory traversal sequences to prevent path traversal attacks
-						char *f = sanitize_filename(p);
-						xfree(p);
-						if (!wget_str_is_valid_utf8(f)) {
-							// if it is not UTF-8, assume ISO-8859-1
-							// see https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
-							*filename = wget_str_to_utf8(f, "iso-8859-1");
-							xfree(f);
-						} else
-							*filename = f;
-					}
+					wget_percent_unescape(p);
+					char *f = sanitize_filename(p);
+					xfree(p);
+					if (!wget_str_is_valid_utf8(f)) {
+						// if it is not UTF-8, assume ISO-8859-1
+						// see https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
+						*filename = wget_str_to_utf8(f, "iso-8859-1");
+						xfree(f);
+					} else
+						*filename = f;
 				}
 			} else if (param.value && !wget_strcasecmp_ascii("filename*", param.name)) {
 				// RFC5987
@@ -646,18 +649,6 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 							}
 							else
 								*filename = p;
-
-							// just take the last path part as filename
-							if (*filename) {
-								if ((p = strrchr(*filename, '/'))) {
-									char *p2;
-									if ((p2 = strrchr(p + 1, '\\')))
-										p = p2;
-									p = wget_strdup(p + 1);
-									xfree(*filename);
-									*filename = p;
-								}
-							}
 
 							xfree(param.name);
 							xfree(param.value);
