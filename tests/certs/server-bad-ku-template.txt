@@ -12,7 +12,8 @@ dns_name = "WgetTestingServer"
 # WRONG KEY USAGE: 
 # Omit digitalSignature and keyEncipherment.
 # Include something irrelevant like non_repudiation.
-key_encipherment
+# key_encipherment
+non_repudiation
 # Or simply leave key_usage out entirely if the client requires it,
 # but explicitly setting a 'wrong' one is better for testing.
 
@@ -20,4 +21,4 @@ key_encipherment
 # This adds the 'Extended Key Usage' (EKU) extension.
 # If you omit this, many clients will mark the cert as 'Insecure' 
 # or 'Not intended for this use'.
-tls_www_client
+tls_www_server
