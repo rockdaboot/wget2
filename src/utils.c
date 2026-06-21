@@ -34,8 +34,7 @@
 // this function should be called protected by a mutex - else race conditions will happen
 void mkdir_path(const char *_fname, bool is_file)
 {
-	const char *p1;
-	char *p2, *fname;
+	char *p1, *p2, *fname;
 	char buf[1024];
 
 	fname = wget_strmemcpy_a(buf, sizeof(buf), _fname, strlen(_fname));

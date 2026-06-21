@@ -67,8 +67,7 @@ int main(void)
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	char *file1_name = strrchr(urls[0].name, '/') + 1;
-
+	const char *file1_name = strrchr(urls[0].name, '/') + 1;
 
 	wget_test(
 		WGET_TEST_OPTIONS, "--verify-sig --gnupg-homedir=" SRCDIR "/gpg --verify-save-failed",

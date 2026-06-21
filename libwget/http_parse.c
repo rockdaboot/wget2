@@ -633,11 +633,11 @@ const char *wget_http_parse_content_disposition(const char *s, const char **file
 				//		/ "^" / "_" / "`" / "|" / "~"
 				//		; token except ( "*" / "'" / "%" )
 
-				if ((p = strchr(param.value, '\''))) {
+				if ((p = strchr((char *) param.value, '\''))) {
 					const char *charset = param.value;
 					const char *language = p + 1;
 					*p = 0;
-					if ((p = strchr(language, '\''))) {
+					if ((p = (char *) strchr(language, '\''))) {
 						*p++ = 0;
 						if (*p) {
 							wget_percent_unescape(p);

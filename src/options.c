@@ -413,7 +413,7 @@ static int parse_header(option_t opt, const char *val, WGET_GCC_UNUSED const cha
 	wget_vector *v = *((wget_vector **)opt->var);
 
 	if (val && *val) {
-		char *value, *delim_pos;
+		const char *value, *delim_pos;
 
 		if (!v) {
 			v = *((wget_vector **)opt->var) =
@@ -2611,7 +2611,8 @@ static int WGET_GCC_NONNULL((1)) set_long_option(const char *name, const char *v
 {
 	option_t opt;
 	char invert = 0, value_present = 0, case_insensitive = 1;
-	char namebuf[sizeof(options[0].long_name) + 5], *p;
+	char namebuf[sizeof(options[0].long_name) + 5];
+	const char *p;
 	int ret = 0, rc;
 
 	if ((p = strchr(name, '='))) {

@@ -64,7 +64,7 @@ int gpg_test(const char *sig_file, int expected_exit)
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
 		0);
 
-	char *file1_name = strrchr(urls[0].name, '/') + 1;
+	const char *file1_name = strrchr(urls[0].name, '/') + 1;
 
 	if (expected_exit) {
 		wget_test(

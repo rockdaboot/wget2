@@ -432,7 +432,7 @@ void wget_tcp_set_bind_address(wget_tcp *tcp, const char *bind_address)
 
 		if (*s == '[') {
 			/* IPv6 address within brackets */
-			char *p = strrchr(s, ']');
+			const char *p = strrchr(s, ']');
 			if (p) {
 				host = s + 1;
 				s = p + 1;

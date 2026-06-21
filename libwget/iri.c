@@ -1343,10 +1343,10 @@ char *wget_iri_get_query_as_filename(const wget_iri *iri, wget_buffer *buf, cons
 char *wget_iri_get_basename(const wget_iri *iri, wget_buffer *buf, const char *encoding, int flags)
 {
 	if (iri->path) {
-		char *fname;
+		const char *fname;
 
 		if (wget_strcasecmp_ascii(encoding, "utf-8")) {
-			char *p;
+			const char *p;
 
 			if ((p = strrchr(iri->path, '/'))) {
 				if (!(fname = wget_utf8_to_str(p + 1, encoding)))

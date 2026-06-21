@@ -651,7 +651,7 @@ static void test_modify_hsts(wget_iri *iri)
 // Add iri to parents (for --no-parent option).
 static void add_parent(wget_iri *iri)
 {
-	char *p;
+	const char *p;
 
 	if (!parents)
 		parents = wget_vector_create(4, NULL);
