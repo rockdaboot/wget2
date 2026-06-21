@@ -816,14 +816,18 @@ static int do_handshake(WOLFSSL *session, int sockfd, int timeout)
 			rc = wget_ready_2_read(sockfd, timeout);
 		} else {
 			// WOLFSSL error are negative
-			if ((rc <= WOLFSSL_FIRST_E && rc >= WOLFSSL_LAST_E)
+			if (rc == SOCKET_ERROR_E) {
+				ret = WGET_E_CONNECT;
+			}
+			else if ((rc <= WOLFSSL_FIRST_E && rc >= WOLFSSL_LAST_E)
 				|| (rc <= WC_SPAN1_FIRST_E && rc >= WC_SPAN1_LAST_E)
 				|| (rc <= WC_SPAN2_FIRST_E && rc >= WC_SPAN2_LAST_E))
 			{
 				// there are some error codes that could be mapped to WGET_E_CONNECT, though
 				ret = WGET_E_CERTIFICATE;
-			} else
+			} else {
 				ret = WGET_E_CONNECT;
+			}
 
 			break;
 		}
