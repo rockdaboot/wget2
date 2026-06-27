@@ -33,6 +33,7 @@ WGET_TESTS = \
  test-cond$(EXEEXT) \
  test-decompress$(EXEEXT) \
  test-http-parse$(EXEEXT)
+# test-cookies-http_state$(EXEEXT)
 
 if PLUGIN_SUPPORT
  WGET_TESTS += test-dl$(EXEEXT)
@@ -47,6 +48,9 @@ test_parse_html_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MY
 test_dl_LDADD = ../src/dl.o ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 test_http_parse_SOURCES = test-http-parse.c
 test_http_parse_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
+
+test_cookies_http_state_SOURCES = test-cookies-http_state.c
+test_cookies_http_state_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 test_html_get_urls_SOURCES = test-html-get-urls.c
 test_html_get_urls_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)

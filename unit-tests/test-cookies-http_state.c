@@ -156,7 +156,7 @@ next:
 	xfree(dps);
 }
 
-int main(int argc, const char * const *argv)
+int main(int argc, const char **argv)
 {
 	// if VALGRIND testing is enabled, we have to call ourselves with valgrind checking
 	const char *valgrind = getenv("VALGRIND_TESTS");
@@ -165,15 +165,17 @@ int main(int argc, const char * const *argv)
 		// fallthrough
 	}
 	else if (!strcmp(valgrind, "1")) {
-		char cmd[strlen(argv[0]) + 256];
-
-		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s", argv[0]);
-		return system(cmd) != 0;
+		char *cmd;
+		wget_asprintf(&cmd, "VALGRIND_TESTS=\"\" valgrind --error-exitcode=301 --leak-check=yes --show-reachable=yes --track-origins=yes %s", argv[0]);
+		int ret = system(cmd);
+		xfree(cmd);
+		return ret != 0;
 	} else {
-		char cmd[strlen(valgrind) + strlen(argv[0]) + 32];
-
-		wget_snprintf(cmd, sizeof(cmd), "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
-		return system(cmd) != 0;
+		char *cmd;
+		wget_asprintf(&cmd, "VALGRIND_TESTS="" %s %s", valgrind, argv[0]);
+		int ret = system(cmd);
+		xfree(cmd);
+		return ret != 0;
 	}
 
 	if (init(argc, argv) < 0) // allows us to test with options (e.g. with --debug)

@@ -48,7 +48,7 @@ bool cookie_domain_match(const char *domain, const char *host)
 	size_t domain_length, host_length;
 	const char *p;
 
-	debug_printf("domain_match(%s,%s)", domain, host);
+	debug_printf("domain_match(%s,%s)\n", domain, host);
 
 	if (!strcmp(domain, host))
 		return true; // an exact match
@@ -312,13 +312,15 @@ const char *wget_cookie_parse_setcookie(const char *s, wget_cookie **_cookie)
 					} else if (!wget_strcasecmp_ascii(name, "max-age")) {
 						long offset = atol(p);
 
-						if (offset > 0) {
+						cookie->maxage = time(NULL) + offset;
+/*						if (offset > 0) {
 							// limit offset to avoid integer overflow
 							if (offset > INT_MAX)
 								offset = INT_MAX;
 							cookie->maxage = time(NULL) + offset;
 						} else
 							cookie->maxage = 0;
+ */
 					} else if (!wget_strcasecmp_ascii(name, "domain")) {
 						if (p != s) {
 							if (*p == '.') { // RFC 6265 5.2.3

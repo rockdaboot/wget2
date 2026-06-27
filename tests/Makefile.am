@@ -34,7 +34,7 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
  test-http2-connection-errors$(EXEEXT) test-http2-settings$(EXEEXT) \
  test-cert-key-usage$(EXEEXT) test-waitretry$(EXEEXT) \
  test-connection-failure$(EXEEXT)
-#test-post-file$(EXEEXT) test-cookies-http_state$(EXEEXT)
+#test-post-file$(EXEEXT)
 
 if WITH_GPGME
  WGET_TESTS += test-gpg-valid$(EXEEXT) test-gpg-invalid$(EXEEXT) test-gpg-missing$(EXEEXT) test-gpg-styles$(EXEEXT) test-gpg-bad$(EXEEXT) \
