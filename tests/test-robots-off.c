@@ -91,7 +91,7 @@ int main(void)
 		WGET_TEST_FEATURE_MHD,
 		0);
 
-	// with robots=off must download robots.txt and /subdir2/ should not be forbidden
+	// with robots=off must download robots.txt (because follow-sitemaps=true) and /subdir2/ is downloaded
 	wget_test(
 		WGET_TEST_OPTIONS, "-r -nH --robots=off",
 		WGET_TEST_REQUEST_URL, "index.html",
@@ -119,6 +119,20 @@ int main(void)
 			{ urls[4].name + 1, urls[4].body },
 			{ urls[5].name + 1, urls[5].body },
 			{ urls[6].name + 1, urls[6].body },
+			{	NULL } },
+		0);
+
+	// with default (robots=on) /subdir2/ is excluded from download
+	wget_test(
+		WGET_TEST_OPTIONS, "-r -nH",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[0].name + 1, urls[0].body },
+			{ urls[1].name + 1, urls[1].body },
+			{ urls[2].name + 1, urls[2].body },
+			{ urls[3].name + 1, urls[3].body },
+			{ urls[4].name + 1, urls[4].body },
 			{	NULL } },
 		0);
 
