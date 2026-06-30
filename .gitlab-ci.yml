@@ -33,8 +33,8 @@ variables:
   DEBIAN_STABLE_BUILD: buildenv-wget2-debian-stable
   DEBIAN_UNSTABLE_BUILD: buildenv-wget2-debian-unstable
   FEDORA_BUILD: buildenv-wget2-fedora
-  MINGW_BUILD: buildenv-mingw
-  MINGW_BUILD_STATIC: buildenv-mingw-static
+  MINGW_BUILD: buildenv-wget2-mingw
+  MINGW_BUILD_STATIC: buildenv-wget2-mingw-static
   ALPINE_BUILD: buildenv-wget2-alpine
   ARCH_BUILD: buildenv-arch
 #  BASIC_BUILD: buildenv-wget2-basic
