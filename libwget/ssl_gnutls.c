@@ -927,7 +927,7 @@ static int verify_certificate_callback(gnutls_session_t session)
 	unsigned int status, deinit_cert = 0, deinit_issuer = 0;
 	const gnutls_datum_t *cert_list = NULL;
 	unsigned int cert_list_size;
-	int ret = -1, err, ocsp_ok = 0, pinning_ok = 0;
+	int ret = -1, err, ocsp_ok = 0;
 	gnutls_x509_crt_t cert = NULL, issuer = NULL;
 	const char *tag = config.check_certificate ? _("ERROR") : _("WARNING");
 #ifdef WITH_OCSP
@@ -1045,10 +1045,12 @@ static int verify_certificate_callback(gnutls_session_t session)
 		goto out;
 	}
 
-	if (!config.check_hostname || (config.check_hostname && hostname && gnutls_x509_crt_check_hostname(cert, hostname)))
-		ret = 0;
-	else
-		goto out;
+	if (config.check_hostname) {
+		if (!hostname || !gnutls_x509_crt_check_hostname(cert, hostname)) {
+			error_printf_check(_("%s: Hostname mismatch or missing\n"), tag);
+			goto out; // Fail immediately
+		}
+	}
 
 	// At this point, the cert chain has been found valid regarding the locally available CA certificates and CRLs.
 	// Now, we are going to check the revocation status via OCSP
@@ -1083,11 +1085,13 @@ static int verify_certificate_callback(gnutls_session_t session)
 
 		if ((err = gnutls_x509_crt_import(cert, &cert_list[it], GNUTLS_X509_FMT_DER)) != GNUTLS_E_SUCCESS) {
 			error_printf_check(_("%s: Failed to parse certificate[%u]: %s\n"), tag, it, gnutls_strerror (err));
-			continue;
+			goto out;
 		}
 
-		if (cert_verify_hpkp(cert, hostname, session) == 0)
-			pinning_ok = 1;
+		if (cert_verify_hpkp(cert, hostname, session) != 0) {
+			error_printf_check(_("%s: Pubkey pinning mismatch!\n"), tag);
+			goto out;
+		}
 
 #ifdef WITH_OCSP
 		if (!config.ocsp || (skip_server_cert_check && it == 0))
@@ -1118,11 +1122,11 @@ static int verify_certificate_callback(gnutls_session_t session)
 			deinit_issuer = 1;
 			if ((err = gnutls_x509_crt_import(issuer, &cert_list[it + 1], GNUTLS_X509_FMT_DER))  != GNUTLS_E_SUCCESS) {
 				debug_printf("Decoding error: %s\n", gnutls_strerror(err));
-				continue;
+				goto out;
 			}
 		} else if (err  != GNUTLS_E_SUCCESS) {
 			debug_printf("Cannot find issuer: %s\n", gnutls_strerror(err));
-			continue;
+			goto out;
 		}
 
 		ocsp_ok = cert_verify_ocsp(cert, issuer);
@@ -1160,15 +1164,12 @@ static int verify_certificate_callback(gnutls_session_t session)
 			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, time(NULL) + 3600); // 1h valid
 		} else if (nrevoked) {
 			wget_ocsp_db_add_host(config.ocsp_cert_cache, hostname, 0); // remove entry from cache
-			ret = -1;
+			goto out;
 		}
 	}
 #endif
 
-	if (!pinning_ok) {
-		error_printf_check(_("%s: Pubkey pinning mismatch!\n"), tag);
-		ret = -1;
-	}
+	ret = 0;
 
 	// 0: continue handshake
 	// else: stop handshake
