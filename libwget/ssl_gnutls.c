@@ -360,7 +360,7 @@ static void print_x509_certificate_info(gnutls_session_t session)
 			expired = gnutls_x509_crt_get_expiration_time(cert);
 			info_printf(_("  Expires: %s"), safe_ctime(expired, timebuf, sizeof(timebuf)));
 
-			if (!gnutls_fingerprint(GNUTLS_DIG_MD5, &cert_list[ncert], digest, &digest_size)) {
+			if (!gnutls_fingerprint(GNUTLS_DIG_SHA256, &cert_list[ncert], digest, &digest_size)) {
 				char digest_hex[sizeof(digest) * 2 + 1];
 
 				wget_memtohex(digest, digest_size, digest_hex, sizeof(digest_hex));
