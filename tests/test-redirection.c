@@ -27,6 +27,7 @@
 #include <config.h>
 
 #include <stdlib.h> // exit()
+#include <string.h> // strstr()
 #include "libtest.h"
 
 int main(void)
@@ -162,7 +163,16 @@ int main(void)
 		0);
 
 	// Check if we really retried exactly 1x.
-	if (system("if [ \"$(grep -c 'HTTP ERROR response 501' ../test-redirection.log)\" != 2 ]; then exit 1; fi"))
+	size_t n;
+	char *log = wget_read_file("../test-redirection.log", &n), *p = log;
+	int cnt = 0;
+	while ((p = strstr(p, "HTTP ERROR response 501"))) {
+		p += 23;
+		cnt++;
+	}
+	wget_xfree(log);
+
+	if (cnt != 2)
 		wget_error_printf_exit("Expected exactly 2x 'HTTP ERROR response 501'\n");
 
 	wget_test(
