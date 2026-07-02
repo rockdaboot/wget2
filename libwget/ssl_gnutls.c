@@ -1089,8 +1089,6 @@ static int verify_certificate_callback(gnutls_session_t session)
 		if (cert_verify_hpkp(cert, hostname, session) == 0)
 			pinning_ok = 1;
 
-		cert_verify_hpkp(cert, hostname, session);
-
 #ifdef WITH_OCSP
 		if (!config.ocsp || (skip_server_cert_check && it == 0))
 			continue;
