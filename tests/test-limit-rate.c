@@ -27,7 +27,7 @@
 #include "libtest.h"
 
 #define WITHIN_RANGE(value, desired, tolerance) \
-  (runs_with_valgrind || ((value <= desired + tolerance) && (value >= desired - tolerance)))
+  (skip_timing_check || ((value <= desired + tolerance) && (value >= desired - tolerance)))
 
 // one megabyte file to use for limit rate testing
 static char large_file[1 * 1024 * 1024];
@@ -88,8 +88,13 @@ int main(void)
 		},
 	};
 
+	bool skip_timing_check;
+#ifdef _WIN32
+	skip_timing_check = true;
+#else
 	const char *valgrind = getenv("VALGRIND_TESTS");
-	const bool runs_with_valgrind = valgrind && *valgrind && strcmp(valgrind, "0");
+	skip_timing_check = valgrind && *valgrind && strcmp(valgrind, "0");
+#endif
 
 	// functions won't come back if an error occurs
 	wget_test_start_server(
@@ -131,7 +136,7 @@ int main(void)
 		wget_info_printf("Time1 %lld %lld\n", normal_elapsed_ms, elapsed_ms);
 
 
-	if (!runs_with_valgrind && elapsed_ms < normal_elapsed_ms) {
+	if (!skip_timing_check && elapsed_ms < normal_elapsed_ms) {
 		wget_error_printf_exit("Single file without limit-rate took longer "
 		                       "than with limit-rate enabled "
 		                       "(normal=%lld ms, elapsed=%lld ms)\n",
@@ -176,7 +181,7 @@ int main(void)
 		                       elapsed_ms, desired_ms, tolerance_ms);
 	}
 
-	if (!runs_with_valgrind && elapsed_ms < normal_elapsed_ms) {
+	if (!skip_timing_check && elapsed_ms < normal_elapsed_ms) {
 		wget_error_printf_exit("Mirror without limit-rate took longer "
 		                       "than with limit-rate enabled "
 		                       "(normal=%lld ms, elapsed=%lld ms)\n",
