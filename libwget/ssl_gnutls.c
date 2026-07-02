@@ -112,12 +112,12 @@ static struct config {
 		ocsp_nonce : 1,
 		dane : 1;
 } config = {
-	.check_certificate = 1,
-	.report_invalid_cert = 1,
-	.check_hostname = 1,
+	.check_certificate = true,
+	.report_invalid_cert = true,
+	.check_hostname = true,
 #ifdef WITH_OCSP
-	.ocsp = 0,
-	.ocsp_stapling = 1,
+	.ocsp = false,
+	.ocsp_stapling = true,
 #endif
 	.ca_type = WGET_SSL_X509_FMT_PEM,
 	.cert_type = WGET_SSL_X509_FMT_PEM,
@@ -293,18 +293,18 @@ void wget_ssl_set_config_object(int key, void *value)
 void wget_ssl_set_config_int(int key, int value)
 {
 	switch (key) {
-	case WGET_SSL_CHECK_CERTIFICATE: config.check_certificate = (char)value; break;
-	case WGET_SSL_REPORT_INVALID_CERT: config.report_invalid_cert = (char)value; break;
-	case WGET_SSL_CHECK_HOSTNAME: config.check_hostname = (char)value; break;
+	case WGET_SSL_CHECK_CERTIFICATE: config.check_certificate = !!value; break;
+	case WGET_SSL_REPORT_INVALID_CERT: config.report_invalid_cert = !!value; break;
+	case WGET_SSL_CHECK_HOSTNAME: config.check_hostname = !!value; break;
 	case WGET_SSL_CA_TYPE: config.ca_type = (char)value; break;
 	case WGET_SSL_CERT_TYPE: config.cert_type = (char)value; break;
-	case WGET_SSL_DANE: config.dane = (char)value; break;
+	case WGET_SSL_DANE: config.dane = !!value; break;
 	case WGET_SSL_KEY_TYPE: config.key_type = (char)value; break;
-	case WGET_SSL_PRINT_INFO: config.print_info = (char)value; break;
-	case WGET_SSL_OCSP: config.ocsp = (char)value; break;
-	case WGET_SSL_OCSP_DATE: config.ocsp_date = (char)value; break;
-	case WGET_SSL_OCSP_STAPLING: config.ocsp_stapling = (char)value; break;
-	case WGET_SSL_OCSP_NONCE: config.ocsp_nonce = value; break;
+	case WGET_SSL_PRINT_INFO: config.print_info = !!value; break;
+	case WGET_SSL_OCSP: config.ocsp = !!value; break;
+	case WGET_SSL_OCSP_DATE: config.ocsp_date = !!value; break;
+	case WGET_SSL_OCSP_STAPLING: config.ocsp_stapling = !!value; break;
+	case WGET_SSL_OCSP_NONCE: config.ocsp_nonce = !!value; break;
 	default: error_printf(_("Unknown config key %d (or value must not be an integer)\n"), key);
 	}
 }
