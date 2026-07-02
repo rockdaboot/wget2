@@ -599,7 +599,7 @@ static int send_ocsp_request(const char *server,
 		server = wget_strmemdup((char *)data.data, data.size);
 		server_allocated = 1;
 
-		xfree(data.data);
+		gnutls_free(data.data);
 	}
 
 	iri = wget_iri_parse(server, NULL);
