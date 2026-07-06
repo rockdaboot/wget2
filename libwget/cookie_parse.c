@@ -312,15 +312,13 @@ const char *wget_cookie_parse_setcookie(const char *s, wget_cookie **_cookie)
 					} else if (!wget_strcasecmp_ascii(name, "max-age")) {
 						long offset = atol(p);
 
+						// limit offset to avoid integer overflow
+						if (offset > INT_MAX)
+							offset = INT_MAX;
+						else if (offset < 0)
+							offset = 0;
+
 						cookie->maxage = time(NULL) + offset;
-/*						if (offset > 0) {
-							// limit offset to avoid integer overflow
-							if (offset > INT_MAX)
-								offset = INT_MAX;
-							cookie->maxage = time(NULL) + offset;
-						} else
-							cookie->maxage = 0;
- */
 					} else if (!wget_strcasecmp_ascii(name, "domain")) {
 						if (p != s) {
 							if (*p == '.') { // RFC 6265 5.2.3
