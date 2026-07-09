@@ -725,6 +725,11 @@ static int parse_timeout(option_t opt, const char *val, WGET_GCC_UNUSED const ch
 {
 	double fval = -1;
 
+	if (!val || !*val) {
+		error_printf(_("Missing timeout value\n"));
+		return -1;
+	}
+
 	if (wget_strcasecmp_ascii(val, "INF") && wget_strcasecmp_ascii(val, "INFINITY")) {
 		char modifier = 0;
 
