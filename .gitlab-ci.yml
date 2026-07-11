@@ -146,8 +146,7 @@ DebianTesting:
     - tar xf wget2-*.gz && rm wget2-*.gz
     - cd wget2-*
     - CONFIG_SHELL=/bin/dash dash ./configure $CONFIGURE_BASE_FLAGS
-      --enable-manylibs -q 2>&1 >/dev/null
-      | grep -v "libhsts was not found" | grep . && exit 1
+      --enable-manylibs
     - make -j$(nproc) -C lib
     - make check -j$(nproc) CFLAGS="$CFLAGS_DEFAULT -Werror"
 
