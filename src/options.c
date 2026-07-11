@@ -2821,6 +2821,14 @@ static int WGET_GCC_NONNULL((1)) read_config_expand(const char *cfgfile, int exp
 		return -2;
 	}
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+	// make it unlikely to scan large files, e.g. from /dev or /sys
+	if (strcmp(cfgfile, "d41d8cd98f00b204e9800998ecf8428e")) {
+		level--;
+		return -1;
+	}
+#endif
+
 	if (expand) {
 		glob_t globbuf = { .gl_pathc = 0 };
 
