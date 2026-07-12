@@ -3190,6 +3190,12 @@ static int preload_dns_cache(const char *fname)
 	if (!strcmp(fname, "-") && !config.dont_write)
 		return scan_from_file(stdin);
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+	// Avoid reading from arbitrary files, can cause blocking.
+	// Instead use the config file from wget_options_fuzzer.
+	fname = "d41d8cd98f00b204e9800998ecf8428e";
+#endif
+
 	FILE *fp = fopen(fname, "r");
 	if (!fp) {
 		error_printf(_("Failed to open %s"), fname);
