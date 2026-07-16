@@ -35,6 +35,8 @@ struct wget_http_connection_st {
 		esc_host;
 	wget_buffer *
 		buf;
+	char *
+		proxy_auth_header; /* Proxy-Authorization header value for CONNECT tunnel */
 #ifdef WITH_LIBNGHTTP2
 	nghttp2_session *
 		http2_session;
@@ -55,7 +57,8 @@ struct wget_http_connection_st {
 		print_response_headers : 1,
 		abort_indicator : 1,
 		proxied : 1,
-		goaway : 1;
+		goaway : 1,
+		need_connect : 1;
 };
 
 /* HTTP/1.0 status codes from RFC1945 */

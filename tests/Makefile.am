@@ -64,14 +64,15 @@ libtest_la_CPPFLAGS = -I$(srcdir) -I$(top_srcdir)/include/wget -I$(top_builddir)
  -DWGETVER_FILE=\"$(top_builddir)/include/wget/wgetver.h\" $(TEST_CFLAGS) $(GNUTLS_CFLAGS)
 libtest_la_LIBADD = ../src/libtest-utils.la ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS) $(TEST_LIBS) $(GNUTLS_LIBS)
 
-EXTRA_DIST = certs gpg valgrind-suppressions clang-asan-suppressions
+EXTRA_DIST = certs gpg valgrind-suppressions clang-asan-suppressions \
+ test-https-proxy-auth-server.py test-https-proxy-auth.sh
 
 clean-local:
 	$(AM_V_at)rm -rf $(srcdir)/.test_*
 
 AM_TESTS_ENVIRONMENT = export VALGRIND_TESTS"=@VALGRIND_TESTS@";\
  export LSAN_OPTIONS=suppressions="$(abs_srcdir)/clang-asan-suppressions";
-TESTS = $(WGET_TESTS)
+TESTS = $(WGET_TESTS) test-https-proxy-auth.sh
 
 #Test plugins for plugin related testing
 dummy_ldflags = -avoid-version -module -shared -no-undefined \

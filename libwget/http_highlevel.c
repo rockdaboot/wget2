@@ -309,6 +309,19 @@ wget_http_response *wget_http_get(int first_key, ...)
 			char uri_sbuf[1024];
 			wget_buffer uri_buf;
 
+			// Per RFC 7231 Section 7.1.3, drop Authorization and Proxy-Authorization
+			// headers on redirect to prevent credential leakage across origins.
+			// User-provided headers in the 'headers' vector are freed here.
+			for (it = 0; it < wget_vector_size(headers); it++) {
+				wget_http_header_param *p = wget_vector_get(headers, it);
+				wget_http_free_param(p);
+			}
+			wget_vector_clear_nofree(headers);
+
+			// Also drop any credentials (challenges) so they won't be re-sent
+			// on the redirected request.
+			wget_http_free_challenges(&challenges);
+
 			// if relative location, convert to absolute
 			wget_buffer_init(&uri_buf, uri_sbuf, sizeof(uri_sbuf));
 			wget_iri_relative_to_abs(uri, resp->location, -1, &uri_buf);

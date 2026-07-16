@@ -449,7 +449,7 @@ void http_fix_broken_server_encoding(wget_http_response *resp)
 #ifdef WITH_LIBNGHTTP2
 #endif
 
-static int establish_proxy_connect(wget_tcp *tcp, const char *host, uint16_t port)
+static int establish_proxy_connect(wget_tcp *tcp, const char *host, uint16_t port, const char *proxy_auth_header)
 {
 	char sbuf[1024];
 	wget_buffer buf;
@@ -459,12 +459,20 @@ static int establish_proxy_connect(wget_tcp *tcp, const char *host, uint16_t por
 	// The use of Proxy-Connection has been discouraged in RFC 7230 A.1.2.
 	// wget_buffer_sprintf(buf, "CONNECT %s:%hu HTTP/1.1\r\nHost: %s\r\nProxy-Connection: keep-alive\r\n\r\n",
 
-	if (wget_ip_is_family(host, WGET_NET_FAMILY_IPV6))
-		wget_buffer_printf(&buf, "CONNECT [%s]:%hu HTTP/1.1\r\nHost: [%s]:%hu\r\n\r\n",
-			host, port, host, port);
-	else
-		wget_buffer_printf(&buf, "CONNECT %s:%hu HTTP/1.1\r\nHost: %s:%hu\r\n\r\n",
-			host, port, host, port);
+	// Build CONNECT request with optional Proxy-Authorization header
+	const char *host_left = wget_ip_is_family(host, WGET_NET_FAMILY_IPV6) ? "[" : "";
+	const char *host_right = *host_left == '[' ? "]" : "";
+
+	wget_buffer_printf(&buf, "CONNECT %s%s%s:%hu HTTP/1.1\r\nHost: %s%s%s:%hu\r\n",
+		host_left, host, host_right, port, host_left, host, host_right, port);
+
+	if (proxy_auth_header) {
+		debug_printf("# Sending CONNECT request (with Proxy-Authorization)\n%sProxy-Authorization: Basic *\r\n\r\n", buf.data);
+		wget_buffer_printf_append(&buf, "Proxy-Authorization: Basic %s\r\n\r\n", proxy_auth_header);
+	} else {
+		wget_buffer_strcat(&buf, "\r\n");
+		debug_printf("%s", buf.data);
+	}
 
 	if (wget_tcp_write(tcp, buf.data, buf.length) != (ssize_t) buf.length) {
 		wget_buffer_deinit(&buf);
@@ -543,6 +551,12 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 					} else {
 						ssl = true;
 						need_connect = true;
+
+						// Compute Proxy-Authorization header for CONNECT tunnel if credentials are present
+						if (proxy_iri->userinfo && *proxy_iri->userinfo) {
+							conn->proxy_auth_header = (char *) wget_base64_encode_printf_alloc("%s:%s", proxy_iri->userinfo, proxy_iri->password ? proxy_iri->password : "");
+							debug_printf("HTTPS Proxy (libproxy): using credentials (userinfo=%s, password=*)\n", proxy_iri->userinfo);
+						}
 					}
 					wget_iri_free(&proxy_iri);
 				}
@@ -590,6 +604,12 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 			// conn->proxied = 1;
 
 			need_connect = true;
+
+			// Compute Proxy-Authorization header for CONNECT tunnel if credentials are present
+			if (proxy->userinfo && *proxy->userinfo) {
+				conn->proxy_auth_header = (char *) wget_base64_encode_printf_alloc("%s:%s", proxy->userinfo, proxy->password ? proxy->password : "");
+				debug_printf("HTTPS Proxy: using credentials (userinfo=%s, password=*)\n", proxy->userinfo);
+			}
 		}
 	}
 #endif
@@ -608,7 +628,7 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 	}
 
 	if (need_connect) {
-		if ((rc = establish_proxy_connect(conn->tcp, iri->host, iri->port)) != WGET_E_SUCCESS) {
+		if ((rc = establish_proxy_connect(conn->tcp, iri->host, iri->port, conn->proxy_auth_header)) != WGET_E_SUCCESS) {
 			wget_http_close(_conn);
 			return rc;
 		}
@@ -652,6 +672,7 @@ void wget_http_close(wget_http_connection **conn)
 //		if (!wget_tcp_get_dns_caching())
 //			freeaddrinfo((*conn)->addrinfo);
 		xfree((*conn)->esc_host);
+		xfree((*conn)->proxy_auth_header);
 		// xfree((*conn)->scheme);
 		wget_buffer_free(&(*conn)->buf);
 		wget_vector_clear_nofree((*conn)->pending_requests);
