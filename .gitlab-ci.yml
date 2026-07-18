@@ -55,6 +55,7 @@ include:
 .defaults:
   variables:
     GIT_STRATEGY: none
+    MALLOC_PERTURB_: "42"
   except:
     - coverity-scan@gnuwget/wget2
   artifacts:
