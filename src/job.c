@@ -169,9 +169,6 @@ int job_validate_file(JOB *job)
 		wget_vector_clear(job->parts);
 
 	fsize = metalink->size;
-//	info_printf("metalink->name = %s\n", metalink->name);
-//	info_printf("metalink->size = %zu\n", metalink->size);
-//	info_printf("metalink->hashes = %d\n", wget_vector_size(metalink->hashes));
 
 	if (wget_vector_size(metalink->hashes) == 0) {
 		// multipart non-metalink download: do not clobber if file has expected size

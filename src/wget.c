@@ -2129,6 +2129,28 @@ static void process_response_part(wget_http_response *resp)
 	}
 }
 
+static const char *restrict_file_name(const char *fname)
+{
+	char tmp[1024];
+	char *fname_esc = (sizeof(tmp) < strlen(fname) * 3 + 1)
+		? wget_malloc(strlen(fname) * 3 + 1)
+		: tmp;
+
+	char *restricted_name = wget_restrict_file_name(fname, fname_esc, config.restrict_file_names);
+	if (restricted_name != fname) {
+		xfree(fname);
+		if (restricted_name == tmp)
+			fname = wget_strdup(tmp);
+		else
+			fname = restricted_name;
+	}
+
+	if (fname_esc != tmp)
+		xfree(fname_esc);
+
+	return fname;
+}
+
 static void process_response(wget_http_response *resp)
 {
 	JOB *job = resp->req->user_data;
@@ -2221,9 +2243,13 @@ static void process_response(wget_http_response *resp)
 			// save_file(resp, job->local_filename, O_TRUNC);
 			if (resp->body && resp->body->data) {
 				job->metalink = wget_metalink_parse(resp->body->data);
-				if (config.output_document) {
-					xfree(job->metalink->name);
-					job->metalink->name = wget_strdup(config.output_document);
+				if (job->metalink) {
+					if (config.output_document) {
+						xfree(job->metalink->name);
+						job->metalink->name = wget_strdup(config.output_document);
+					} else if (job->metalink->name && config.restrict_file_names) {
+						job->metalink->name = restrict_file_name(job->metalink->name);
+					}
 				}
 			}
 		}
@@ -3168,6 +3194,13 @@ void metalink_parse_localfile(const char *fname)
 
 	if ((data = wget_read_file(fname, NULL))) {
 		wget_metalink *metalink = wget_metalink_parse(data);
+		if (!metalink) {
+			return;
+		}
+
+		if (metalink->name && config.restrict_file_names) {
+			metalink->name = restrict_file_name(metalink->name);
+		}
 
 		if (metalink->size <= 0) {
 			error_printf(_("Invalid file length %llu\n"), (unsigned long long)metalink->size);

@@ -177,37 +177,27 @@ static const char *sanitized_filename(const char *in)
 	//   directives or information.  The path MUST be relative.  The path
 	//   MUST NOT begin with a "/", "./", or "../"; contain "/../"; or end
 	//   with "/..".
+	// ISSLASH() takes care for '\\' on Windows.
 	const char *p = in + FILE_SYSTEM_PREFIX_LEN(in); // skip drive letter on Windows
 
-	// Reject absolute paths (leading "/" or "\\")
+	// Reject absolute paths
 	if (ISSLASH(*p))
 		return NULL;
 
-	// Reject "../" at the start
-	if (!strncmp(p, "./", 2) || !strncmp(p, "../", 3))
-		return NULL;
-
-	// Reject "/../" anywhere in the path
-	if (strstr(p, "/../"))
+	// Reject "./", and "../" at the start
+	if ((p[0] == '.' && ISSLASH(p[1])) || (p[0] == '.' && p[1] == '.' && ISSLASH(p[2])))
 		return NULL;
 
 	// Reject trailing "/.."
-	if (wget_match_tail(p, "/.."))
+	size_t len = strlen(p);
+	if (len >= 3 && ISSLASH(p[len - 3]) && p[len - 2] == '.' && p[len - 1] == '.')
 		return NULL;
 
-#ifdef WIN32
-	// Reject "..\\" at the start
-	if (!strncmp(p, ".\\", 2) || !strncmp(p, "..\\", 3))
-		return NULL;
-
-	// Reject "\\../" or "\\..\\" or "/..\\" anywhere in the path
-	if (strstr(p, "\\../") || strstr(p, "\\..\\") || strstr(p, "/..\\"))
-		return NULL;
-
-	// Reject trailing "\\.."
-	if (wget_match_tail(p, "\\.."))
-		return NULL;
-#endif
+	// Reject "/../" anywhere in the path
+	for (; *p; p++) {
+		if (ISSLASH(p[0]) && p[1] == '.' && p[2] == '.' && ISSLASH(p[3]))
+			return NULL;
+	}
 
 	return wget_strdup(in);
 }
