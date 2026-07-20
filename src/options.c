@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <c-ctype.h>
+#include <xstrtol.h>
 #include <errno.h>
 #include <glob.h>
 #include <fcntl.h>
@@ -274,14 +275,20 @@ static int print_version(WGET_GCC_UNUSED option_t opt, WGET_GCC_UNUSED const cha
 
 static int parse_integer(option_t opt, const char *val, WGET_GCC_UNUSED const char invert)
 {
-	*((int *)opt->var) = val ? atoi(val) : 0;
+	long result = 0;
+	if (val)
+		xstrtol(val, NULL, 10, &result, NULL);
+	*((int *)opt->var) = result;
 
 	return 0;
 }
 
 static int parse_uint16(option_t opt, const char *val, WGET_GCC_UNUSED const char invert)
 {
-	int port = val ? atoi(val) : 0;
+	long result = 0;
+	if (val)
+		xstrtol(val, NULL, 10, &result, NULL);
+	long port = result;
 
 	if (port >= 0 && port <= UINT16_MAX) {
 		*((uint16_t *)opt->var) = (uint16_t) port;

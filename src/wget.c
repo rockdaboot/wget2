@@ -37,6 +37,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <c-ctype.h>
+#include <xstrtol.h>
 #include <ctype.h>
 #include <time.h>
 #include <fnmatch.h>
@@ -3346,7 +3347,12 @@ static int64_t WGET_GCC_NONNULL_ALL get_file_lmtime(const char *fname)
 	if ((fp = fopen(fname, "r"))) {
 		char tbuf[32];
 		if (read_xattr_metadata("user.last_modified", tbuf, sizeof(tbuf), fileno(fp)) > 0)
-			ret = (int64_t) atoll(tbuf);
+		{
+			long long val;
+			if (xstrtoll(tbuf, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			ret = (int64_t) val;
+		}
 
 		fclose(fp);
 	}
@@ -3755,7 +3761,10 @@ static int get_requested_range(void *ctx, void *elem)
 	wget_http_header_param *param = (wget_http_header_param *) elem;
 	long long *ret = (long long *) ctx;
 	if (!strcmp(param->name, "Range")) {
-		*ret = atoll(param->value+6);
+		long long val;
+		if (xstrtoll(param->value+6, NULL, 10, &val, NULL) != LONGINT_OK)
+			val = 0;
+		*ret = val;
 		return 1;
 	}
 	else

@@ -27,6 +27,7 @@
 #include <arpa/inet.h>
 
 #include <wget.h>
+#include <xstrtol.h>
 #include "private.h"
 
 /**
@@ -86,7 +87,10 @@ int wget_ip_parse_cidr(const char *s, wget_network_addr_t *addr)
 		if ((c_isdigit(p[1]) && p[2] == 0)
 			|| (p[1] >= '1' && p[1] <= '3' && isdigit(p[2]) && p[3] == 0))
 		{
-			mask_bits = atoi(p + 1);
+			long val;
+			if (xstrtol(p + 1, NULL, 10, &val, NULL) != LONGINT_OK || val < 0 || val > 32)
+				return -1;
+			mask_bits = (int) val;
 
 			if (mask_bits > 32)
 				return -1;

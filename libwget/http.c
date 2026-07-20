@@ -38,6 +38,7 @@
 #include <c-ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <xstrtol.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -1326,7 +1327,9 @@ static bool cidr_v4_match(const char *cidr, struct in_addr *addr)
 	if (slash_pos == NULL) {
 		return false; // invalid CIDR range
 	}
-	int prefix_len = atoi(slash_pos + 1);
+	long prefix_len;
+	if (xstrtol(slash_pos + 1, NULL, 10, &prefix_len, NULL) != LONGINT_OK)
+		return false; // invalid prefix length
 	if (prefix_len < 0 || prefix_len > 32) {
 		return false; // invalid prefix length
 	}
@@ -1353,7 +1356,9 @@ static bool cidr_v6_match(const char *cidr, struct in6_addr *addr)
 	if (slash_pos == NULL) {
 		return false; // invalid CIDR range
 	}
-	int prefix_len = atoi(slash_pos + 1);
+	long prefix_len;
+	if (xstrtol(slash_pos + 1, NULL, 10, &prefix_len, NULL) != LONGINT_OK)
+		return false; // invalid prefix length
 	if (prefix_len < 0 || prefix_len > 128) {
 		return false; // invalid prefix length
 	}

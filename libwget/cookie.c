@@ -29,6 +29,7 @@
 
 #include <config.h>
 
+#include <xstrtol.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -393,7 +394,11 @@ static int cookie_db_load(wget_cookie_db *cookie_db, FILE *fp)
 
 		// parse expires
 		for (p = *linep ? ++linep : linep; *linep && *linep != '\t';) linep++;
-		cookie.expires = (int64_t) atoll(p);
+		long long expires;
+		if (xstrtoll(p, NULL, 10, &expires, NULL) != LONGINT_OK)
+			expires = 0;
+		cookie.expires = (int64_t) expires;
+
 		if (cookie.expires && cookie.expires <= now) {
 			// drop expired cookie
 			wget_cookie_deinit(&cookie);

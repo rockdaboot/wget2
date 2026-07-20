@@ -34,6 +34,7 @@
 #include <errno.h>
 
 #include <wget.h>
+#include <xstrtol.h>
 #include "private.h"
 
 struct wget_netrc_db_st {
@@ -283,7 +284,10 @@ int wget_netrc_db_load(wget_netrc_db *netrc_db, const char *fname)
 						netrc.password = unescape_password(p, linep - p - escaped);
 				}
 			} else if (!strcmp(key, "port")) { // GNU extension
-				netrc.port = (uint16_t) atoi(p);
+				unsigned long val;
+				if (xstrtoul(p, NULL, 10, &val, NULL) != LONGINT_OK || val > UINT16_MAX)
+					val = 0;
+				netrc.port = (uint16_t) val;
 			} else if (!strcmp(key, "force")) { // GNU extension
 				netrc.force = !wget_strncasecmp_ascii("yes", p, 3);
 			} else if (!strcmp(key, "macdef")) {

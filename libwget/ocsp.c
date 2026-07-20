@@ -35,6 +35,7 @@
 #include <errno.h>
 
 #include <wget.h>
+#include <xstrtol.h>
 #include "private.h"
 
 /**
@@ -438,7 +439,10 @@ static int ocsp_db_load(wget_ocsp_db *ocsp_db, FILE *fp, bool load_hosts)
 		// parse max age
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.maxage = (int64_t) atoll(p);
+			long long val;
+			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			ocsp.maxage = (int64_t) val;
 			if (ocsp.maxage < now) {
 				// drop expired entry
 				deinit_ocsp(&ocsp);
@@ -450,13 +454,19 @@ static int ocsp_db_load(wget_ocsp_db *ocsp_db, FILE *fp, bool load_hosts)
 		// parse mtime (age of this entry)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.mtime = (int64_t) atoll(p);
+			long long val;
+			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			ocsp.mtime = (int64_t) val;
 		}
 
 		// parse mtime (age of this entry)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep);) linep++;
-			ocsp.valid = atoi(p) != 0;
+			long val;
+			if (xstrtol(p, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			ocsp.valid = val != 0;
 		}
 
 		if (ok) {

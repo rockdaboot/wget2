@@ -37,6 +37,7 @@
 #include <sys/file.h>
 
 #include <wget.h>
+#include <xstrtol.h>
 #include "private.h"
 
 /**
@@ -375,7 +376,10 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.port = (uint16_t) atoi(p);
+			unsigned long val;
+			if (xstrtoul(p, NULL, 10, &val, NULL) != LONGINT_OK || val > UINT16_MAX)
+				val = 443;
+			hsts.port = (uint16_t) val;
 			if (hsts.port == 0)
 				hsts.port = 443;
 		}
@@ -384,14 +388,20 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.include_subdomains = atoi(p) ? 1 : 0;
+			long val;
+			if (xstrtol(p, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			hsts.include_subdomains = val ? 1 : 0;
 		}
 
 		// parse creation time
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.created = atoll(p);
+			long long val;
+			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			hsts.created = val;
 			if (hsts.created < 0 || hsts.created >= INT64_MAX / 2)
 				hsts.created = 0;
 		}
@@ -400,7 +410,10 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			hsts.maxage = atoll(p);
+			long long val;
+			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			hsts.maxage = val;
 			if (hsts.maxage < 0 || hsts.maxage >= INT64_MAX / 2)
 				hsts.maxage = 0; // avoid integer overflow here
 			hsts.expires = hsts.maxage ? hsts.created + hsts.maxage : 0;

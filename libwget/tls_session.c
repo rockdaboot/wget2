@@ -33,6 +33,7 @@
 #include <time.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <xstrtol.h>
 #include <sys/file.h>
 
 #include <wget.h>
@@ -287,7 +288,10 @@ static int tls_session_db_load(wget_tls_session_db *tls_session_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			tls_session.created = (int64_t) atoll(p);
+			long long val;
+			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			tls_session.created = val;
 			if (tls_session.created < 0 || tls_session.created >= INT64_MAX / 2)
 				tls_session.created = 0;
 		}
@@ -296,7 +300,10 @@ static int tls_session_db_load(wget_tls_session_db *tls_session_db, FILE *fp)
 		if (*linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
-			tls_session.maxage = (int64_t) atoll(p);
+			long long val;
+			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK)
+				val = 0;
+			tls_session.maxage = val;
 			if (tls_session.maxage < 0 || tls_session.maxage >= INT64_MAX / 2)
 				tls_session.maxage = 0; // avoid integer overflow here
 			tls_session.expires = tls_session.maxage ? tls_session.created + tls_session.maxage : 0;

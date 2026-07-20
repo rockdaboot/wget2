@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <xstrtol.h>
 
 #include <wget.h>
 #include "private.h"
@@ -233,7 +234,10 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 				if (!wget_strcasecmp_ascii(attr, "type")) {
 					sscanf(value, "%15s", ctx->hash_type);
 				} else if (!wget_strcasecmp_ascii(attr, "length")) {
-					ctx->length = atoll(value);
+					unsigned long long tmp_len;
+					if (xstrtoull(value, NULL, 10, &tmp_len, NULL) != LONGINT_OK)
+						tmp_len = 0;
+					ctx->length = (long long)tmp_len;
 				}
 //			} else if (!wget_strcasecmp_ascii(dir, "/verification/pieces/hash")) {
 //				if (!wget_strcasecmp_ascii(attr, "type")) {
@@ -262,7 +266,10 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 			} else if (!wget_strcasecmp_ascii(dir, "/verification/hash")) {
 				add_file_hash(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/size")) {
-				ctx->metalink->size = atoll(value);
+				unsigned long long tmp_size;
+				if (xstrtoull(value, NULL, 10, &tmp_size, NULL) != LONGINT_OK)
+					tmp_size = 0;
+				ctx->metalink->size = tmp_size;
 			} else if (!wget_strcasecmp_ascii(dir, "/resources/url")) {
 				add_mirror(ctx, value);
 			}
@@ -278,7 +285,10 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 				if (!wget_strcasecmp_ascii(attr, "type")) {
 					sscanf(value, "%15s", ctx->hash_type);
 				} else if (!wget_strcasecmp_ascii(attr, "length")) {
-					ctx->length = atoll(value);
+					unsigned long long tmp_len;
+					if (xstrtoull(value, NULL, 10, &tmp_len, NULL) != LONGINT_OK)
+						tmp_len = 0;
+					ctx->length = (long long)tmp_len;
 				}
 			} else if (!wget_strcasecmp_ascii(dir, "/hash")) {
 				if (!wget_strcasecmp_ascii(attr, "type")) {
@@ -299,7 +309,10 @@ static void metalink_parse(void *context, int flags, const char *dir, const char
 			} else if (!wget_strcasecmp_ascii(dir, "/hash")) {
 				add_file_hash(ctx, value);
 			} else if (!wget_strcasecmp_ascii(dir, "/size")) {
-				ctx->metalink->size = atoll(value);
+				unsigned long long tmp_size;
+					if (xstrtoull(value, NULL, 10, &tmp_size, NULL) != LONGINT_OK)
+						tmp_size = 0;
+					ctx->metalink->size = tmp_size;
 			} else if (!wget_strcasecmp_ascii(dir, "/url")) {
 				add_mirror(ctx, value);
 			}

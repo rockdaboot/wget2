@@ -35,6 +35,8 @@
 #include <errno.h>
 #include <stdint.h>
 
+#include <xstrtol.h>
+
 #include <wget.h>
 #include "private.h"
 #include "http.h"
@@ -302,7 +304,9 @@ const char *wget_http_parse_link(const char *s, wget_http_link *link)
 						else if (!wget_strcasecmp_ascii(value, "duplicate"))
 							link->rel = link_rel_duplicate;
 					} else if (!wget_strcasecmp_ascii(name, "pri")) {
-						link->pri = atoi(value);
+						long pri;
+						if (xstrtol(value, NULL, 10, &pri, NULL) == LONGINT_OK)
+							link->pri = (int) pri;
 					} else if (!wget_strcasecmp_ascii(name, "type")) {
 						if (!link->type) {
 							link->type = value;
@@ -683,7 +687,9 @@ const char *wget_http_parse_public_key_pins(const char *s, wget_hpkp *hpkp)
 
 		if (param.value) {
 			if (!wget_strcasecmp_ascii(param.name, "max-age")) {
-				wget_hpkp_set_maxage(hpkp, (int64_t) atoll(param.value));
+				long long maxage;
+				if (xstrtoll(param.value, NULL, 10, &maxage, NULL) == LONGINT_OK)
+					wget_hpkp_set_maxage(hpkp, (int64_t) maxage);
 			} else if (!wget_strncasecmp_ascii(param.name, "pin-", 4)) {
 				wget_hpkp_pin_add(hpkp, param.name + 4, param.value);
 			}
@@ -718,7 +724,9 @@ const char *wget_http_parse_strict_transport_security(const char *s, int64_t *ma
 
 		if (param.value) {
 			if (!wget_strcasecmp_ascii(param.name, "max-age")) {
-				*maxage = (int64_t) atoll(param.value);
+				long long val;
+				if (xstrtoll(param.value, NULL, 10, &val, NULL) == LONGINT_OK)
+					*maxage = (int64_t) val;
 			}
 		} else {
 			if (!wget_strcasecmp_ascii(param.name, "includeSubDomains")) {
@@ -1146,7 +1154,9 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 			if (!resp->content_type && !resp->content_type_encoding)
 				wget_http_parse_content_type(value0, &resp->content_type, &resp->content_type_encoding);
 		} else if (!wget_strncasecmp_ascii(name, "content-length", namelen)) {
-			resp->content_length = (size_t)atoll(value0);
+			unsigned long long cl;
+			if (xstrtoull(value0, NULL, 10, &cl, NULL) == LONGINT_OK)
+				resp->content_length = (size_t) cl;
 			resp->content_length_valid = 1;
 		} else if (!wget_strncasecmp_ascii(name, "content-disposition", namelen)) {
 			if (!resp->content_filename)
@@ -1181,7 +1191,9 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 		break;
 	case 'i':
 		if (!wget_strncasecmp_ascii(name, "icy-metaint", namelen)) {
-			resp->icy_metaint = atoi(value0);
+			long metaint;
+			if (xstrtol(value0, NULL, 10, &metaint, NULL) == LONGINT_OK)
+				resp->icy_metaint = (int) metaint;
 		} else
 			ret = WGET_E_UNKNOWN;
 		break;

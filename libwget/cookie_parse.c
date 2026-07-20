@@ -38,6 +38,7 @@
 #include <time.h>
 
 #include <c-ctype.h>
+#include <xstrtol.h>
 
 #include <wget.h>
 #include "private.h"
@@ -310,7 +311,9 @@ const char *wget_cookie_parse_setcookie(const char *s, wget_cookie **_cookie)
 					if (!wget_strcasecmp_ascii(name, "expires")) {
 						cookie->expires = wget_http_parse_full_date(p);
 					} else if (!wget_strcasecmp_ascii(name, "max-age")) {
-						long offset = atol(p);
+						long offset;
+						if (xstrtol(p, NULL, 10, &offset, NULL) != LONGINT_OK)
+							offset = 0;
 
 						// limit offset to avoid integer overflow
 						if (offset > INT_MAX)
