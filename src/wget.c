@@ -365,16 +365,16 @@ static void program_deinit(void)
 static bool match_subdir(const char *dir, const char *subdir, bool ignore_case)
 {
 	if (*dir == '\0')
-		return strcmp(subdir, "/") == 0;
+		return ISSLASH(*subdir) && subdir[1] == 0;
 
 	if (ignore_case)
-		for (; *dir && *subdir && (c_tolower(*dir) == c_tolower(*subdir)); ++dir, ++subdir)
+		for (; *dir && *subdir && (c_tolower(*dir) == c_tolower(*subdir)); dir++, subdir++)
 			;
 	else
-		while (*dir && *subdir && (*dir++ == *subdir++))
+		for (; *dir && *subdir && *dir == *subdir; dir++, subdir++)
 			;
 
-	return *dir == 0 && (*subdir == 0 || *subdir == '/');
+	return *dir == 0 && (*subdir == 0 || ISSLASH(*subdir));
 }
 
 static int in_directory_pattern_list(const wget_vector *v, const char *fname)
