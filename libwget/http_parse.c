@@ -1289,7 +1289,7 @@ int wget_http_parse_header_line(wget_http_response *resp, const char *name, size
 			ret = WGET_E_UNKNOWN;
 		break;
 	case 'x':
-		if (!wget_strncasecmp_ascii(name, "x-archive-orig-last-modified", namelen)) {
+		if (!wget_strncasecmp_ascii(name, "x-archive-orig-last-modified", 28)) {
 			resp->last_modified = wget_http_parse_full_date(value0);
 		} else
 			ret = WGET_E_UNKNOWN;
