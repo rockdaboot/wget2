@@ -8,7 +8,7 @@ believe you've discovered a security vulnerability in GNU Wget2, we encourage yo
 to disclose it to us as confidential issues and work with us to ensure it is addressed
 promptly and appropriately.
 
-To report vulnerabilites, open confidential issues at
+To report vulnerabilities, open confidential issues at
 https://gitlab.com/gnuwget/wget2/issues .
 
 In case, it can't be avoided to send an email: The names and contact details of the
