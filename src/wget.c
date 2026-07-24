@@ -3855,10 +3855,7 @@ out:
 		if (!name) {
 			filename = ctx->job->blacklist_entry->local_filename;
 
-			if (filename && (name = strrchr(filename, '/')))
-				name += 1;
-			else
-				name = filename;
+			name = filename ? last_component(filename) : NULL;
 		}
 
 		if (!wget_strcasecmp_ascii(resp->req->method, "HEAD")) {
