@@ -63,9 +63,12 @@ static const char *ssl_default_path(const char *base)
 
 	const char *progData = getenv("ProgramData");
 
+	if (!progData)
+		progData = "/ProgramData";
+
 	return wget_aprintf("%s%s%s%s",
-		progData ? progData : "/ProgramData",
-		ISSLASH(progData[strlen(progData - 1)]) ? "" : "/",
+		progData,
+		ISSLASH(progData[strlen(progData) - 1]) ? "" : "/",
 		"ssl/",
 		base);
 }
