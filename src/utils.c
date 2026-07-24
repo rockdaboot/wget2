@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <string.h>
 #include <glob.h>
+#include "filename.h" // ISSLASH
 
 #include "wget_main.h"
 #include "wget_utils.h"
@@ -39,8 +40,13 @@ void mkdir_path(const char *_fname, bool is_file)
 
 	fname = wget_strmemcpy_a(buf, sizeof(buf), _fname, strlen(_fname));
 
+#ifdef _WIN32
+	for (p1 = fname + 1; *p1 && (p2 = strpbrk(p1, "/\\")); p1 = p2 + 1) {
+#else
 	for (p1 = fname + 1; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
+#endif
 		int rc;
+		char sep = *p2;
 		*p2 = 0; // replace path separator
 
 		// relative paths should have been normalized earlier,
@@ -80,19 +86,19 @@ void mkdir_path(const char *_fname, bool is_file)
 
 					if (rc) {
 						error_printf(_("Failed to make directory '%s' (errno=%d)\n"), fname, errno);
-						*p2 = '/'; // restore path separator
+						*p2 = sep; // restore path separator
 						break;
 					}
 				} else
 					error_printf(_("Failed to rename '%s' (errno=%d)\n"), fname, errno);
 			} else if (err != EEXIST) {
 				error_printf(_("Failed to make directory '%s' (errno=%d)\n"), fname, err);
-				*p2 = '/'; // restore path separator
+				*p2 = sep; // restore path separator
 				break;
 			}
 		} else debug_printf("created dir %s\n", fname);
 
-		*p2 = '/'; // restore path separator
+		*p2 = sep; // restore path separator
 	}
 
 	if (fname != buf)
@@ -114,6 +120,10 @@ char *shell_expand(const char *fname)
 
 	if (*fname == '~') {
 		char *slash = strchrnul(fname, '/');
+#ifdef WIN32
+		if (!*slash)
+			slash = strchrnul(fname, '\\');
+#endif
 		expanded_str = wget_strnglob(fname, slash - fname, GLOB_TILDE | GLOB_ONLYDIR | GLOB_NOCHECK);
 	}
 
