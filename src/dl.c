@@ -65,10 +65,15 @@ void dl_error_set_printf (dl_error_t *e, const char *format, ...)
 // else returns NULL
 static char *convert_to_path_if_not(const char *str)
 {
-	if (str && !strchr(str, '/'))
-		return wget_aprintf("./%s", str);
+	if (!str || strchr(str, '/'))
+		return NULL;
 
-	return NULL;
+#if defined _WIN32
+	if (strchr(str, '\\'))
+		return NULL
+#endif
+
+	return wget_aprintf("./%s", str);
 }
 #endif
 
