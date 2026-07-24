@@ -56,8 +56,8 @@ include:
   variables:
     GIT_STRATEGY: none
     MALLOC_PERTURB_: "42"
-  except:
-    - coverity-scan@gnuwget/wget2
+  rules:
+    - if: '$CI_COMMIT_REF_NAME != "coverity-scan"'
   artifacts:
     expire_in: 2 weeks
     when: on_failure
@@ -132,6 +132,7 @@ Build-Tarball:
     when: on_success
     paths:
       - wget2-*.gz
+  rules:
   dependencies:
   needs: []
 
@@ -353,8 +354,8 @@ pages:
     when: on_success
     paths:
       - public
-  only:
-    - master
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master"'
 
 MinGW64:
   stage: stage1-testing
@@ -399,8 +400,8 @@ MinGW64-static:
     when: on_success
     paths:
       - wget2.exe
-  only:
-    - master
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master"'
 
 Arch:
   stage: stage1-testing
@@ -418,20 +419,23 @@ Arch:
 coverity:
   stage: stage1-testing
   image: $CI_REGISTRY/$BUILD_IMAGES_PROJECT:$FEDORA_BUILD
+  extends:
+    - .defaults
   script:
+    - dnf update -y && dnf install -y --allowerasing file
     - wget https://scan.coverity.com/download/linux64 --post-data "token=$COVERITY_SCAN_TOKEN&project=$COVERITY_SCAN_PROJECT_NAME" -O /tmp/coverity_tool.tgz
     - tar xfz /tmp/coverity_tool.tgz
     - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
     - cd wget2-*.*.?
     - CFLAGS="-g -Og" ./configure --cache-file cache/config.cache --disable-doc
-    - cov-analysis-linux64-*/bin/cov-build --dir cov-int make -j$(nproc)
+    - ../cov-analysis-linux64-*/bin/cov-build --dir cov-int make -j$(nproc)
     - tar cfz cov-int.tar.gz cov-int
     - curl https://scan.coverity.com/builds?project=$COVERITY_SCAN_PROJECT_NAME
       --form token=$COVERITY_SCAN_TOKEN --form email=tim.ruehsen@gmx.de
       --form file=@cov-int.tar.gz --form version="`git describe --tags`"
       --form description="CI build"
-  only:
-    - coverity-scan@gnuwget/wget2
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "coverity-scan"'
   artifacts:
     expire_in: 1 week
     when: on_failure
