@@ -339,7 +339,7 @@ void host_add_robotstxt_job(HOST *host, const wget_iri *base, const char *encodi
 {
 	JOB *job;
 	blacklist_entry *blacklist_robots;
-	wget_iri *robot_iri = wget_iri_parse_base(base, "/robots.txt", encoding);
+	wget_iri *robot_iri = wget_iri_parse_base(base, "/robots.txt", encoding, 0);
 
 	if (!robot_iri || !(blacklist_robots = blacklist_add(robot_iri))) {
 		wget_iri_free(&robot_iri);

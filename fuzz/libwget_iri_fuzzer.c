@@ -38,9 +38,9 @@ static void test(char *in, size_t len, const char *encoding)
 	iri = wget_iri_parse(in, encoding);
 	iri2 = wget_iri_clone(iri);
 	wget_iri_free(&iri2);
-	iri2 = wget_iri_parse_base(NULL, in, encoding);
+	iri2 = wget_iri_parse_base(NULL, in, encoding, 0);
 	wget_iri_free(&iri2);
-	iri2 = wget_iri_parse_base(base, in, encoding);
+	iri2 = wget_iri_parse_base(base, in, encoding, 0);
 	int x = wget_iri_compare(iri, iri2);
 	wget_iri_free(&iri2);
 

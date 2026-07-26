@@ -705,7 +705,10 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	bool http_fallback = 0;
 	bool parse_only = 0;
 
-	iri = wget_iri_parse_base(base, url, encoding);
+	// WGET_IRI_KEEP_AS_IS preserves percent-encoded characters in the path (like wget1 does).
+	// This ensures URLs like https://example.com/path%2Fto%2Ffile are sent as-is to the server,
+	// not decoded to path/to/file.
+	iri = wget_iri_parse_base(base, url, encoding, WGET_IRI_KEEP_AS_IS);
 
 	if (!iri) {
 		error_printf(_("Failed to parse URI '%s'\n"), url);

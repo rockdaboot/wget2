@@ -1000,7 +1000,7 @@ const char *wget_iri_relative_to_abs(const wget_iri *base, const char *val, size
  *
  * If \p base is NULL, then the parameter \p url must itself be an absolute URI.
  */
-wget_iri *wget_iri_parse_base(const wget_iri *base, const char *url, const char *encoding)
+wget_iri *wget_iri_parse_base(const wget_iri *base, const char *url, const char *encoding, int flags)
 {
 	wget_iri *iri;
 
@@ -1009,11 +1009,11 @@ wget_iri *wget_iri_parse_base(const wget_iri *base, const char *url, const char 
 		char sbuf[256];
 
 		wget_buffer_init(&buf, sbuf, sizeof(sbuf));
-		iri = wget_iri_parse(wget_iri_relative_to_abs(base, url, (size_t) -1, &buf), encoding);
+		iri = wget_iri_parse_ex(wget_iri_relative_to_abs(base, url, (size_t) -1, &buf), encoding, flags);
 		wget_buffer_deinit(&buf);
 	} else {
 		// no base: just check URL for being an absolute URI
-		iri = wget_iri_parse(wget_iri_relative_to_abs(NULL, url, (size_t) -1, NULL), encoding);
+		iri = wget_iri_parse_ex(wget_iri_relative_to_abs(NULL, url, (size_t) -1, NULL), encoding, flags);
 	}
 
 	return iri;

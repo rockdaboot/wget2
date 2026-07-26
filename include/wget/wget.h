@@ -1320,7 +1320,7 @@ WGETAPI wget_iri *
 WGETAPI wget_iri *
 	wget_iri_parse_ex(const char *uri, const char *encoding, int flags);
 WGETAPI wget_iri * NULLABLE
-	wget_iri_parse_base(const wget_iri *base, const char *url, const char *encoding);
+	wget_iri_parse_base(const wget_iri *base, const char *url, const char *encoding, int flags);
 WGETAPI wget_iri * NULLABLE
 	wget_iri_clone(const wget_iri *iri);
 WGETAPI const char * NULLABLE
