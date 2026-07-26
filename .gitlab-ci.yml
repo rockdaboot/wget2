@@ -177,6 +177,8 @@ Debian/WolfSSL:
     - cd wget2-*
     - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=wolfssl
     - make check -j$(nproc)
+  # WolfSSL from unstable fails an OCSP test, as of 26.7.2026
+  allow_failure: true
 
 Debian/OpenSSL:
   stage: stage1-testing
