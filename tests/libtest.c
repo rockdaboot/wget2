@@ -996,7 +996,7 @@ static void *h2_server_thread(void *arg WGET_GCC_UNUSED)
 		return NULL;
 
 	while (nghttp2_server->running) {
-		struct sockaddr_in client_addr;
+		struct sockaddr_storage client_addr;
 		socklen_t client_len = sizeof(client_addr);
 
                 if (wget_ready_2_read(nghttp2_server->listen_fd, 100) <= 0)
@@ -1121,8 +1121,8 @@ static int h2_server_start(void)
 	if (!nghttp2_server)
 		return -1;
 
-	// Create listen socket
-	nghttp2_server->listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+	// Create listen socket (IPv6 dual-stack)
+	nghttp2_server->listen_fd = socket(AF_INET6, SOCK_STREAM, 0);
 	if (nghttp2_server->listen_fd < 0) {
 		wget_free(nghttp2_server);
 		nghttp2_server = NULL;
@@ -1132,11 +1132,15 @@ static int h2_server_start(void)
 	int optval = 1;
 	setsockopt(nghttp2_server->listen_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
-	struct sockaddr_in server_addr;
+	// Disable IPv6-only to allow IPv4 connections on the same socket
+	int ipv6only = 0;
+	setsockopt(nghttp2_server->listen_fd, IPPROTO_IPV6, IPV6_V6ONLY, &ipv6only, sizeof(ipv6only));
+
+	struct sockaddr_in6 server_addr;
 	memset(&server_addr, 0, sizeof(server_addr));
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	server_addr.sin_port = 0;  // Let OS assign port
+	server_addr.sin6_family = AF_INET6;
+	server_addr.sin6_addr = in6addr_loopback;
+	server_addr.sin6_port = 0;  // Let OS assign port
 
 	if (bind(nghttp2_server->listen_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
 		close(nghttp2_server->listen_fd);
@@ -1154,7 +1158,7 @@ static int h2_server_start(void)
 		return -1;
 	}
 
-	h2_server_port = ntohs(server_addr.sin_port);
+	h2_server_port = ntohs(server_addr.sin6_port);
 
 	if (listen(nghttp2_server->listen_fd, 5) < 0) {
 		close(nghttp2_server->listen_fd);
@@ -1245,7 +1249,7 @@ static int _http_server_start(int SERVER_MODE)
 	if (SERVER_MODE == HTTP_MODE) {
 		static char rnd[8] = "realrnd"; // fixed 'random' value
 
-		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
+		httpdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DUAL_STACK,
 			port_num, _check_to_accept,
 			(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
@@ -1271,7 +1275,7 @@ static int _http_server_start(int SERVER_MODE)
 
 			if (SERVER_MODE == HTTPS_MODE) {
 				httpsdaemon = MHD_start_daemon(
-					MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS	| MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT,
+					MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT | MHD_USE_DUAL_STACK,
 					port_num, _check_to_accept,
 					(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 					MHD_OPTION_HTTPS_MEM_KEY, key_pem,
@@ -1290,7 +1294,7 @@ static int _http_server_start(int SERVER_MODE)
 #ifdef WITH_GNUTLS_OCSP
 		else {
 			httpsdaemon = MHD_start_daemon(
-				MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT,
+				MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT | MHD_USE_DUAL_STACK,
 				port_num, _check_to_accept,
 				(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 				MHD_OPTION_HTTPS_CERT_CALLBACK, _ocsp_cert_callback,
@@ -1336,7 +1340,7 @@ static int _http_server_start(int SERVER_MODE)
 #ifdef WITH_GNUTLS_OCSP
 		static char rnd[8] = "realrnd"; // fixed 'random' value
 
-		ocspdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
+		ocspdaemon = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY | MHD_USE_DUAL_STACK,
 			port_num, NULL, NULL, _ocsp_ahc, NULL,
 			MHD_OPTION_DIGEST_AUTH_RANDOM, sizeof(rnd), rnd,
 			MHD_OPTION_NONCE_NC_SIZE, 300,
@@ -1393,7 +1397,7 @@ static int _http_server_start(int SERVER_MODE)
 
 		/* Start HTTPS daemon with stapled OCSP responses */
 		httpsdaemon = MHD_start_daemon(
-			MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT,
+			MHD_USE_SELECT_INTERNALLY | MHD_USE_TLS | MHD_USE_POST_HANDSHAKE_AUTH_SUPPORT | MHD_USE_DUAL_STACK,
 			port_num, _check_to_accept,
 			(void *) (ptrdiff_t) SERVER_MODE, _answer_to_connection, NULL,
 			MHD_OPTION_HTTPS_CERT_CALLBACK2, _ocsp_stap_cert_callback,

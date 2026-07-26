@@ -46,7 +46,7 @@ int main(void)
 	wget_test(
 		WGET_TEST_OPTIONS, "--ca-certificate=" SRCDIR "/certs/x509-ca-cert.pem",
 		WGET_TEST_REQUEST_URL, "https://localhost:{{sslport}}/index.html",
-		WGET_TEST_EXPECTED_ERROR_CODE, 4, // WGET_EXIT_SSL_AUTH
+		WGET_TEST_EXPECTED_ERROR_CODE, 5, // EXIT_STATUS_TLS
 		0);
 
 	// 2. Test with Bad Extended Key Usage (EKU)
