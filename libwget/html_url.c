@@ -108,6 +108,7 @@ static void css_parse_uri(void *context, const char *url WGET_GCC_UNUSED, size_t
 		return;
 
 	parsed_url->link_inline = 1;
+	parsed_url->url_heap_allocated = 0;
 	wget_strscpy(parsed_url->attr, ctx->css_attr, sizeof(parsed_url->attr));
 	wget_strscpy(parsed_url->tag, ctx->css_dir, sizeof(parsed_url->tag));
 	parsed_url->url.p = (const char *) (ctx->html + ctx->css_start_offset + pos);
@@ -316,7 +317,7 @@ static void html_get_url(void *context, int flags, const char *tag, const char *
 			if (!res->uris)
 				res->uris = wget_vector_create(32, NULL);
 
-			wget_html_parsed_url url;
+			wget_html_parsed_url url = { NULL };
 
 			// handle <iframe srcdoc="..."> - parse srcdoc content as HTML
 			if ((*tag|0x20) == 'i' && !wget_strcasecmp_ascii(tag, "iframe") && !wget_strcasecmp_ascii(attr, "srcdoc")) {
