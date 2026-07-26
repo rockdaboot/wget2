@@ -629,7 +629,7 @@ static void test_modify_hsts(wget_iri *iri)
 {
 	bool match = 0;
 
-	if (config.hsts && wget_hsts_host_match(config.hsts_db, iri->host, iri->port)) {
+	if (config.hsts && wget_hsts_host_match(config.hsts_db, iri->host)) {
 		match = 1;
 	}
 #ifdef WITH_LIBHSTS
@@ -1864,7 +1864,7 @@ static int process_response_header(wget_http_response *resp)
 		&& iri->scheme == WGET_IRI_SCHEME_HTTPS && !iri->is_ip_address
 		&& resp->hsts)
 	{
-		wget_hsts_db_add(config.hsts_db, iri->host, iri->port, resp->hsts_maxage, resp->hsts_include_subdomains);
+		wget_hsts_db_add(config.hsts_db, iri->host, resp->hsts_maxage, resp->hsts_include_subdomains);
 		hsts_changed = 1;
 	}
 

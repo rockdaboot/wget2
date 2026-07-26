@@ -69,8 +69,6 @@ typedef struct {
 		created; // creation time
 	int64_t
 		maxage; // max-age in seconds
-	uint16_t
-		port;
 	bool
 		include_subdomains : 1; // whether or not subdomains are included
 } hsts_entry;
@@ -90,7 +88,7 @@ __attribute__((no_sanitize("integer")))
 WGET_GCC_PURE
 static unsigned int hash_hsts(const hsts_entry *hsts)
 {
-	unsigned int hash = hsts->port;
+	unsigned int hash = 0;
 	const unsigned char *p;
 
 	for (p = (unsigned char *)hsts->host; *p; p++)
@@ -102,12 +100,7 @@ static unsigned int hash_hsts(const hsts_entry *hsts)
 WGET_GCC_NONNULL_ALL WGET_GCC_PURE
 static int compare_hsts(const hsts_entry *h1, const hsts_entry *h2)
 {
-	int n;
-
-	if ((n = strcmp(h1->host, h2->host)))
-		return n;
-
-	return h1->port < h2->port ? -1 : (h1->port > h2->port ? 1 : 0);
+	return strcmp(h1->host, h2->host);
 }
 
 static hsts_entry *init_hsts(hsts_entry *hsts)
@@ -138,7 +131,7 @@ static void free_hsts(hsts_entry *hsts)
 	}
 }
 
-static hsts_entry *new_hsts(const char *host, uint16_t port, int64_t maxage, bool include_subdomains)
+static hsts_entry *new_hsts(const char *host, int64_t maxage, bool include_subdomains)
 {
 	hsts_entry *hsts = init_hsts(NULL);
 
@@ -146,7 +139,6 @@ static hsts_entry *new_hsts(const char *host, uint16_t port, int64_t maxage, boo
 		return NULL;
 
 	hsts->host = wget_strdup(host);
-	hsts->port = port ? port : 443;
 	hsts->include_subdomains = include_subdomains;
 
 	if (maxage <= 0 || maxage >= INT64_MAX / 2 || hsts->created < 0 || hsts->created >= INT64_MAX / 2) {
@@ -163,8 +155,6 @@ static hsts_entry *new_hsts(const char *host, uint16_t port, int64_t maxage, boo
 /**
  * \param[in] hsts_db An HSTS database
  * \param[in] host Hostname to search for
- * \param[in] port Port number in the original URI/IRI.
- *                 Port number 80 is treated similar to 443, as 80 is default port for HTTP.
  * \return 1 if the host must be accessed only through TLS, 0 if there is no such condition.
  *
  * Searches for a given host in the database for any previously added entry.
@@ -174,10 +164,10 @@ static hsts_entry *new_hsts(const char *host, uint16_t port, int64_t maxage, boo
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-int wget_hsts_host_match(const wget_hsts_db *hsts_db, const char *host, uint16_t port)
+int wget_hsts_host_match(const wget_hsts_db *hsts_db, const char *host)
 {
 	if (plugin_vtable)
-		return plugin_vtable->host_match(hsts_db, host, port);
+		return plugin_vtable->host_match(hsts_db, host);
 
 	if (!hsts_db)
 		return 0;
@@ -186,10 +176,6 @@ int wget_hsts_host_match(const wget_hsts_db *hsts_db, const char *host, uint16_t
 	const char *p;
 	int64_t now = time(NULL);
 
-	// first look for an exact match
-	// if it's the default port, "normalize" it
-	// we assume the scheme is HTTP
-	hsts.port = (port == 80 ? 443 : port);
 	hsts.host = host;
 	if (wget_hashmap_get(hsts_db->entries, &hsts, &hstsp) && hstsp->expires >= now)
 		return 1;
@@ -267,9 +253,9 @@ static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
 	if (hsts->maxage == 0) {
 		if (wget_hashmap_remove(hsts_db->entries, hsts)) {
 			if (wget_ip_is_family(hsts->host, WGET_NET_FAMILY_IPV6))
-				debug_printf("removed HSTS [%s]:%hu\n", hsts->host, hsts->port);
+				debug_printf("removed HSTS [%s]\n", hsts->host);
 			else
-				debug_printf("removed HSTS %s:%hu\n", hsts->host, hsts->port);
+				debug_printf("removed HSTS %s\n", hsts->host);
 		}
 		free_hsts(hsts);
 		hsts = NULL;
@@ -283,15 +269,15 @@ static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
 				old->maxage = hsts->maxage;
 				old->include_subdomains = hsts->include_subdomains;
 				if (wget_ip_is_family(old->host, WGET_NET_FAMILY_IPV6))
-					debug_printf("update HSTS [%s]:%hu (maxage=%lld, includeSubDomains=%d)\n", old->host, old->port, (long long) old->maxage, old->include_subdomains);
+					debug_printf("update HSTS [%s] (maxage=%lld, includeSubDomains=%d)\n", old->host, (long long) old->maxage, old->include_subdomains);
 				else
-					debug_printf("update HSTS %s:%hu (maxage=%lld, includeSubDomains=%d)\n", old->host, old->port, (long long) old->maxage, old->include_subdomains);
+					debug_printf("update HSTS %s (maxage=%lld, includeSubDomains=%d)\n", old->host, (long long) old->maxage, old->include_subdomains);
 			}
 			free_hsts(hsts);
 			hsts = NULL;
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hsts'
-			// debug_printf("add HSTS %s:%hu (maxage=%lld, includeSubDomains=%d)\n", hsts->host, hsts->port, (long long)hsts->maxage, hsts->include_subdomains);
+			// debug_printf("add HSTS %s (maxage=%lld, includeSubDomains=%d)\n", hsts->host, (long long)hsts->maxage, hsts->include_subdomains);
 			wget_hashmap_put(hsts_db->entries, hsts, hsts);
 			// no need to free anything here
 		}
@@ -303,27 +289,26 @@ static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
 /**
  * \param[in] hsts_db An HSTS database
  * \param[in] host Hostname from where `Strict-Transport-Security` header was received
- * \param[in] port Port number used for connecting to the host
  * \param[in] maxage The time from now till the entry is valid, in seconds, or 0 to remove existing entry.
  *                   Corresponds to the `max-age` directive in `Strict-Transport-Security` header.
  * \param[in] include_subdomains Nonzero if `includeSubDomains` directive was present in the header, zero otherwise
  *
  * Add an entry to the HSTS database. An entry corresponds to the `Strict-Transport-Security` HTTP response header.
- * Any existing entry with same `host` and `port` is replaced. If `maxage` is zero, any existing entry with
- * matching `host` and `port` is removed.
+ * Any existing entry for `host` is replaced. If `maxage` is zero, an existing entry with
+ * matching `host` is removed.
  *
  * This function is thread-safe and can be called from multiple threads concurrently.
  * Any implementation for this function must be thread-safe as well.
  */
-void wget_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, int64_t maxage, bool include_subdomains)
+void wget_hsts_db_add(wget_hsts_db *hsts_db, const char *host, int64_t maxage, bool include_subdomains)
 {
 	if (plugin_vtable) {
-		plugin_vtable->add(hsts_db, host, port, maxage, include_subdomains);
+		plugin_vtable->add(hsts_db, host, maxage, include_subdomains);
 		return;
 	}
 
 	if (hsts_db) {
-		hsts_entry *hsts = new_hsts(host, port, maxage, include_subdomains);
+		hsts_entry *hsts = new_hsts(host, maxage, include_subdomains);
 
 		hsts_db_add_entry(hsts_db, hsts);
 	}
@@ -338,6 +323,7 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 	ssize_t buflen;
 	int64_t now = time(NULL);
 	int ok;
+	bool parse_port = true;
 
 	// if the database file hasn't changed since the last read
 	// there's no need to reload
@@ -355,8 +341,11 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 		while (isspace(*linep)) linep++; // ignore leading whitespace
 		if (!*linep) continue; // skip empty lines
 
-		if (*linep == '#')
+		if (*linep == '#') {
+			if (!strncmp(linep + 1, "HSTS 1.1 file", 13))
+				parse_port = false;
 			continue; // skip comments
+		}
 
 		// strip off \r\n
 		while (buflen > 0 && (buf[buflen] == '\n' || buf[buflen] == '\r'))
@@ -372,16 +361,12 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 			hsts.host = wget_strmemdup(p, linep - p);
 		}
 
-		// parse port
-		if (*linep) {
+		if (parse_port && *linep) {
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
 			unsigned long val;
 			if (xstrtoul(p, NULL, 10, &val, NULL) != LONGINT_OK || val > UINT16_MAX)
-				val = 443;
-			hsts.port = (uint16_t) val;
-			if (hsts.port == 0)
-				hsts.port = 443;
+				goto next;
 		}
 
 		// parse includeSubDomains
@@ -389,9 +374,9 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
 			long val;
-			if (xstrtol(p, NULL, 10, &val, NULL) != LONGINT_OK)
-				val = 0;
-			hsts.include_subdomains = val ? 1 : 0;
+			if (xstrtol(p, NULL, 10, &val, NULL) != LONGINT_OK || (val != 0 && val != 1))
+				goto next;
+			hsts.include_subdomains = !!val;
 		}
 
 		// parse creation time
@@ -399,11 +384,9 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
 			long long val;
-			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK)
-				val = 0;
+			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK || (val< 0 || val >= INT64_MAX / 2))
+				goto next;
 			hsts.created = val;
-			if (hsts.created < 0 || hsts.created >= INT64_MAX / 2)
-				hsts.created = 0;
 		}
 
 		// parse max age
@@ -411,20 +394,19 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 			for (p = ++linep; *linep && !isspace(*linep); )
 				linep++;
 			long long val;
-			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK)
-				val = 0;
+			if (xstrtoll(p, NULL, 10, &val, NULL) != LONGINT_OK || (val < 0 || val >= INT64_MAX / 2))
+				goto next;
 			hsts.maxage = val;
-			if (hsts.maxage < 0 || hsts.maxage >= INT64_MAX / 2)
-				hsts.maxage = 0; // avoid integer overflow here
 			hsts.expires = hsts.maxage ? hsts.created + hsts.maxage : 0;
 			if (hsts.expires < now) {
-				// drop expired entry
-				deinit_hsts(&hsts);
-				continue;
+				// drop expired entry, hsts_db_add_entry() removes entries with maxage=0;
+				hsts.maxage = 0;
+				goto next;
 			}
 			ok = 1;
 		}
 
+next:
 		if (ok) {
 			hsts_db_add_entry(hsts_db, wget_memdup(&hsts, sizeof(hsts)));
 		} else {
@@ -483,7 +465,7 @@ static int hsts_save(void *_fp, const void *_hsts, WGET_GCC_UNUSED void *v)
 	FILE *fp = _fp;
 	const hsts_entry *hsts = _hsts;
 
-	wget_fprintf(fp, "%s %hu %d %lld %lld\n", hsts->host, hsts->port, hsts->include_subdomains, (long long)hsts->created, (long long)hsts->maxage);
+	wget_fprintf(fp, "%s %d %lld %lld\n", hsts->host, hsts->include_subdomains, (long long)hsts->created, (long long)hsts->maxage);
 	return 0;
 }
 
@@ -492,9 +474,9 @@ static int hsts_db_save(void *hsts_db, FILE *fp)
 	wget_hashmap *entries = ((wget_hsts_db *) hsts_db)->entries;
 
 	if (wget_hashmap_size(entries) > 0) {
-		fputs("#HSTS 1.0 file\n", fp);
+		fputs("#HSTS 1.1 file\n", fp);
 		fputs("#Generated by libwget " PACKAGE_VERSION ". Edit at your own risk.\n", fp);
-		fputs("# <hostname> <port> <incl. subdomains> <created> <max-age>\n", fp);
+		fputs("# <hostname> <incl. subdomains> <created> <max-age>\n", fp);
 
 		wget_hashmap_browse(entries, hsts_save, fp);
 

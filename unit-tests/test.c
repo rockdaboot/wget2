@@ -1382,31 +1382,25 @@ static void test_hsts(void)
 	static const struct hsts_db_data {
 		const char *
 			host;
-		uint16_t
-			port;
 		const char *
 			hsts_params;
 	} hsts_db_data[] = {
-		{ "www.example.com", 443, "max-age=14400; includeSubDomains" },
-		{ "www.example2.com", 443, "max-age=14400" },
-		{ "www.example2.com", 443, "max-age=0" }, // this removes the previous entry
+		{ "www.example.com", "max-age=14400; includeSubDomains" },
+		{ "www.example2.com", "max-age=14400" },
+		{ "www.example2.com", "max-age=0" }, // this removes the previous entry
 	};
 	static const struct hsts_data {
 		const char *
 			host;
-		uint16_t
-			port;
 		int
 			result;
 	} hsts_data[] = {
-		{ "www.example.com", 443, 1 }, // exact match
-		{ "ftp.example.com", 443, 0 },
-		{ "example.com", 443, 0 },
-		{ "sub.www.example.com", 443, 1 }, // subdomain
-		{ "sub1.sub2.www.example.com", 443, 1 }, // subdomain
-		{ "www.example2.com", 443, 0 }, // entry should have been removed due to maxage=0
-		{ "www.example.com", 80, 1 }, // default port
-		{ "www.example.com", 8080, 0 }, // wrong port
+		{ "www.example.com", 1 }, // exact match
+		{ "ftp.example.com", 0 },
+		{ "example.com", 0 },
+		{ "sub.www.example.com", 1 }, // subdomain
+		{ "sub1.sub2.www.example.com", 1 }, // subdomain
+		{ "www.example2.com", 0 }, // entry should have been removed due to maxage=0
 	};
 	wget_hsts_db *hsts_db = wget_hsts_db_init(NULL, NULL);
 	int64_t maxage;
@@ -1417,20 +1411,20 @@ static void test_hsts(void)
 	for (unsigned it = 0; it < countof(hsts_db_data); it++) {
 		const struct hsts_db_data *t = &hsts_db_data[it];
 		wget_http_parse_strict_transport_security(t->hsts_params, &maxage, &include_subdomains);
-		wget_hsts_db_add(hsts_db, t->host, t->port, maxage, include_subdomains);
+		wget_hsts_db_add(hsts_db, t->host, maxage, include_subdomains);
 	}
 
 	// check HSTS database with values
 	for (unsigned it = 0; it < countof(hsts_data); it++) {
 		const struct hsts_data *t = &hsts_data[it];
 
-		n = wget_hsts_host_match(hsts_db, t->host, t->port);
+		n = wget_hsts_host_match(hsts_db, t->host);
 
 		if (n == t->result)
 			ok++;
 		else {
 			failed++;
-			info_printf("Failed [%u]: wget_hsts_host_match(%s,%d) -> %d (expected %d)\n", it, t->host, t->port, n, t->result);
+			info_printf("Failed [%u]: wget_hsts_host_match(%s) -> %d (expected %d)\n", it, t->host, n, t->result);
 		}
 	}
 

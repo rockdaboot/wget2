@@ -553,12 +553,12 @@ typedef struct {
 	int dummy;
 } test_hsts_db_t;
 
-static int test_hsts_db_host_match(const wget_hsts_db *hsts_db, const char *host, uint16_t port)
+static int test_hsts_db_host_match(const wget_hsts_db *hsts_db, const char *host)
 {
 	(void) hsts_db;
 
-	wget_debug_printf("%s: host %s port %hu\n", __func__,
-		host, port);
+	wget_debug_printf("%s: host %s\n", __func__,
+		host);
 
 	return 0;
 }
@@ -588,11 +588,11 @@ static void test_hsts_db_free(wget_hsts_db **hsts_db)
 	*hsts_db = NULL;
 }
 
-static void test_hsts_db_add(wget_hsts_db *hsts_db, const char *host, uint16_t port, int64_t maxage, bool include_subdomains)
+static void test_hsts_db_add(wget_hsts_db *hsts_db, const char *host, int64_t maxage, bool include_subdomains)
 {
 	(void) hsts_db;
-	wget_debug_printf("%s: host %s port %hu maxage %lld include_subdomains %d\n", __func__,
-		host, port, (long long) maxage, include_subdomains);
+	wget_debug_printf("%s: host %s maxage %lld include_subdomains %d\n", __func__,
+		host, (long long) maxage, include_subdomains);
 }
 
 static int test_hsts_db_load(wget_hsts_db *hsts_db)
