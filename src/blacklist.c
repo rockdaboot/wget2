@@ -148,9 +148,6 @@ static char * get_local_filename_real(const wget_iri *iri)
 			xfree(fname_esc);
 	}
 
-	// create the complete directory path
-//	mkdir_path(fname);
-
 	debug_printf("local filename = '%s'\n", fname);
 
 	return fname;

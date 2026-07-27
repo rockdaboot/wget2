@@ -3490,6 +3490,104 @@ static bool is_directory(const char *fname)
 	return stat(fname, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
+/* This represents how many characters less than the OS max name length a file
+ * should be.  More precisely, a file name should be at most
+ * (NAME_MAX - CHOMP_BUFFER) characters in length.  This number was arrived at
+ * by adding the lengths of all possible strings that could be appended to a
+ * file name later in the code (e.g. ".orig", ".html", etc.).  This is
+ * hopefully plenty of extra characters, but I am not guaranteeing that a file
+ * name will be of the proper length by the time the code wants to open a
+ * file descriptor. */
+#define CHOMP_BUFFER 19
+
+/* Get the maximum name length for the given path. */
+/* Return 0 if length is unknown. */
+static long get_max_length(const char *path, size_t length)
+{
+#ifndef HAVE_PATHCONF
+	(void) path;
+	(void) length;
+	return PATH_MAX > 0 ? PATH_MAX : 0;
+#else
+	long ret;
+
+	/* Make a copy of the path that we can modify. */
+	char *p = wget_strmemdup(path, length);
+
+	for (;;) {
+		errno = 0;
+
+		/* For an empty path query the current directory. */
+		ret = pathconf(*p ? p : ".", _PC_NAME_MAX);
+		if (!(ret < 0 && errno == ENOENT))
+			break;
+
+		/* The path does not exist yet, but may be created. */
+		/* Already at current or root directory, give up. */
+		if (!*p || strcmp(p, "/") == 0)
+		  break;
+
+		/* Remove one directory level and try again. */
+		char *d = strrchr(p, '/');
+		if (d == p)
+			p[1] = '\0';  /* check root directory */
+		else if (d)
+			*d = '\0';  /* remove last directory part */
+		else
+			*p = '\0';  /* check current directory */
+	}
+
+	xfree(p);
+
+	if (ret < 0) {
+		/* pathconf() has a message for us. */
+		if (errno)
+			error_printf(_("Failed to determine max length of file names"));
+
+		/* If (errno == 0) then there is no max length.
+		   Even on error return 0 so the caller can continue. */
+		return 0;
+	}
+
+	return ret;
+#endif
+}
+
+static bool maybe_truncate_filename(const char *fname, char **truncated)
+{
+	size_t dirname_length;
+	const char *dirname;
+	const char *basename = strrchr(fname, '/');
+
+	if (basename) {
+		dirname = fname;
+		dirname_length = basename - fname + 1;
+		basename++;
+	} else {
+		dirname = ".";
+		dirname_length = 1;
+		basename = fname;
+	}
+
+#ifdef _WIN32
+	size_t max_length = MAX_PATH;
+#else
+	size_t max_length = get_max_length(dirname, dirname_length);
+#endif
+	if (max_length >= CHOMP_BUFFER)
+		max_length -= CHOMP_BUFFER;
+
+	debug_printf("max filename length %zu\n", max_length);
+
+	if (max_length && strlen(basename) > max_length && truncated) {
+		*truncated = wget_strmemdup(fname, dirname_length + max_length);
+		debug_printf("truncated filename to %zu characters: '%s'\n", max_length, *truncated);
+		return true;
+	}
+
+	return false;
+}
+
 static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const char *fname, int flag,
 		const wget_iri *uri, const wget_iri *original_url, int ignore_patterns, wget_buffer *partial_content,
 		size_t max_partial_content, char **actual_file_name, const char *path)
@@ -3561,14 +3659,21 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		}
 
 		flag = O_APPEND;
+	} else {
+		// shorten filename if needed
+		if (maybe_truncate_filename(fname, &alloced_fname))
+			fname = alloced_fname;
 	}
 
 	if (config.adjust_extension && resp->content_type) {
 		const char *ext = NULL;
 
 		if (!wget_strcasecmp_ascii(resp->content_type, "text/html") || !wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
-			if (!wget_match_tail_nocase(fname, ".html") && !wget_match_tail_nocase(fname, ".htm"))
+			if (!wget_match_tail_nocase(fname, ".html") && !wget_match_tail_nocase(fname, ".htm")) {
+				char *tmp = alloced_fname;
 				fname = alloced_fname = wget_aprintf("%s%s", fname, ".html");
+				xfree(tmp);
+			}
 		} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
 			ext = ".css";
 		} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) {
@@ -3577,8 +3682,11 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 			ext = ".rss";
 		}
 
-		if (ext && !wget_match_tail_nocase(fname, ext))
+		if (ext && !wget_match_tail_nocase(fname, ext)) {
+			char *tmp = alloced_fname;
 			fname = alloced_fname = wget_aprintf("%s%s", fname, ext);
+			xfree(tmp);
+		}
 	}
 
 	if (!ignore_patterns && !config.filter_urls) {
@@ -3677,6 +3785,7 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 		if (unlink(fname) < 0 && errno != ENOENT) {
 			error_printf(_("Failed to unlink '%s' (errno=%d)\n"), fname, errno);
 			set_exit_status(EXIT_STATUS_IO);
+			xfree(alloced_fname);
 			xfree(unique);
 			return -1;
 		}

@@ -1047,7 +1047,7 @@ AC_CHECK_HEADERS([\
 AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([\
- strlcpy getuid fmemopen])
+ strlcpy getuid fmemopen pathconf])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
