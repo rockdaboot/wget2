@@ -926,10 +926,14 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		if (!iri->host)
 			reason = _("missing ip/host/domain");
 		else if (job && strcmp(job->iri->host, iri->host)) {
-			if (!config.span_hosts && !in_host_pattern_list(config.domains, iri->host))
-				reason = _("no host-spanning requested");
-			else if (config.span_hosts && in_host_pattern_list(config.exclude_domains, iri->host))
-				reason = _("domain explicitly excluded");
+			if (config.span_hosts) {
+				if (in_host_pattern_list(config.exclude_domains, iri->host))
+					reason = _("domain explicitly excluded");
+			} else {
+				if (!in_host_pattern_list(config.domains, iri->host)) {
+					reason = _("no host-spanning requested");
+				}
+			}
 		}
 
 		if (reason) {

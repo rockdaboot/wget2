@@ -33,7 +33,7 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
  test-http2-multiplexing$(EXEEXT) test-http2-stream-errors$(EXEEXT)\
  test-http2-connection-errors$(EXEEXT) test-http2-settings$(EXEEXT) \
  test-cert-key-usage$(EXEEXT) test-waitretry$(EXEEXT) \
- test-connection-failure$(EXEEXT)
+ test-connection-failure$(EXEEXT) test-span-hosts-domains$(EXEEXT)
 #test-post-file$(EXEEXT)
 
 if WITH_GPGME
@@ -112,3 +112,5 @@ libplugindb_la_SOURCES = test-plugin-dummy.c plugin_tests.h
 libplugindb_la_CPPFLAGS = $(AM_CPPFLAGS) -DTEST_SELECT_DATABASE
 libplugindb_la_LDFLAGS = $(dummy_ldflags)
 libplugindb_la_LIBADD = ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
+
+test_span_hosts_domains_SOURCES = test-span-hosts-domains.c
