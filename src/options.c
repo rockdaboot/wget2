@@ -3568,7 +3568,24 @@ int init(int argc, const char **argv)
 	debug_printf("Local URI encoding = '%s'\n", config.local_encoding);
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
-//Set environ proxy var only if a corresponding command-line proxy var isn't supplied
+	if (config.directory_prefix) {
+		char *cwd = getcwd(NULL, 0);
+		if (!cwd) {
+			error_printf_exit(_("Failed to get current directory\n"));
+		}
+		char *unresolved_path = wget_aprintf("%s/%s", cwd, config.directory_prefix);
+		xfree(cwd);
+		char *resolved_path = wget_path_sanitize(unresolved_path);
+		xfree(unresolved_path);
+		if (resolved_path) {
+			xfree(config.directory_prefix);
+			config.directory_prefix = resolved_path;
+		} else {
+			error_printf_exit(_("Failed to resolve directory prefix '%s' (%d, %s)\n"), config.directory_prefix, errno, strerror(errno));
+		}
+	}
+
+	// Set environ proxy var only if a corresponding command-line proxy var isn't supplied
 	if (config.proxy) {
 		if (!config.http_proxy)
 			config.http_proxy = wget_strdup(getenv("http_proxy"));

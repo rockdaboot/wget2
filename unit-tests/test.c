@@ -1718,6 +1718,63 @@ static void test_utils(void)
 	}
 }
 
+static void test_path_sanitize(void)
+{
+	static const struct {
+		const char *input;
+		const char *expected;
+	} sanitize_tests[] = {
+		{ "/root/foo/../bar/.//x.txt", "/root/bar/x.txt" },
+		{ "foo/../bar", "bar" },
+		{ "/foo/./bar", "/foo/bar" },
+		{ "/foo//bar", "/foo/bar" },
+		{ "foo/bar/..", "foo" },
+		{ "..", ".." },
+		{ "/../foo", "/foo" },
+		{ "", "." },
+		{ ".", "." },
+		{ "./foo", "foo" },
+		{ "/foo/../..", "/" },
+		{ "/foo/../../bar", "/bar" },
+		{ "foo/././bar", "foo/bar" },
+		{ "/foo/././bar", "/foo/bar" },
+		{ "foo/bar/..", "foo" },
+		{ "foo/bar/../..", "." },
+		{ "/foo/bar/..", "/foo" },
+		{ "/foo/bar/../..", "/" },
+		{ "/foo/bar/../../..", "/" },
+		{ "foo/..", "." },
+		{ "/foo/..", "/" },
+		{ "///foo///bar///", "/foo/bar" },
+		{ "foo//bar//baz", "foo/bar/baz" },
+		{ "/", "/" },
+		{ "/..", "/" },
+		{ "/../..", "/" },
+		{ "../a/..", ".." },
+		{ "/../a/..", "/" },
+		{ "/././.", "/" },
+		{ "././.", "." },
+	};
+
+	for (size_t i = 0; i < countof(sanitize_tests); i++) {
+		char *result = wget_path_sanitize(sanitize_tests[i].input);
+		if (result) {
+			if (strcmp(result, sanitize_tests[i].expected) == 0) {
+				ok++;
+			} else {
+				failed++;
+				info_printf("wget_path_sanitize test %zu failed: input='%s' expected='%s' got='%s'\n",
+					i, sanitize_tests[i].input, sanitize_tests[i].expected, result);
+			}
+			xfree(result);
+		} else {
+			failed++;
+			info_printf("wget_path_sanitize test %zu failed: input='%s' returned NULL\n",
+				i, sanitize_tests[i].input);
+		}
+	}
+}
+
 static void test_strcasecmp_ascii(void)
 {
 	static const struct test_data {
@@ -2774,6 +2831,7 @@ int main(int argc, const char **argv)
 	test_buffer();
 	test_buffer_printf();
 	test_utils();
+	test_path_sanitize();
 	test_strcasecmp_ascii();
 	test_hashing();
 	test_vector();

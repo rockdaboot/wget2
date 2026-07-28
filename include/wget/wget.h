@@ -350,6 +350,8 @@ WGETAPI char *
 	wget_human_readable(char *buf, size_t bufsize, uint64_t n);
 WGETAPI int
 	wget_get_screen_size(int *width, int *height);
+WGETAPI char * NULLABLE
+	wget_path_sanitize(const char *path) WGET_GCC_MALLOC;
 WGETAPI ssize_t
 	wget_fdgetline(char **buf, size_t *bufsize, int fd);
 WGETAPI ssize_t
