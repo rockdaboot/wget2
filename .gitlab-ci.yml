@@ -50,6 +50,7 @@ sast:
   variables:
     SAST_EXCLUDED_PATHS: examples, fuzz, tests, unit-tests
 include:
+  - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
   - template: Security/SAST.gitlab-ci.yml
 
 .defaults:
