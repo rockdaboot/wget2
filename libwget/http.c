@@ -220,6 +220,14 @@ void *wget_http_request_get_ptr(wget_http_request *req, int key)
 	}
 }
 
+// See RFC 9110
+bool wget_http_method_defines_content(const char *method)
+{
+	return (!wget_strcasecmp_ascii(method, "POST")
+	        || !wget_strcasecmp_ascii(method, "PUT")
+	        || !wget_strcasecmp_ascii(method, "PATCH"));
+}
+
 void wget_http_request_set_body(wget_http_request *req, const char *mimetype, char *body, size_t length)
 {
 	if (mimetype)
@@ -719,8 +727,8 @@ int wget_http_send_request(wget_http_connection *conn, wget_http_request **req)
 
 ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, int proxied, int port)
 {
-	char have_content_length = 0;
-	char check_content_length = req->body && req->body_length;
+	bool add_content_length = (req->body && req->body_length)
+		|| wget_http_method_defines_content(req->method);
 
 //	wget_buffer_sprintf(buf, "%s /%s HTTP/1.1\r\nHost: %s", req->method, req->esc_resource.data ? req->esc_resource.data : "",);
 
@@ -749,8 +757,8 @@ ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, in
 			wget_buffer_memcat(buf, "\r\n", 2);
 		}
 
-		if (check_content_length && !wget_strcasecmp_ascii(param->name, "Content-Length"))
-			have_content_length = 1; // User supplied Content-Length header, keep it unchecked
+		if (!wget_strcasecmp_ascii(param->name, "Content-Length"))
+			add_content_length = false; // User supplied Content-Length header, keep it unchecked
 	}
 
 /* The use of Proxy-Connection has been discouraged in RFC 7230 A.1.2.
@@ -758,7 +766,7 @@ ssize_t wget_http_request_to_buffer(wget_http_request *req, wget_buffer *buf, in
 		wget_buffer_strcat(buf, "Proxy-Connection: keep-alive\r\n");
 */
 
-	if (check_content_length && !have_content_length)
+	if (add_content_length)
 		wget_buffer_printf_append(buf, "Content-Length: %zu\r\n", req->body_length);
 
 	wget_buffer_memcat(buf, "\r\n", 2); // end-of-header

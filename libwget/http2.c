@@ -307,10 +307,14 @@ int wget_http2_send_request(wget_http_connection *conn, wget_http_request **req)
 	// init_nv(&nvs[3], ":authority", (*req)->esc_host.data);
 	nvp = &nvs[4];
 
+	bool add_content_length = ((*req)->body && (*req)->body_length)
+		|| wget_http_method_defines_content((*req)->method);
+
 	for (int it = 0; it < wget_vector_size((*req)->headers); it++) {
 		wget_http_header_param *param = wget_vector_get((*req)->headers, it);
 		if (!param)
 			continue;
+
 		if (!wget_strcasecmp_ascii(param->name, "Connection"))
 			continue;
 		if (!wget_strcasecmp_ascii(param->name, "Transfer-Encoding"))
@@ -319,11 +323,14 @@ int wget_http2_send_request(wget_http_connection *conn, wget_http_request **req)
 			init_nv(&nvs[3], ":authority", param->value);
 			continue;
 		}
+		if (!wget_strcasecmp_ascii(param->name, "Content-Length")) {
+			add_content_length = false; // Keep user supplied Content-Length header
+		}
 
 		init_nv(nvp++, param->name, param->value);
 	}
 
-	if ((*req)->body_length) {
+	if (add_content_length) {
 		wget_snprintf(length_str, sizeof(length_str), "%zu", (*req)->body_length);
 		init_nv(nvp++, "Content-Length", length_str);
 	}
