@@ -88,7 +88,7 @@ static void get_url(void *context, const char *url, size_t len, size_t pos)
 	wget_vector_add(ctx->uris, parsed_url);
 }
 
-static void urls_to_absolute(wget_vector *urls, wget_iri *base)
+static void urls_to_absolute(wget_vector *urls, const wget_iri *base)
 {
 	if (base && urls) {
 		wget_buffer buf;
@@ -108,7 +108,7 @@ static void urls_to_absolute(wget_vector *urls, wget_iri *base)
 	}
 }
 
-wget_vector *wget_css_get_urls(const char *css, size_t len, wget_iri *base, const char **encoding)
+wget_vector *wget_css_get_urls(const char *css, size_t len, const wget_iri *base, const char **encoding)
 {
 	css_context context = { .encoding = encoding };
 

@@ -105,6 +105,7 @@
 #define WGET_DEFAULT_LOGFILE "wget-log"
 
 #define CONTENT_TYPE_HTML 1
+#define CONTENT_TYPE_CSS 2
 typedef struct {
 	const char *
 		filename;
@@ -114,6 +115,8 @@ typedef struct {
 		base;
 	wget_html_parsed_result *
 		parsed;
+	wget_vector *
+		css_uris;
 	int
 		content_type;
 } conversion_t;
@@ -154,6 +157,8 @@ static void
 	css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
 	fork_to_background(void);
+static void
+	remember_for_conversion(const char *filename, const wget_iri *base, int content_type, const char *encoding, wget_html_parsed_result *parsed, wget_vector *css_uris);
 
 static unsigned int WGET_GCC_PURE
 	hash_url(const char *url);
@@ -1191,13 +1196,84 @@ static void convert_link_whole(const char *filename, conversion_t *conversion, w
 	}
 }
 
+static FILE *convert_file(FILE *fpout, conversion_t *conversion, wget_string *url, wget_buffer *buf, const char **data_ptr)
+{
+	// Preprocess URL the same way as in normalize_uri() to ensure consistent
+	// URL encoding between initial download and link conversion.
+	// This fixes the bug where URLs with %2C (comma) and %7C (pipe) in query
+	// strings fail to match during blacklist lookup.
+	char *urlpart = wget_strmemdup(url->p, url->len);
+	wget_xml_decode_entities_inline(urlpart);
+	wget_iri_unescape_url_inline(urlpart);
+
+	if (!wget_iri_relative_to_abs(conversion->base, urlpart, strlen(urlpart), buf)) {
+		xfree(urlpart);
+		return NULL;
+	}
+
+	xfree(urlpart);
+
+	// buf.data now holds the absolute URL as a string
+	wget_iri *iri = wget_iri_parse(buf->data, conversion->encoding);
+	blacklist_entry *blacklist_entry;
+	bool free_iri = false;
+
+	if (!iri) {
+		info_printf(_("Cannot resolve URI '%s'\n"), buf->data);
+		return NULL;
+	}
+
+	if (!(blacklist_entry = blacklist_add(iri))) {
+		blacklist_entry = blacklist_get(iri);
+		free_iri = true;
+	}
+
+	const char *filename = blacklist_entry->local_filename;
+
+	if (config.convert_links) {
+		convert_link_whole(filename, conversion, url, buf);
+		if (iri->fragment) {
+			wget_buffer_memcat(buf, "#", 1);
+			wget_buffer_strcat(buf, iri->fragment);
+		}
+	} else if (config.convert_file_only) {
+		convert_link_file_only(filename, url, buf);
+	}
+
+	if (free_iri)
+		wget_iri_free(&iri);
+
+	if (buf->length != url->len || strncmp(buf->data, url->p, url->len)) {
+		// conversion takes place, write to disk
+		if (!fpout) {
+			if (config.backup_converted) {
+				char *dstfile = wget_aprintf("%s.orig", conversion->filename);
+
+				if (rename(conversion->filename, dstfile) == -1) {
+					wget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
+				}
+
+				xfree(dstfile);
+			}
+			if (!(fpout = fopen(conversion->filename, "wb")))
+				wget_error_printf(_("Failed to write open %s (%d)"), conversion->filename, errno);
+		}
+		if (fpout) {
+			fwrite(*data_ptr, 1, url->p - *data_ptr, fpout);
+			fwrite(buf->data, 1, buf->length, fpout);
+			*data_ptr = url->p + url->len;
+		}
+	}
+
+	return fpout;
+}
+
 static void convert_links(void)
 {
 	FILE *fpout = NULL;
 	conversion_t *conversion;
 	wget_buffer buf;
 	char sbuf[1024];
-	bool free_iri = false;
 
 	wget_buffer_init(&buf, sbuf, sizeof(sbuf));
 
@@ -1215,87 +1291,39 @@ static void convert_links(void)
 			continue;
 		}
 
-		// cycle through all links found in the document
-		for (int it2 = 0; it2 < wget_vector_size(conversion->parsed->uris); it2++) {
-			wget_html_parsed_url *html_url = wget_vector_get(conversion->parsed->uris, it2);
-			wget_string *url = &html_url->url;
+		if (conversion->css_uris) {
+			// Process CSS file URLs
+			for (int it2 = 0; it2 < wget_vector_size(conversion->css_uris); it2++) {
+				wget_css_parsed_url *css_url = wget_vector_get(conversion->css_uris, it2);
+				wget_string *url = &(wget_string){ data + css_url->pos, css_url->len };
 
-			url->p = (size_t) url->p + data; // convert offset to pointer
-
-			if (url->len >= 1 && *url->p == '#') // ignore e.g. href='#'
-				continue;
-
-			// Preprocess URL the same way as in normalize_uri() to ensure consistent
-			// URL encoding between initial download and link conversion.
-			// This fixes the bug where URLs with %2C (comma) and %7C (pipe) in query
-			// strings fail to match during blacklist lookup.
-			char *urlpart = wget_strmemdup(url->p, url->len);
-			wget_xml_decode_entities_inline(urlpart);
-			wget_iri_unescape_url_inline(urlpart);
-
-			if (!wget_iri_relative_to_abs(conversion->base, urlpart, strlen(urlpart), &buf)) {
-				xfree(urlpart);
-				continue;
+				fpout = convert_file(fpout, conversion, url, &buf, &data_ptr);
 			}
 
-			xfree(urlpart);
+			if (fpout) {
+				fwrite(data_ptr, 1, (data + data_length) - data_ptr, fpout);
+				fclose(fpout);
+				fpout = NULL;
+			}
+		} else if (conversion->parsed) {
+			// cycle through all links found in the document
+			for (int it2 = 0; it2 < wget_vector_size(conversion->parsed->uris); it2++) {
+				wget_html_parsed_url *html_url = wget_vector_get(conversion->parsed->uris, it2);
+				wget_string *url = &html_url->url;
 
-			// buf.data now holds the absolute URL as a string
-			wget_iri *iri = wget_iri_parse(buf.data, conversion->encoding);
-			blacklist_entry *blacklist_entry;
-			free_iri = false;
+				url->p = (size_t) url->p + data; // convert offset to pointer
 
-			if (!iri) {
-				info_printf(_("Cannot resolve URI '%s'\n"), buf.data);
-				continue;
+				if (url->len >= 1 && *url->p == '#') // ignore e.g. href='#'
+					continue;
+
+				fpout = convert_file(fpout, conversion, url, &buf, &data_ptr);
 			}
 
-			if (!(blacklist_entry = blacklist_add(iri))) {
-				blacklist_entry = blacklist_get(iri);
-				free_iri = true;
+			if (fpout) {
+				fwrite(data_ptr, 1, (data + data_length) - data_ptr, fpout);
+				fclose(fpout);
+				fpout = NULL;
 			}
-
-			const char *filename = blacklist_entry->local_filename;
-
-			if (config.convert_links) {
-				convert_link_whole(filename, conversion, url, &buf);
-				if (iri->fragment) {
-					wget_buffer_memcat(&buf, "#", 1);
-					wget_buffer_strcat(&buf, iri->fragment);
-				}
-			} else if (config.convert_file_only)
-				convert_link_file_only(filename, url, &buf);
-
-			if (free_iri)
-				wget_iri_free(&iri);
-
-			if (buf.length != url->len || strncmp(buf.data, url->p, url->len)) {
-				// conversion takes place, write to disk
-				if (!fpout) {
-					if (config.backup_converted) {
-						char *dstfile = wget_aprintf("%s.orig", conversion->filename);
-
-						if (rename(conversion->filename, dstfile) == -1) {
-							wget_error_printf(_("Failed to rename %s to %s (%d)"), conversion->filename, dstfile, errno);
-						}
-
-						xfree(dstfile);
-					}
-					if (!(fpout = fopen(conversion->filename, "wb")))
-						wget_error_printf(_("Failed to write open %s (%d)"), conversion->filename, errno);
-				}
-				if (fpout) {
-					fwrite(data_ptr, 1, url->p - data_ptr, fpout);
-					fwrite(buf.data, 1, buf.length, fpout);
-					data_ptr = url->p + url->len;
-				}
-			}
-		}
-
-		if (fpout) {
-			fwrite(data_ptr, 1, (data + data_length) - data_ptr, fpout);
-			fclose(fpout);
-			fpout = NULL;
 		}
 
 		xfree(data);
@@ -2712,10 +2740,11 @@ static void free_conversion(void *conversion)
 	xfree(c->encoding);
 	wget_iri_free((wget_iri **)&c->base);
 	wget_html_free_urls_inline(&c->parsed);
+	wget_vector_free(&c->css_uris);
 	xfree(c);
 }
 
-static void remember_for_conversion(const char *filename, const wget_iri *base, int content_type, const char *encoding, wget_html_parsed_result *parsed)
+static void remember_for_conversion(const char *filename, const wget_iri *base, int content_type, const char *encoding, wget_html_parsed_result *parsed, wget_vector *css_uris)
 {
 	wget_thread_mutex_lock(conversion_mutex);
 
@@ -2728,16 +2757,19 @@ static void remember_for_conversion(const char *filename, const wget_iri *base, 
 	}
 
 	if (!wget_stringmap_get(conversions, filename, NULL)) {
-		conversion_t *conversion = wget_malloc(sizeof(conversion_t));
+		conversion_t *conversion = wget_calloc(1, sizeof(conversion_t));
 		conversion->filename = wget_strdup(filename);
 		conversion->encoding = wget_strdup(encoding);
 		conversion->base = wget_iri_clone(base);
-		conversion->content_type = content_type; // TODO: remove if unused
+		conversion->content_type = content_type;
 		conversion->parsed = parsed;
+		conversion->css_uris = css_uris;
 
 		wget_stringmap_put(conversions, conversion->filename, conversion);
-	} else {
+	} else if (content_type == CONTENT_TYPE_HTML) {
 		wget_html_free_urls_inline(&parsed);
+	} else if (content_type == CONTENT_TYPE_CSS) {
+		wget_vector_free(&css_uris);
 	}
 
 	wget_thread_mutex_unlock(conversion_mutex);
@@ -2759,7 +2791,7 @@ static unsigned int WGET_GCC_PURE hash_url(const char *url)
 /*
  * helper function: percent-unescape, convert to utf-8, create URL string using base
  */
-static int normalize_uri(const wget_iri *base, wget_string *url, const char *encoding, wget_buffer *buf)
+static int normalize_uri(const wget_iri *base, const wget_string *url, const char *encoding, wget_buffer *buf)
 {
 	char *urlpart = wget_strmemdup(url->p, url->len);
 	char *urlpart_encoded;
@@ -2953,7 +2985,7 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 			wget_html_parsed_url *html_url = wget_vector_get(parsed->uris, it);
 			html_url->url.p = (const char *) (html_url->url.p - html); // convert pointer to offset
 		}
-		remember_for_conversion(fname, base, CONTENT_TYPE_HTML, encoding, parsed);
+		remember_for_conversion(fname, base, CONTENT_TYPE_HTML, encoding, parsed, NULL);
 		parsed = NULL; // 'parsed' has been consumed
 	}
 
@@ -3302,6 +3334,11 @@ void css_parse(JOB *job, const char *data, size_t len, const char *encoding, con
 		xfree(context.encoding);
 
 	wget_buffer_deinit(&context.uri_buf);
+
+	if ((config.convert_links || config.convert_file_only) && !config.delete_after) {
+		wget_vector *css_uris = wget_css_get_urls(data, len, base, NULL);
+		remember_for_conversion(job->blacklist_entry->local_filename, base, CONTENT_TYPE_CSS, context.encoding, NULL, css_uris);
+	}
 }
 
 void css_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base)

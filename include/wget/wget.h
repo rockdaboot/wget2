@@ -1744,7 +1744,7 @@ WGETAPI wget_vector *
 	wget_css_get_urls(
 		const char *css,
 		size_t len,
-		wget_iri *base,
+		const wget_iri *base,
 		const char **encoding) WGET_GCC_NONNULL((1));
 WGETAPI wget_vector *
 	wget_css_get_urls_from_localfile(
