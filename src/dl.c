@@ -70,7 +70,7 @@ static char *convert_to_path_if_not(const char *str)
 
 #if defined _WIN32
 	if (strchr(str, '\\'))
-		return NULL
+		return NULL;
 #endif
 
 	return wget_aprintf("./%s", str);
