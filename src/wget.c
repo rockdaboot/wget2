@@ -698,6 +698,17 @@ static bool matches_parent(const wget_iri *iri)
 	return false;
 }
 
+static const char *redact_url(const char *url)
+{
+	if (!url)
+		return "<NULL>";
+
+	if (strchr(url, '@') || strstr(url, "%40"))
+		return _("<redacted>");
+
+	return url;
+}
+
 // Add URLs given by user (command line, file or -i option).
 // Needs to be thread-save.
 static void queue_url_from_local(const char *url, wget_iri *base, const char *encoding, int flags)
@@ -716,7 +727,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	iri = wget_iri_parse_base(base, url, encoding, WGET_IRI_KEEP_AS_IS);
 
 	if (!iri) {
-		error_printf(_("Failed to parse URI '%s'\n"), url);
+		error_printf(_("Failed to parse URI '%s'\n"), redact_url(url));
 		return;
 	}
 
@@ -734,7 +745,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	}
 
 	if (!wget_iri_supported(iri)) {
-		error_printf(_("URI scheme not supported: '%s'\n"), url);
+		error_printf(_("URI scheme not supported: '%s'\n"), iri->safe_uri);
 		wget_iri_free(&iri);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
