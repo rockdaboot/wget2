@@ -222,3 +222,7 @@ A copy of the GNU General Public License can be found in the file LICENSE
 in the top directory of the official source distribution. The license is
 also available in several formats through the World Wide Web, or
 via http://www.gnu.org/licenses/licenses.html#GPL .
+
+# Sponsored by
+
+[![JetBrains logo](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSource)
