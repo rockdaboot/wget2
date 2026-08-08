@@ -785,7 +785,7 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 	// only download content from hosts given on the command line or from input file
 	if (wget_vector_contains(config.exclude_domains, iri->host)) {
 		// download from this scheme://domain are explicitly not wanted
-		debug_printf("not requesting '%s'. (Exclude Domains)\n", iri->safe_uri);
+		debug_printf("not requesting '%s'. (exclude domains)\n", iri->safe_uri);
 		wget_thread_mutex_unlock(downloader_mutex);
 		plugin_db_forward_url_verdict_free(&plugin_verdict);
 		return;
@@ -797,19 +797,27 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 		plugin_verdict.alt_local_filename = NULL;
 	}
 
-	if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
-		debug_printf("not requesting '%s'. (Exclude Domains)\n", iri->safe_uri);
-		if (config.recursive || config.page_requisites) {
-			parse_only = 1;
+	if (!config.clobber) {
+		if ((blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0)
+		   || (config.output_document && strcmp(config.output_document, "-") && access(config.output_document, F_OK) == 0))
+		{
+			if (config.recursive || config.page_requisites) {
+				debug_printf("not requesting '%s'. (reading from disk)\n", iri->safe_uri);
+				parse_only = 1;
+			} else {
+				debug_printf("not requesting '%s'. (file already exists)\n", iri->safe_uri);
+				wget_thread_mutex_unlock(downloader_mutex);
+				plugin_db_forward_url_verdict_free(&plugin_verdict);
+				wget_iri_free(&iri);
+				return;
+			}
 		}
 	}
 
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive) {
-			if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
-				debug_printf("not requesting '%s'. (Exclude Domains)\n", iri->safe_uri);
-			} else if (config.robots || config.follow_sitemaps) {
+			if (config.robots || config.follow_sitemaps) {
 				// create a special job for downloading robots.txt (before anything else)
 				host_add_robotstxt_job(host, iri, encoding, http_fallback);
 			}
@@ -987,7 +995,7 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 		if (job && (flags & URL_FLG_REDIRECTION) && is_parent(job->iri)) {
 			add_parent(iri);
 		} else if (!matches_parent(iri)) {
-			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), url);
+			info_printf(_("URL '%s' not followed (parent ascending not allowed)\n"), iri->safe_uri);
 			goto out;
 		}
 	}
@@ -1003,21 +1011,28 @@ static void queue_url_from_remote(JOB *job, const char *encoding, const char *ur
 			xfree(blacklistp->local_filename);
 			blacklistp->local_filename = wget_strdup(job->blacklist_entry->local_filename);
 		}
+	}
 
-		if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
-			info_printf(_("URL '%s' not followed (file already exists)\n"), iri->safe_uri);
+	if (!config.clobber) {
+		if ((blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0)
+		   || (config.output_document && strcmp(config.output_document, "-") && access(config.output_document, F_OK) == 0))
+		{
 			if (config.recursive && (!config.level || !job || (job && job->level < config.level + config.page_requisites))) {
+				info_printf(_("URL '%s' not followed (reading from disk)\n"), iri->safe_uri);
 				parse_only = 1;
+			} else {
+				info_printf(_("URL '%s' not followed (file already exists)\n"), iri->safe_uri);
+				wget_iri_free(&iri);
+				goto out;
 			}
 		}
 	}
 
+
 	if ((host = host_add(iri))) {
 		// a new host entry has been created
 		if (config.recursive) {
-			if (!config.clobber && blacklistp->local_filename && access(blacklistp->local_filename, F_OK) == 0) {
-				info_printf(_("URL '%s' not followed (file already exists)\n"), iri->safe_uri);
-			} else if (config.robots || config.follow_sitemaps) {
+			if (config.robots || config.follow_sitemaps) {
 				// create a special job for downloading robots.txt (before anything else)
 				host_add_robotstxt_job(host, iri, encoding, http_fallback);
 			}
