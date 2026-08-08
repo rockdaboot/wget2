@@ -760,6 +760,14 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 			http_fallback = 1;
 	}
 
+	if (wget_vector_contains(config.exclude_domains, iri->host)) {
+		// download from this scheme://domain are explicitly not wanted
+		debug_printf("not requesting '%s'. (exclude domains)\n", iri->safe_uri);
+		wget_iri_free(&iri);
+		plugin_db_forward_url_verdict_free(&plugin_verdict);
+		return;
+	}
+
 	wget_thread_mutex_lock(downloader_mutex);
 
 	if (!(blacklistp = blacklist_add(iri))) {
@@ -780,15 +788,6 @@ static void queue_url_from_local(const char *url, wget_iri *base, const char *en
 
 		if (!config.parent)
 			add_parent(iri);
-	}
-
-	// only download content from hosts given on the command line or from input file
-	if (wget_vector_contains(config.exclude_domains, iri->host)) {
-		// download from this scheme://domain are explicitly not wanted
-		debug_printf("not requesting '%s'. (exclude domains)\n", iri->safe_uri);
-		wget_thread_mutex_unlock(downloader_mutex);
-		plugin_db_forward_url_verdict_free(&plugin_verdict);
-		return;
 	}
 
 	if (plugin_verdict.alt_local_filename) {
