@@ -4244,10 +4244,15 @@ static wget_http_request *http_create_request(const wget_iri *iri, JOB *job)
 			unlink(local_filename);
 		}
 
-		if (config.continue_download) {
-			long long file_size = get_file_size(local_filename);
-			if (file_size >= 0)
-				wget_http_add_header_printf(req, "Range", "bytes=%lld-", file_size);
+		else if (config.continue_download) {
+			struct stat st;
+
+			if (stat(local_filename, &st) == 0 && S_ISREG(st.st_mode)) {
+				long long file_size = get_file_size(local_filename);
+
+				if (file_size >= 0)
+					wget_http_add_header_printf(req, "Range", "bytes=%lld-", file_size);
+			}
 		}
 
 		if (config.start_pos)
