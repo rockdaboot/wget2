@@ -2859,9 +2859,9 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 	char sbuf[1024];
 	int convert_links = config.convert_links && !config.delete_after;
 	int convert_file_only = config.convert_file_only && !config.delete_after;
-	bool page_requisites = config.recursive && config.page_requisites && config.level && level < config.level;
+	bool page_requisites = config.recursive && config.page_requisites && (!config.level || (config.level && level < config.level));
 
-	//	info_printf(_("page_req %d: %d %d %d %d\n"), page_requisites, config.recursive, config.page_requisites, config.level, level);
+	// debug_printf("page_req %d: %d %d %d %d %s\n", page_requisites, config.recursive, config.page_requisites, config.level, level, job->iri->uri);
 
 	// https://html.spec.whatwg.org/#determining-the-character-encoding
 	if (encoding && encoding == config.remote_encoding) {

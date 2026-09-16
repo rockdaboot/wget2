@@ -226,6 +226,60 @@ int main(void)
 				"Content-Type: image/svg+xml",
 			}
 		},
+		// Assets in subdirectories for --mirror --no-parent --page-requisites --convert-links test
+		{	.name = "/subfolder/index.html",
+			.code = "200 Dontcare",
+			.body =
+				"<html><head><title>Subfolder Page</title>" \
+				"<link rel=\"stylesheet\" href=\"/subfolder/css/style.css\" />" \
+				"<link rel=\"stylesheet\" href=\"/assets/theme.css\" />" \
+				"<script src=\"/subfolder/css/script.js\"></script>" \
+				"<img src=\"/subfolder/assets/logo.png\" />" \
+				"</head><body><p>Content in subfolder.</p>" \
+				"<a href=\"/subfolder/other.html\">Other page</a>" \
+				"</body></html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
+		{	.name = "/subfolder/other.html",
+			.code = "200 Dontcare",
+			.body =
+				"<html><head><title>Other Page</title>" \
+				"<link rel=\"stylesheet\" href=\"/subfolder/css/style.css\" />" \
+				"</head><body><p>Other page content.</p></body></html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
+		{	.name = "/subfolder/css/style.css",
+			.code = "200 Dontcare",
+			.body = "body { color: red; }",
+			.headers = {
+				"Content-Type: text/css",
+			}
+		},
+		{	.name = "/assets/theme.css",
+			.code = "200 Dontcare",
+			.body = ".theme { background: blue; }",
+			.headers = {
+				"Content-Type: text/css",
+			}
+		},
+		{	.name = "/subfolder/css/script.js",
+			.code = "200 Dontcare",
+			.body = "console.log('hello');",
+			.headers = {
+				"Content-Type: application/javascript",
+			}
+		},
+		{	.name = "/subfolder/assets/logo.png",
+			.code = "200 Dontcare",
+			.body = "PNG data",
+			.headers = {
+				"Content-Type: image/png",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -281,6 +335,32 @@ int main(void)
 			{ urls[15].name + 1, urls[15].body }, // import2.css
 			{ urls[16].name + 1, urls[16].body }, // background.css
 			{	NULL } },
+		0);
+
+	// test --mirror --no-parent --page-requisites --convert-links with assets in /subfolder/css/ and /subfolder/assets/
+	wget_test(
+		WGET_TEST_OPTIONS, "--mirror --no-parent --page-requisites --convert-links -nH",
+		WGET_TEST_REQUEST_URL, "subfolder/index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[22].name + 1,
+				"<html><head><title>Subfolder Page</title>" \
+				"<link rel=\"stylesheet\" href=\"css/style.css\" />" \
+				"<link rel=\"stylesheet\" href=\"../assets/theme.css\" />" \
+				"<script src=\"css/script.js\"></script>" \
+				"<img src=\"assets/logo.png\" />" \
+				"</head><body><p>Content in subfolder.</p>" \
+				"<a href=\"other.html\">Other page</a>" \
+				"</body></html>" },
+			{ urls[23].name + 1,
+				"<html><head><title>Other Page</title>" \
+				"<link rel=\"stylesheet\" href=\"css/style.css\" />" \
+				"</head><body><p>Other page content.</p></body></html>" },
+			{ urls[24].name + 1, urls[24].body },  // subfolder/css/style.css
+			{ urls[25].name + 1, urls[25].body },  // subfolder/assets/theme.css
+			{ urls[26].name + 1, urls[26].body },  // subfolder/css/script.js
+			{ urls[27].name + 1, urls[27].body },  // /assets/logo.png
+			{ NULL } },
 		0);
 
 	exit(EXIT_SUCCESS);
