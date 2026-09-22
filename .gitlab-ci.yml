@@ -444,3 +444,80 @@ coverity:
     when: on_failure
     paths:
       - cov-int/*.txt
+
+MacOS/AppleClang:
+  stage: stage1-testing
+  extends:
+    - .defaults
+  tags:
+    - saas-macos-medium-m1
+  image: macos-15-xcode-16
+  variables:
+    GIT_STRATEGY: none
+  cache:
+    key: "$CI_JOB_NAME-macos"
+    paths:
+      - cache/
+      - homebrew-cache/
+  before_script:
+    # ccache
+    - mkdir -p cache
+    - export CCACHE_BASEDIR="$PWD"
+    - export CCACHE_DIR="$PWD/cache"
+
+    # Homebrew cache
+    - mkdir -p homebrew-cache
+    - export HOMEBREW_CACHE="$PWD/homebrew-cache"
+
+    # Apple Clang
+    - export CC="ccache clang"
+    - export CXX="ccache clang++"
+
+    # Homebrew dependencies
+    - brew update
+    - brew install \
+        ccache \
+        pkgconf \
+        gettext \
+        libtool \
+        libidn2 \
+        libunistring \
+        brotli \
+        zstd \
+        libpsl \
+        nghttp2 \
+        pcre2 \
+        openssl@3 \
+        libmicrohttpd
+
+    # Homebrew paths
+    - export HOMEBREW_PREFIX="$(brew --prefix)"
+    - export PKG_CONFIG_PATH="$HOMEBREW_PREFIX/lib/pkgconfig:$HOMEBREW_PREFIX/share/pkgconfig"
+
+    # OpenSSL
+    - export PKG_CONFIG_PATH="$(brew --prefix openssl@3)/lib/pkgconfig:$PKG_CONFIG_PATH"
+
+    # Compiler and linker flags
+    - export CPPFLAGS="-I$HOMEBREW_PREFIX/include -I$(brew --prefix openssl@3)/include"
+    - export LDFLAGS="-L$HOMEBREW_PREFIX/lib -L$(brew --prefix openssl@3)/lib"
+  script:
+    - export CFLAGS="$CFLAGS_DEFAULT"
+
+    - tar xf wget2-*.gz
+    - rm wget2-*.gz
+    - cd wget2-*
+
+    - ./configure \
+        $CONFIGURE_BASE_FLAGS \
+        --with-ssl=openssl
+
+    - make -j$(sysctl -n hw.ncpu) -C lib
+
+    - make check \
+        -j$(sysctl -n hw.ncpu) \
+        CFLAGS="$CFLAGS_DEFAULT -Werror"
+  after_script:
+    - export CCACHE_BASEDIR="$PWD"
+    - export CCACHE_DIR="$PWD/cache"
+    - ccache -s 2>/dev/null
+  allow_failure: true
