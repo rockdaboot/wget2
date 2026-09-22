@@ -246,6 +246,12 @@ const char *wget_str_to_ascii(const char *src)
 	if (wget_str_needs_encoding(src)) {
 		char *asc = NULL;
 		int rc;
+
+		debug_printf("toASCII: src='%s', strlen=%zu\n", src, strlen(src));
+		for (const unsigned char *p = (const unsigned char *)src; *p; ++p)
+				debug_printf("%02x ", *p);
+		debug_printf("\n");
+
 		if ((rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_NONTRANSITIONAL|IDN2_USE_STD3_ASCII_RULES)) != IDN2_OK)
 			rc = idn2_lookup_u8((uint8_t *)src, (uint8_t **)&asc, IDN2_TRANSITIONAL|IDN2_USE_STD3_ASCII_RULES);
 		if (rc == IDN2_OK)

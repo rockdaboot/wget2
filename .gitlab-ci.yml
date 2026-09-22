@@ -64,7 +64,9 @@ include:
     when: on_failure
     paths:
       - ./**/config.h
+      - ./**/config.status
       - ./**/*.log
+      - ./**/Makefile
   dependencies:
     - Build-Tarball
   needs: ["Build-Tarball"]
@@ -455,13 +457,22 @@ MacOS/AppleClang:
   tags:
     - saas-macos-medium-m1
   image: macos-15-xcode-16
+#  image: macos-26-xcode-26
   variables:
     GIT_STRATEGY: none
+    LANG: en_US.UTF-8
+    LC_ALL: en_US.UTF-8
   cache:
     key: "$CI_JOB_NAME-macos"
     paths:
       - cache/
       - homebrew-cache/
+  variables:
+    HOMEBREW_NO_AUTO_UPDATE: 1
+    HOMEBREW_NO_INSTALL_UPGRADE: 1
+    HOMEBREW_NO_INSTALL_CLEANUP: 1
+    HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
+
   before_script:
     # ccache
     - mkdir -p cache
@@ -472,13 +483,10 @@ MacOS/AppleClang:
     - mkdir -p homebrew-cache
     - export HOMEBREW_CACHE="$PWD/homebrew-cache"
 
-    # Apple Clang
-    - export CC="ccache clang"
-    - export CXX="ccache clang++"
-
     # Homebrew dependencies
     - brew update
-    - brew install \
+    - |
+      brew install \
         ccache \
         pkgconf \
         gettext \
@@ -491,36 +499,38 @@ MacOS/AppleClang:
         nghttp2 \
         pcre2 \
         openssl@3 \
-        libmicrohttpd
+        libmicrohttpd \
+        libiconv
+
+    # ccache
+    - export PATH="$(brew --prefix ccache)/libexec:$(brew --prefix ccache)/libexec/gnubin:$(brew --prefix libiconv)/bin:$PATH"
+    - export CC="ccache clang"
+    - export CXX="ccache clang++"
 
     # Homebrew paths
     - export HOMEBREW_PREFIX="$(brew --prefix)"
+    - export LIBICONV_PREFIX="$(brew --prefix libiconv)"
     - export PKG_CONFIG_PATH="$HOMEBREW_PREFIX/lib/pkgconfig:$HOMEBREW_PREFIX/share/pkgconfig"
 
     # OpenSSL
     - export PKG_CONFIG_PATH="$(brew --prefix openssl@3)/lib/pkgconfig:$PKG_CONFIG_PATH"
 
     # Compiler and linker flags
-    - export CPPFLAGS="-I$HOMEBREW_PREFIX/include -I$(brew --prefix openssl@3)/include"
-    - export LDFLAGS="-L$HOMEBREW_PREFIX/lib -L$(brew --prefix openssl@3)/lib"
+    - export CPPFLAGS="-I$HOMEBREW_PREFIX/include -I$(brew --prefix openssl@3)/include -I$LIBICONV_PREFIX/include"
+    - export LDFLAGS="-L$HOMEBREW_PREFIX/lib -L$(brew --prefix openssl@3)/lib -L$LIBICONV_PREFIX/lib -Wl,-framework -Wl,CoreFoundation"
+
   script:
     - export CFLAGS="$CFLAGS_DEFAULT"
-
     - tar xf wget2-*.gz
     - rm wget2-*.gz
     - cd wget2-*
-
-    - ./configure \
-        $CONFIGURE_BASE_FLAGS \
-        --with-ssl=openssl
-
+    - ./configure $CONFIGURE_BASE_FLAGS --with-ssl=openssl
     - make -j$(sysctl -n hw.ncpu) -C lib
+    - make check -j$(sysctl -n hw.ncpu)
 
-    - make check \
-        -j$(sysctl -n hw.ncpu) \
-        CFLAGS="$CFLAGS_DEFAULT -Werror"
   after_script:
     - export CCACHE_BASEDIR="$PWD"
     - export CCACHE_DIR="$PWD/cache"
     - ccache -s 2>/dev/null
-  allow_failure: true
+
+  allow_failure: false

@@ -193,6 +193,7 @@ AS_IF([test -n "$WARN_CFLAGS"], [
     WARN_CFLAGS="$WARN_CFLAGS -Wno-covered-switch-default -Wno-unused-macros"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-missing-field-initializers"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-nullability-extension -Wno-nullability-completeness"
+    WARN_CFLAGS="$WARN_CFLAGS -Wno-pre-c23-compat"
 
     CLANG_VERSION=$($CC -dumpversion | cut -f1 -d.)
     AS_IF([test $CLANG_VERSION -ge 11], [
