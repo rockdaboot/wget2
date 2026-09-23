@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include <wget.h>
 #include <xstrtol.h>
@@ -292,12 +293,12 @@ static void ocsp_db_add_fingerprint_entry(wget_ocsp_db *ocsp_db, ocsp_entry *ocs
 				old->mtime = ocsp->mtime;
 				old->maxage = ocsp->maxage;
 				old->valid = ocsp->valid;
-				debug_printf("update OCSP cert %s (maxage=%lld,valid=%d)\n", old->key, (long long)old->maxage, old->valid);
+				debug_printf("update OCSP cert %s (maxage=%" PRId64 ",valid=%d)\n", old->key, old->maxage, old->valid);
 			}
 			free_ocsp(ocsp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'ocsp'
-			debug_printf("add OCSP cert %s (maxage=%lld,valid=%d)\n", ocsp->key, (long long)ocsp->maxage, ocsp->valid);
+			debug_printf("add OCSP cert %s (maxage=%" PRId64 ",valid=%d)\n", ocsp->key, ocsp->maxage, ocsp->valid);
 			wget_hashmap_put(ocsp_db->fingerprints, ocsp, ocsp);
 			// no need to free anything here
 		}
@@ -357,13 +358,13 @@ static void ocsp_db_add_host_entry(wget_ocsp_db *ocsp_db, ocsp_entry *ocsp)
 				old->mtime = ocsp->mtime;
 				old->maxage = ocsp->maxage;
 				old->valid = ocsp->valid;
-				debug_printf("update OCSP host %s (maxage=%lld)\n", old->key, (long long)old->maxage);
+				debug_printf("update OCSP host %s (maxage=%" PRId64 ")\n", old->key, old->maxage);
 			}
 			free_ocsp(ocsp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'ocsp'
 			wget_hashmap_put(ocsp_db->hosts, ocsp, ocsp);
-			debug_printf("add OCSP host %s (maxage=%lld)\n", ocsp->key, (long long)ocsp->maxage);
+			debug_printf("add OCSP host %s (maxage=%" PRId64 ")\n", ocsp->key, ocsp->maxage);
 			// no need to free anything here
 		}
 	}
@@ -543,7 +544,7 @@ static int ocsp_save_fingerprint(void *_fp, const void *_ocsp, WGET_GCC_UNUSED v
 	FILE *fp = _fp;
 	const ocsp_entry *ocsp = _ocsp;
 
-	wget_fprintf(fp, "%s %lld %lld %d\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime, ocsp->valid);
+	wget_fprintf(fp, "%s %" PRId64 " %" PRId64 " %d\n", ocsp->key, ocsp->maxage, ocsp->mtime, ocsp->valid);
 	return 0;
 }
 
@@ -553,7 +554,7 @@ static int ocsp_save_host(void *_fp, const void *_ocsp, WGET_GCC_UNUSED void *v)
 	FILE *fp = _fp;
 	const ocsp_entry *ocsp = _ocsp;
 
-	wget_fprintf(fp, "%s %lld %lld\n", ocsp->key, (long long)ocsp->maxage, (long long)ocsp->mtime);
+	wget_fprintf(fp, "%s %" PRId64 " %" PRId64 "\n", ocsp->key, ocsp->maxage, ocsp->mtime);
 	return 0;
 }
 
