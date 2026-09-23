@@ -55,10 +55,10 @@
 
 #if defined __APPLE__ && defined __MACH__ && defined CONNECT_DATA_IDEMPOTENT && defined CONNECT_RESUME_ON_READ_WRITE
 # define TCP_FASTOPEN_OSX
-#elif defined TCP_FASTOPEN_CONNECT // since Linux 4.11
-# define TCP_FASTOPEN_LINUX_411
+#elif defined TCP_FASTOPEN_CONNECT && !defined TEST_LEGACY_TFO_API
+# define TCP_FASTOPEN_LINUX_411 // for Linux 4.11+: newer client API
 #elif defined TCP_FASTOPEN && defined MSG_FASTOPEN
-# define TCP_FASTOPEN_LINUX
+# define TCP_FASTOPEN_LINUX // for Linux 3.7+: legacy client API
 #endif
 
 #include <wget.h>
@@ -993,11 +993,11 @@ ssize_t wget_tcp_write(wget_tcp *tcp, const char *buf, size_t count)
 				/* fallback from fastopen, e.g. when fastopen is disabled in system */
 				tcp->tcp_fastopen = 0;
 
-				set_socket_timeout(sockfd, tcp->connect_timeout);
+				set_socket_timeout(tcp->sockfd, tcp->connect_timeout);
 
 				int rc = connect(tcp->sockfd, tcp->connect_addrinfo->ai_addr, tcp->connect_addrinfo->ai_addrlen);
 
-				set_socket_timeout(sockfd, tcp->timeout);
+				set_socket_timeout(tcp->sockfd, tcp->timeout);
 
 				if (rc < 0
 					&& errno != EAGAIN

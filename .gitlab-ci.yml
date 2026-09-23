@@ -165,6 +165,9 @@ Debian/Unstable:
     - cd wget2-*
     - ./configure $CONFIGURE_BASE_FLAGS
     - make -j$(nproc) -C lib
+    # quick compile check for legacy TFO API (Linux [3.7 ... 4.10])
+    - make -j$(nproc) -C libwget CFLAGS="$CFLAGS_DEFAULT -Werror -DTEST_LEGACY_TFO_API"
+    - make -C libwget clean
     - make -j$(nproc) check CFLAGS="$CFLAGS_DEFAULT -Werror"
 
 Debian/WolfSSL:
