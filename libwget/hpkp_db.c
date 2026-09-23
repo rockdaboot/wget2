@@ -28,6 +28,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <inttypes.h>
 #include "private.h"
 #include "hpkp.h"
 
@@ -231,11 +232,11 @@ void wget_hpkp_db_add(wget_hpkp_db *hpkp_db, wget_hpkp **_hpkp)
 			wget_vector_free(&old->pins);
 			old->pins = hpkp->pins;
 			hpkp->pins = NULL;
-			debug_printf("update HPKP %s (maxage=%lld, includeSubDomains=%d)\n", old->host, (long long)old->maxage, old->include_subdomains);
+			debug_printf("update HPKP %s (maxage=%" PRId64 ", includeSubDomains=%d)\n", old->host, old->maxage, old->include_subdomains);
 			wget_hpkp_free(hpkp);
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hpkp'
-			/* debug_printf("add HPKP %s (maxage=%lld, includeSubDomains=%d)\n", hpkp->host, (long long)hpkp->maxage, hpkp->include_subdomains); */
+			/* debug_printf("add HPKP %s (maxage=%" PRId64 ", includeSubDomains=%d)\n", hpkp->host, hpkp->maxage, hpkp->include_subdomains); */
 			wget_hashmap_put(hpkp_db->entries, hpkp, hpkp);
 			// no need to free anything here
 		}
@@ -249,7 +250,6 @@ void wget_hpkp_db_add(wget_hpkp_db *hpkp_db, wget_hpkp **_hpkp)
 static int hpkp_db_load(wget_hpkp_db *hpkp_db, FILE *fp)
 {
 	int64_t created, max_age;
-	long long _created, _max_age;
 	int include_subdomains;
 
 	wget_hpkp *hpkp = NULL;
@@ -286,9 +286,7 @@ static int hpkp_db_load(wget_hpkp_db *hpkp_db, FILE *fp)
 		if (*linep != '*') {
 			wget_hpkp_db_add(hpkp_db, &hpkp);
 
-			if (sscanf(linep, "%255s %d %lld %lld", host, &include_subdomains, &_created, &_max_age) == 4) {
-				created = _created;
-				max_age = _max_age;
+			if (sscanf(linep, "%255s %d %" SCNi64 " %" SCNi64, host, &include_subdomains, &created, &max_age) == 4) {
 				if (created < 0 || max_age < 0 || created >= INT64_MAX / 2 || max_age >= INT64_MAX / 2) {
 					max_age = 0; // avoid integer overflow here
 				}
@@ -389,7 +387,7 @@ static int hpkp_save(void *_fp, const void *_hpkp, WGET_GCC_UNUSED void *v)
 	else if (hpkp->expires < time(NULL))
 		debug_printf("HPKP: drop '%s', expired\n", hpkp->host);
 	else {
-		wget_fprintf(fp, "%s %d %lld %lld\n", hpkp->host, hpkp->include_subdomains, (long long) hpkp->created, (long long) hpkp->maxage);
+		wget_fprintf(fp, "%s %d %" PRIi64 " %" PRIi64 "\n", hpkp->host, hpkp->include_subdomains, hpkp->created, hpkp->maxage);
 
 		if (ferror(fp))
 			return -1;
