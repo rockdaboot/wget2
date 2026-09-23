@@ -36,6 +36,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include <c-ctype.h>
 #include <xstrtol.h>
@@ -382,7 +383,7 @@ static int cookie_normalize_cookie(const wget_iri *iri, wget_cookie *cookie)
 /*
 	debug_printf("normalize cookie %s=%s\n", cookie->name, cookie->value);
 	debug_printf("<  %s=%s\n", cookie->name, cookie->value);
-	debug_printf("<  expires=%lld max-age=%lld\n", (long long)cookie->expires, (long long)cookie->maxage);
+	debug_printf("<  expires=%" PRId64" max-age=%" PRId64 "\n", cookie->expires, cookie->maxage);
 	debug_printf("<  domain=%s\n", cookie->domain);
 	debug_printf("<  path=%s\n", cookie->path);
 	debug_printf("<  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
@@ -468,7 +469,7 @@ static int cookie_normalize_cookie(const wget_iri *iri, wget_cookie *cookie)
 
 /*
 	debug_printf(">  %s=%s\n", cookie->name, cookie->value);
-	debug_printf(">  expires=%lld max-age=%lld\n", (long long)cookie->expires, (long long)cookie->maxage);
+	debug_printf(">  expires=%" PRId64 " max-age=%" PRId64 "\n", cookie->expires, cookie->maxage);
 	debug_printf(">  domain=%s\n", cookie->domain);
 	debug_printf(">  path=%s\n", cookie->path);
 	debug_printf(">  normalized=%d persistent=%d hostonly=%d secure=%d httponly=%d\n",
