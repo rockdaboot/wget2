@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/file.h>
 
@@ -269,15 +270,15 @@ static void hsts_db_add_entry(wget_hsts_db *hsts_db, hsts_entry *hsts)
 				old->maxage = hsts->maxage;
 				old->include_subdomains = hsts->include_subdomains;
 				if (wget_ip_is_family(old->host, WGET_NET_FAMILY_IPV6))
-					debug_printf("update HSTS [%s] (maxage=%lld, includeSubDomains=%d)\n", old->host, (long long) old->maxage, old->include_subdomains);
+					debug_printf("update HSTS [%s] (maxage=%" PRId64 ", includeSubDomains=%d)\n", old->host, old->maxage, old->include_subdomains);
 				else
-					debug_printf("update HSTS %s (maxage=%lld, includeSubDomains=%d)\n", old->host, (long long) old->maxage, old->include_subdomains);
+					debug_printf("update HSTS %s (maxage=%" PRId64 ", includeSubDomains=%d)\n", old->host, old->maxage, old->include_subdomains);
 			}
 			free_hsts(hsts);
 			hsts = NULL;
 		} else {
 			// key and value are the same to make wget_hashmap_get() return old 'hsts'
-			// debug_printf("add HSTS %s (maxage=%lld, includeSubDomains=%d)\n", hsts->host, (long long)hsts->maxage, hsts->include_subdomains);
+			// debug_printf("add HSTS %s (maxage=%" PRId64 ", includeSubDomains=%d)\n", hsts->host, hsts->maxage, hsts->include_subdomains);
 			wget_hashmap_put(hsts_db->entries, hsts, hsts);
 			// no need to free anything here
 		}
@@ -465,7 +466,7 @@ static int hsts_save(void *_fp, const void *_hsts, WGET_GCC_UNUSED void *v)
 	FILE *fp = _fp;
 	const hsts_entry *hsts = _hsts;
 
-	wget_fprintf(fp, "%s %d %lld %lld\n", hsts->host, hsts->include_subdomains, (long long)hsts->created, (long long)hsts->maxage);
+	wget_fprintf(fp, "%s %d %" PRId64 " %" PRId64 "\n", hsts->host, hsts->include_subdomains, hsts->created, hsts->maxage);
 	return 0;
 }
 
