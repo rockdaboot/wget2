@@ -32,6 +32,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <xstrtol.h>
 #include <sys/file.h>
@@ -233,7 +234,7 @@ void wget_tls_session_db_add(wget_tls_session_db *tls_session_db, wget_tls_sessi
 				debug_printf("removed TLS session data for %s\n", tls_session->host);
 		}
 
-		debug_printf("add TLS session data for %s (maxage=%lld, size=%zu)\n", tls_session->host, (long long)tls_session->maxage, tls_session->data_size);
+		debug_printf("add TLS session data for %s (maxage=%" PRId64 ", size=%zu)\n", tls_session->host, tls_session->maxage, tls_session->data_size);
 		wget_hashmap_put(tls_session_db->entries, tls_session, tls_session);
 		tls_session_db->changed = 1;
 	}
@@ -385,7 +386,7 @@ static int tls_session_save(void *_fp, const void *_tls_session, WGET_GCC_UNUSED
 
 	wget_base64_encode(session_b64, (const char *) tls_session->data, tls_session->data_size);
 
-	wget_fprintf(fp, "%s %lld %lld %s\n", tls_session->host, (long long)tls_session->created, (long long)tls_session->maxage, session_b64);
+	wget_fprintf(fp, "%s %" PRId64 " %" PRId64 " %s\n", tls_session->host, tls_session->created, tls_session->maxage, session_b64);
 
 	if (session_b64 != tmp)
 		xfree(session_b64);
