@@ -3569,14 +3569,22 @@ int init(int argc, const char **argv)
 	debug_printf("Input URI encoding = '%s'\n", config.input_encoding);
 
 	if (config.directory_prefix) {
-		char *cwd = getcwd(NULL, 0);
-		if (!cwd) {
-			error_printf_exit(_("Failed to get current directory\n"));
+		char *resolved_path = NULL;
+
+		// If directory_prefix is an absolute path, don't prepend cwd
+		if (config.directory_prefix[0] == '/') {
+			resolved_path = wget_path_sanitize(config.directory_prefix);
+		} else {
+			char *cwd = getcwd(NULL, 0);
+			if (!cwd) {
+				error_printf_exit(_("Failed to get current directory\n"));
+			}
+			char *unresolved_path = wget_aprintf("%s/%s", cwd, config.directory_prefix);
+			xfree(cwd);
+			resolved_path = wget_path_sanitize(unresolved_path);
+			xfree(unresolved_path);
 		}
-		char *unresolved_path = wget_aprintf("%s/%s", cwd, config.directory_prefix);
-		xfree(cwd);
-		char *resolved_path = wget_path_sanitize(unresolved_path);
-		xfree(unresolved_path);
+
 		if (resolved_path) {
 			xfree(config.directory_prefix);
 			config.directory_prefix = resolved_path;

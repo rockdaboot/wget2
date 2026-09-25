@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include <stdlib.h> // exit()
+#include <unistd.h> // getcwd()
 #include "libtest.h"
 
 #define PREFIX "prefix"
@@ -97,6 +98,26 @@ int main(void)
 			{ PREFIX "/filename.html", urls[2].body },
 			{	NULL } },
 		0);
+
+	// Test absolute directory-prefix path
+	{
+		char cwd[4096];
+		if (!getcwd(cwd, sizeof(cwd))) {
+			wget_error_printf_exit("Failed to get cwd\n");
+		}
+
+		char abs_opt[4096];
+		wget_snprintf(abs_opt, sizeof(abs_opt), "--directory-prefix=%s/abs_prefix -nH", cwd);
+
+		wget_test(
+			WGET_TEST_OPTIONS, abs_opt,
+			WGET_TEST_REQUEST_URL, "index.html",
+			WGET_TEST_EXPECTED_ERROR_CODE, 0,
+			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+				{ "abs_prefix/index.html", urls[0].body },
+				{	NULL } },
+			0);
+	}
 
 	exit(EXIT_SUCCESS);
 }
