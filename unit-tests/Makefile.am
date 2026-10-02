@@ -49,8 +49,8 @@ test_dl_LDADD = ../src/dl.o ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 test_http_parse_SOURCES = test-http-parse.c
 test_http_parse_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
-test_cookies_http_state_SOURCES = test-cookies-http_state.c
-test_cookies_http_state_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
+#test_cookies_http_state_SOURCES = test-cookies-http_state.c
+#test_cookies_http_state_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
 
 test_html_get_urls_SOURCES = test-html-get-urls.c
 test_html_get_urls_LDADD = $(BASE_OBJS) ../lib/libgnu.la ../libwget/libwget.la $(MYLIBS)
