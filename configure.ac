@@ -1030,6 +1030,9 @@ AC_SUBST([TEST_CFLAGS])
 AC_SUBST([TEST_LIBS])
 AC_SUBST([ALL_LIBS], $LIBS)
 
+AC_PATH_PROG([PYTHON3], [python3])
+AM_CONDITIONAL([HAVE_PYTHON3], [test -n "$PYTHON3"])
+
 # Combined gnulib libraries, shared across libwget, src, tests, unit-tests
 AC_SUBST([GNULIB_LIBS], [\
 "${CLOCK_TIME_LIB} ${GETADDRINFO_LIB} ${GETHOSTNAME_LIB} ${GETLOGIN_LIB}"\

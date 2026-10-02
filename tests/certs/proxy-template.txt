@@ -1,0 +1,8 @@
+# Used for test-https-proxy.py
+
+organization = target.invalid
+cn = target.invalid
+expiration_days = 2
+signing_key
+cert_signing_key
+dns_name = target.invalid

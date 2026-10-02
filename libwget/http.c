@@ -644,7 +644,13 @@ int wget_http_open(wget_http_connection **_conn, const wget_iri *iri)
 		if (iri->scheme == WGET_IRI_SCHEME_HTTPS) {
 			wget_tcp_set_ssl(conn->tcp, 1); // switch SSL on
 			wget_tcp_set_ssl_hostname(conn->tcp, iri->host); // enable host name checking
-			wget_tcp_tls_start(conn->tcp);
+
+			if ((rc = wget_tcp_tls_start(conn->tcp)) != WGET_E_SUCCESS) {
+				if (server_stats_callback && rc == WGET_E_CERTIFICATE)
+					server_stats_callback(conn, NULL);
+				wget_http_close(_conn);
+				return rc;
+			}
 		}
 	}
 

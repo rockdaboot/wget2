@@ -19,3 +19,6 @@ certtool --generate-certificate --load-privkey x509-server-key.pem --template se
 # Generate non-server certificate (for test-cert-key-usage)
 certtool --generate-certificate --load-privkey x509-server-key.pem --template server-bad-eku-template.txt --outfile x509-server-bad-eku-cert.pem --load-ca-certificate x509-ca-cert.pem --load-ca-privkey x509-ca-key.pem
 
+# Generate proxy key + certificate (for test-https-proxy.py)
+certtool --generate-privkey --rsa --bits 2048 --outfile proxy-key.pem
+certtool --generate-self-signed --load-privkey proxy-key.pem --template proxy-template.txt --outfile proxy-cert.pem
