@@ -1018,8 +1018,10 @@ int wget_ssl_open(wget_tcp *tcp)
 	if (peer) {
 		ShowX509(peer, "Peer's cert info");
 		wolfSSL_FreeX509(peer);
-	} else
+	} else {
 		debug_printf("Peer has no cert!\n");
+		ret = WGET_E_CERTIFICATE;
+	}
 
 	ShowX509(wolfSSL_get_certificate(session), "our cert info:");
 	debug_printf("Peer verify result = %ld\n", wolfSSL_get_verify_result(session));
