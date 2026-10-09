@@ -19,6 +19,7 @@ RUN apt-get update -y && apt-get install --no-install-recommends -y \
 	gettext \
 	gperf \
 	mingw-w64 \
+	mingw-w64-x86-64-dev \
 	pkg-config-mingw-w64-x86-64 \
 	ca-certificates \
 	wget \
@@ -73,8 +74,8 @@ RUN cd libpsl && \
 RUN git clone https://github.com/gmp-mirror/gmp-6.3
 RUN cd gmp-* && \
     ./.bootstrap && \
-	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static && \
-	make -j$(nproc) && make install && cd .. && rm -rf gmp-*
+    ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static CC_FOR_BUILD=gcc CPP_FOR_BUILD="gcc -E" && \
+    make -j$(nproc) && make install && cd .. && rm -rf gmp-*
 
 RUN git clone https://git.lysator.liu.se/nettle/nettle.git
 RUN cd nettle && git checkout nettle_3.10.2_release_20250626 && \
