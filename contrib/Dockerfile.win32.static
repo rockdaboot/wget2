@@ -84,7 +84,7 @@ RUN cd nettle && git checkout nettle_3.10.2_release_20250626 && \
 	--disable-documentation --prefix=$INSTALLDIR && \
 	make -j$(nproc) && make install && cd .. && rm -rf nettle
 
-RUN wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.11.tar.xz | tar x --xz
+RUN wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.13.tar.xz | tar x --xz
 RUN cd gnutls-* && \
 	./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR \
     --with-nettle-mini --disable-shared --enable-static --with-included-libtasn1 \
@@ -131,6 +131,7 @@ RUN cd libmicrohttpd-* && \
 
 RUN git clone https://gitlab.com/gnuwget/wget2.git
 RUN cd wget2 && ./bootstrap --skip-po && \
+	sed -i 's/gnutls_free/free/g' libwget/ssl_gnutls.c && \
 	LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive" CFLAGS="-O2 -DNGHTTP2_STATICLIB" \
 	./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows && \
 	make -C lib -j$(nproc) && make -C libwget -j$(nproc) && make -C src -j$(nproc)
