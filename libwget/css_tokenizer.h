@@ -55,4 +55,6 @@ enum {
 
 # define YY_FATAL_ERROR(msg) wget_error_printf_exit(msg)
 
+typedef size_t yy_size_t;
+
 #endif /* LIBWGET_CSS_TOKENIZER_H */
