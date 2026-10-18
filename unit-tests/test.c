@@ -47,6 +47,7 @@
 
 #include "../src/wget_options.h"
 #include "../src/wget_log.h"
+#include "../src/wget_utils.h"
 
 static int
 	ok,
@@ -1775,6 +1776,41 @@ static void test_path_sanitize(void)
 	}
 }
 
+static void test_restrict_file_name(void)
+{
+	static const struct {
+		int mode;
+		const char *input;
+		const char *expected;
+	} restrict_tests[] = {
+		{ WGET_RESTRICT_NAMES_NONE, "a:b\x01\xC2\xBD", "a:b\x01\xC2\xBD" },
+		{ WGET_RESTRICT_NAMES_UNIX, "a:b\x01\xC2\xBD", "a:b%01\xC2\xBD" },
+		{ WGET_RESTRICT_NAMES_NOCONTROL, "a:b\x01\x7F\xC2\xBD", "a:b\x01\x7F\xC2\xBD" },
+		{ WGET_RESTRICT_NAMES_WINDOWS, "a:b?c\x01.txt", "a%3Ab%3Fc%01.txt" },
+		{ WGET_RESTRICT_NAMES_WINDOWS, "8.\xC2\xBD.zip\x7F", "8.%C2%BD.zip%7F" },
+		{ WGET_RESTRICT_NAMES_WINDOWS, "8.\xBD.zip", "8.%BD.zip" },
+		{ WGET_RESTRICT_NAMES_WINDOWS | WGET_RESTRICT_NAMES_NOCONTROL, "a:b?c\x01.txt", "a%3Ab%3Fc%01.txt" },
+		{ WGET_RESTRICT_NAMES_WINDOWS | WGET_RESTRICT_NAMES_NOCONTROL, "8.\xC2\xBD.zip\x7F", "8.\xC2\xBD.zip\x7F" },
+		{ WGET_RESTRICT_NAMES_WINDOWS | WGET_RESTRICT_NAMES_NOCONTROL, "8.\xBD.zip", "8.\xBD.zip" },
+		{ WGET_RESTRICT_NAMES_WINDOWS | WGET_RESTRICT_NAMES_LOWERCASE, "AB\xC2\xBD", "ab%C2%BD" },
+		{ WGET_RESTRICT_NAMES_ASCII, "a\xC2\xBD", "a%C2%BD" },
+		{ WGET_RESTRICT_NAMES_ASCII | WGET_RESTRICT_NAMES_NOCONTROL, "a\xC2\xBD", "a%C2%BD" },
+	};
+	char buf[64];
+
+	for (size_t i = 0; i < countof(restrict_tests); i++) {
+		const char *result = wget_restrict_file_name(restrict_tests[i].input, buf, restrict_tests[i].mode);
+
+		if (!strcmp(result, restrict_tests[i].expected)) {
+			ok++;
+		} else {
+			failed++;
+			info_printf("wget_restrict_file_name test %zu failed: mode=%d input='%s' expected='%s' got='%s'\n",
+				i, restrict_tests[i].mode, restrict_tests[i].input, restrict_tests[i].expected, result);
+		}
+	}
+}
+
 static void test_strcasecmp_ascii(void)
 {
 	static const struct test_data {
@@ -2832,6 +2868,7 @@ int main(int argc, const char **argv)
 	test_buffer_printf();
 	test_utils();
 	test_path_sanitize();
+	test_restrict_file_name();
 	test_strcasecmp_ascii();
 	test_hashing();
 	test_vector();

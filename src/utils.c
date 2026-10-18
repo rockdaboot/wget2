@@ -172,7 +172,8 @@ char *wget_restrict_file_name(const char *fname, char *esc, int mode)
 		}
 
 		if ((mode_unix && (c >= 1 && c <= 31))
-			|| (windows && (c < 32 || strchr("\\<>:\"|?*", c)))
+			|| (windows && ((c >= 1 && c <= 31) || strchr("\\<>:\"|?*", c)))
+			|| (windows && !nocontrol && c < 0) // bytes > 127, 'nocontrol' keeps them
 			|| (!nocontrol && ((c >= 1 && c <= 31) || c == 127))
 			|| (ascii && c <= 31))
 		{
