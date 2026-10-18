@@ -395,11 +395,12 @@ MinGW64-static:
     - unset CC
     - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
     - cd wget2-*.*.?
-    - LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
+    - PKG_CONFIG="$PKG_CONFIG --static"
+      LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
       CFLAGS="$CFLAGS_DEFAULT -DNGHTTP2_STATICLIB"
       ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX
         --disable-shared --enable-static --without-gpgme --enable-threads=windows
-    - make -j$(nproc)
+    - make -C lib -j$(nproc) && make -C libwget -j$(nproc) && make -C src -j$(nproc)
     - mv src/wget2.exe .
   tags:
     - saas-linux-xlarge-amd64
