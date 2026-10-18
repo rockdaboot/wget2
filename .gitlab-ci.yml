@@ -395,7 +395,7 @@ MinGW64-static:
     - unset CC
     - tar xf wget2-*.gz && mv wget2-*.gz wget2-latest.tar.gz
     - cd wget2-*.*.?
-    - LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
+    - LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
       CFLAGS="$CFLAGS_DEFAULT -DNGHTTP2_STATICLIB"
       ./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX
         --disable-shared --enable-static --without-gpgme --enable-threads=windows

@@ -132,6 +132,6 @@ RUN cd libmicrohttpd-* && \
 RUN git clone https://gitlab.com/gnuwget/wget2.git
 RUN cd wget2 && ./bootstrap --skip-po && \
 	sed -i 's/gnutls_free/free/g' libwget/ssl_gnutls.c && \
-	LDFLAGS="-Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive" CFLAGS="-O2 -DNGHTTP2_STATICLIB" \
+	LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive" CFLAGS="-O2 -DNGHTTP2_STATICLIB" \
 	./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows && \
 	make -C lib -j$(nproc) && make -C libwget -j$(nproc) && make -C src -j$(nproc)
