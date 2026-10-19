@@ -1,0 +1,54 @@
+# Git submodules populated inside the Docker container
+gnulib/
+wiki/
+
+# Tracking and editor files
+.scratch/
+**/.scratch/
+.git/hooks/
+
+# Compiled objects, libraries and binaries in any directory
+*.o
+**/*.o
+*.lo
+**/*.lo
+*.la
+**/*.la
+*.a
+**/*.a
+*.exe
+**/*.exe
+*.dll
+**/*.dll
+*.so
+**/*.so
+*.dylib
+**/*.dylib
+*.log
+**/*.log
+*.trs
+**/*.trs
+.deps/
+**/.deps/
+.libs/
+**/.libs/
+autom4te.cache/
+**/autom4te.cache/
+
+# Host autotools build artifacts
+config.h
+**/config.h
+config.log
+**/config.log
+config.status
+**/config.status
+config.cache
+**/config.cache
+stamp-h1
+**/stamp-h1
+libtool
+**/libtool
+Makefile
+**/Makefile
+libwget.pc
+**/libwget.pc
