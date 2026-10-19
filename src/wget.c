@@ -333,8 +333,8 @@ static void program_init(void)
 	setlocale(LC_ALL, "");
 
 #ifdef ENABLE_NLS
-	bindtextdomain("wget", LOCALEDIR);
-	textdomain("wget");
+	bindtextdomain(PACKAGE, LOCALEDIR);
+	textdomain(PACKAGE);
 #endif
 
 	known_urls = wget_hashmap_create(128, (wget_hashmap_hash_fn *) hash_url, (wget_hashmap_compare_fn *) strcmp);
