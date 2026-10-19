@@ -184,6 +184,8 @@ The versions are recommended, but older versions may also work.
 
 ### Build static wget2.exe for Windows
 
+By default, the Windows Docker build runs in **fast mode** using official prebuilt dependencies from Wget2 CI (`registry.gitlab.com/gnuwget/build-images`):
+
 		docker build -t wget2/win32/static -f contrib/Dockerfile.win32.static .
 		docker create --name temp-wget2 wget2/win32/static
 		docker cp temp-wget2:/usr/local/wget2/src/wget2.exe .
@@ -193,6 +195,12 @@ The versions are recommended, but older versions may also work.
 		#   strip wget2.exe   # (needs mingw64 version of `strip`)
 		# optional: pack executable
 		upx wget2.exe
+
+To compile all dependencies from source on Debian instead (offline/audited mode, ~45-60 minutes):
+
+		docker build --build-arg BUILD_MODE=full -t wget2/win32/static -f contrib/Dockerfile.win32.static .
+
+For incremental development workflows and build caching details, see [docs/development/DockerBuild.md](docs/development/DockerBuild.md).
 
 ### Build static wget2 on GNU/Linux for Linux/amd64
 
