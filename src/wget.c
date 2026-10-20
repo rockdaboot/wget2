@@ -4512,8 +4512,7 @@ int http_send_request(const wget_iri *iri, const wget_iri *original_url, DOWNLOA
 	wget_http_request_set_free_user_data_cb(req, free_user_data);
 
 	if ((rc = wget_http_send_request(conn, &req)) != WGET_E_SUCCESS) {
-		wget_buffer_free(&context->body);
-		xfree(context);
+		// context has already been freed by free_user_data
 		wget_http_free_request(&req);
 	}
 
