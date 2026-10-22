@@ -62,6 +62,12 @@
 #include "private.h"
 #include "net.h"
 
+#ifdef _WIN32
+// gnutls.h declares gnutls_free as a dllimport'ed variable on Windows,
+// which a static libgnutls can't provide. GnuTLS allocates with malloc().
+#  define gnutls_free free
+#endif
+
 /**
  * \file
  * \brief Functions for establishing and managing SSL/TLS connections

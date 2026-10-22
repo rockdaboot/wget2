@@ -400,9 +400,9 @@ static int hsts_db_load(wget_hsts_db *hsts_db, FILE *fp)
 			hsts.maxage = val;
 			hsts.expires = hsts.maxage ? hsts.created + hsts.maxage : 0;
 			if (hsts.expires < now) {
-				// drop expired entry, hsts_db_add_entry() removes entries with maxage=0;
-				hsts.maxage = 0;
-				goto next;
+				// drop expired entry silently, it is not a parse error
+				deinit_hsts(&hsts);
+				continue;
 			}
 			ok = 1;
 		}
