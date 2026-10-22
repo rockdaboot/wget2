@@ -1,6 +1,16 @@
-FROM debian:trixie-slim
+ARG BUILD_MODE=fast
 
-LABEL maintainer="Tim Rühsen <tim.ruehsen@gmx.de>"
+# -----------------------------------------------------------------------------
+# Mode: fast (default) - uses prebuilt GNU Wget2 CI base image
+# Maintained upstream by the GNU Wget team at gitlab.com/gnuwget/build-images
+# -----------------------------------------------------------------------------
+FROM registry.gitlab.com/gnuwget/build-images:buildenv-wget2-mingw-static AS fast
+
+# -----------------------------------------------------------------------------
+# Mode: full (optional) - compiles all 12 dependencies from source on Debian
+# Activated by passing --build-arg BUILD_MODE=full
+# -----------------------------------------------------------------------------
+FROM debian:trixie-slim AS full
 
 WORKDIR /usr/local
 
@@ -33,7 +43,8 @@ RUN apt-get update -y && apt-get install --no-install-recommends -y \
 	python3 \
 	binfmt-support \
 	bc \
-	cmake
+	cmake \
+	ccache
 
 ENV PREFIX="x86_64-w64-mingw32"
 ENV INSTALLDIR="/usr/local/$PREFIX"
@@ -129,8 +140,32 @@ RUN cd libmicrohttpd-* && \
 		--disable-shared --enable-static && \
 	make -j$(nproc) && make install && cd .. && rm -rf libmicrohttpd-*
 
-RUN git clone https://gitlab.com/gnuwget/wget2.git
-RUN cd wget2 && ./bootstrap --skip-po && \
-	LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive" CFLAGS="-O2 -DNGHTTP2_STATICLIB" \
-	./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows && \
-	make -C lib -j$(nproc) && make -C libwget -j$(nproc) && make -C src -j$(nproc)
+# -----------------------------------------------------------------------------
+# Final Stage: Build Wget2
+# Uses the dependency option selected by BUILD_MODE (fast or full)
+# Modern Docker (BuildKit) skips the unused dependency option entirely
+# -----------------------------------------------------------------------------
+FROM ${BUILD_MODE} AS builder
+
+LABEL maintainer="Tim Rühsen <tim.ruehsen@gmx.de>"
+
+ENV PREFIX="x86_64-w64-mingw32" \
+    CCACHE_DIR="/root/.cache/ccache" \
+    CC="ccache x86_64-w64-mingw32-gcc" \
+    PKG_CONFIG="/usr/bin/x86_64-w64-mingw32-pkg-config --static"
+
+WORKDIR /usr/local/wget2
+COPY . /usr/local/wget2
+
+RUN ln -s /usr/local/wget2 /wget2 2>/dev/null || true && \
+	git config --global --add safe.directory /usr/local/wget2 && \
+	git clean -Xdf -e gnulib -e wiki 2>/dev/null || true && \
+	./bootstrap --skip-po && \
+	LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive" \
+	CFLAGS="-O2 -DNGHTTP2_STATICLIB" CPPFLAGS="$CPPFLAGS -DNGHTTP2_STATICLIB" \
+	./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows
+
+RUN --mount=type=cache,target=/root/.cache/ccache \
+	make -C lib -j$(nproc) && \
+	make -C libwget -j$(nproc) && \
+	make -C src -j$(nproc)
