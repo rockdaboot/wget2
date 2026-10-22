@@ -161,7 +161,6 @@ RUN ln -s /usr/local/wget2 /wget2 2>/dev/null || true && \
 	git config --global --add safe.directory /usr/local/wget2 && \
 	git clean -Xdf -e gnulib -e wiki 2>/dev/null || true && \
 	./bootstrap --skip-po && \
-	sed -i 's/gnutls_free/free/g' libwget/ssl_gnutls.c 2>/dev/null || true && \
 	LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive" \
 	CFLAGS="-O2 -DNGHTTP2_STATICLIB" CPPFLAGS="$CPPFLAGS -DNGHTTP2_STATICLIB" \
 	./configure $CONFIGURE_BASE_FLAGS --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --without-gpgme --enable-threads=windows
