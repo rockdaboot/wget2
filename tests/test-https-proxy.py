@@ -116,7 +116,8 @@ def run(label, proxy_mode, url, extra=()):
     port = res["port"]
     url = url.format(port=port)
 
-    env = {"PATH":"/usr/bin:/bin", "HOME":TMP}
+    # Isolate from the user's proxy bypass settings so the test proxy is used
+    env = {"PATH":"/usr/bin:/bin", "HOME":TMP, "no_proxy":"", "NO_PROXY":""}
     if proxy_mode:
         env["https_proxy"] = f"http://127.0.0.1:{port}"
 

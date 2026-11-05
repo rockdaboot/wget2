@@ -57,6 +57,9 @@ TARGET_PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); pri
 TMPDIR=$(mktemp -d)
 trap "rm -rf ${TMPDIR}; [ -n \"\${SERVER_PID}\" ] && kill \${SERVER_PID} 2>/dev/null || true" EXIT
 
+# Unset proxy bypass variables to ensure the test proxy is used
+unset no_proxy NO_PROXY
+
 # Start the test server
 python3 "${SERVER_SCRIPT}" "${PROXY_PORT}" "${TARGET_PORT}" "${CERTFILE}" "${KEYFILE}" > "${TMPDIR}/server.log" 2>&1 &
 SERVER_PID=$!
