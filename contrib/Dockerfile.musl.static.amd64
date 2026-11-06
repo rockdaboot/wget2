@@ -93,8 +93,12 @@ RUN cd zlib-ng && \
 	./configure --prefix=$PREFIX --static --zlib-compat && \
 	make -j$(nproc) && make install && cd .. && rm -rf zlib-ng
 
-RUN git clone https://gitlab.com/gnuwget/wget2.git
-RUN cd wget2 && ./bootstrap --skip-po && \
-	LDFLAGS="-static --static" CFLAGS="-O2 -DNGHTTP2_STATICLIB" \
+WORKDIR /usr/local/wget2
+COPY . /usr/local/wget2
+RUN ln -s /usr/local/wget2 /wget2 && \
+	git config --global --add safe.directory /usr/local/wget2 && \
+	git clean -Xdf -e gnulib -e wiki 2>/dev/null || true && \
+	./bootstrap --skip-po && \
+	LDFLAGS="-static --static" CFLAGS="-O2 -DNGHTTP2_STATICLIB" CPPFLAGS="$CPPFLAGS -DNGHTTP2_STATICLIB" \
 	./configure --disable-shared --enable-static --without-gpgme && \
 	make -C lib -j$(nproc) && make -C libwget -j$(nproc) && make -C src -j$(nproc)
