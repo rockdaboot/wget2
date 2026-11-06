@@ -182,23 +182,33 @@ The versions are recommended, but older versions may also work.
 
 		sudo make install (or su -c "make install")
 
-### Build static wget2.exe on GNU/Linux for Windows
+### Build static wget2.exe for Windows
 
-		(cd contrib; docker build -t wget2/win32/static -f Dockerfile.win32.static .)
-		docker run --rm -v $PWD:/tmp wget2/win32/static cp /usr/local/wget2/src/wget2.exe /tmp
-		sudo chown $USER: wget2.exe
+By default, the Windows Docker build runs in **fast mode** using official prebuilt dependencies from Wget2 CI (`registry.gitlab.com/gnuwget/build-images`):
+
+		docker build -t wget2/win32/static -f contrib/Dockerfile.win32.static .
+		docker create --name temp-wget2 wget2/win32/static
+		docker cp temp-wget2:/usr/local/wget2/src/wget2.exe .
+		docker rm -f temp-wget2
 		# now you have `wget2.exe` with debug symbols in your current directory
 		# optional: remove debug symbols with
 		#   strip wget2.exe   # (needs mingw64 version of `strip`)
 		# optional: pack executable
 		upx wget2.exe
 
+To compile all dependencies from source on Debian instead (offline/audited mode, ~45-60 minutes):
+
+		docker build --build-arg BUILD_MODE=full -t wget2/win32/static -f contrib/Dockerfile.win32.static .
+
+For incremental development workflows and build caching details, see [docs/development/DockerBuild.md](docs/development/DockerBuild.md).
+
 ### Build static wget2 on GNU/Linux for Linux/amd64
 
-		(cd contrib; docker build -t wget2/static/amd64 -f Dockerfile.musl.static.amd64 .)
-		docker run --rm -v $PWD:/tmp wget2/static/amd64 cp /usr/local/wget2/src/wget2 /tmp
-		sudo chown $USER: wget2
-		# now you have `wget2.exe` with debug symbols in your current directory
+		docker build -t wget2/static/amd64 -f contrib/Dockerfile.musl.static.amd64 .
+		docker create --name temp-wget2 wget2/static/amd64
+		docker cp temp-wget2:/usr/local/wget2/src/wget2 .
+		docker rm -f temp-wget2
+		# now you have `wget2` with debug symbols in your current directory
 		# optional: remove debug symbols with
 		strip wget2
 		# optional: pack executable
