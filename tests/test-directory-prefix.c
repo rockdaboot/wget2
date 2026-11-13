@@ -59,6 +59,14 @@ int main(void)
 				"Content-Disposition: attachment; filename=\"../filename.html\"",
 			}
 		},
+		{	.name = "/a:b.html",
+			.code = "200 Dontcare",
+			.body =
+				"<html><head><title>Colon Page</title></head><body>colon</body></html>",
+			.headers = {
+				"Content-Type: text/html",
+			}
+		},
 	};
 
 	// functions won't come back if an error occurs
@@ -118,6 +126,58 @@ int main(void)
 				{	NULL } },
 			0);
 	}
+
+#ifdef _WIN32
+	// Test ".." above the drive root, Windows keeps it at the root ("C:\..\dir" is "C:\dir")
+	{
+		char cwd[4096];
+		if (!getcwd(cwd, sizeof(cwd))) {
+			wget_error_printf_exit("Failed to get cwd\n");
+		}
+
+		char abs_opt[4096];
+		wget_snprintf(abs_opt, sizeof(abs_opt), "--directory-prefix=%.2s\\..%s\\abs_prefix2 -nH", cwd, cwd + 2);
+
+		wget_test(
+			WGET_TEST_OPTIONS, abs_opt,
+			WGET_TEST_REQUEST_URL, "index.html",
+			WGET_TEST_EXPECTED_ERROR_CODE, 0,
+			WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+				{ "abs_prefix2/index.html", urls[0].body },
+				{	NULL } },
+			0);
+	}
+
+	// Test relative directory-prefix with backslashes and ".."
+	wget_test(
+		WGET_TEST_OPTIONS, "--directory-prefix=sub\\..\\rel_prefix -nH",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "rel_prefix/index.html", urls[0].body },
+			{	NULL } },
+		0);
+
+	// The file name from the URL is still escaped after the directory prefix
+	wget_test(
+		WGET_TEST_OPTIONS, "--directory-prefix=rel_prefix2 -nH",
+		WGET_TEST_REQUEST_URL, "a:b.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "rel_prefix2/a:b.html", urls[3].body },
+			{	NULL } },
+		0);
+#else
+	// The directory prefix is a local path, --restrict-file-names only escapes the file name
+	wget_test(
+		WGET_TEST_OPTIONS, "--restrict-file-names=windows --directory-prefix=pre:fix -nH",
+		WGET_TEST_REQUEST_URL, "a:b.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ "pre:fix/a%3Ab.html", urls[3].body },
+			{	NULL } },
+		0);
+#endif
 
 	exit(EXIT_SUCCESS);
 }

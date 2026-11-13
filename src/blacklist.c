@@ -58,6 +58,7 @@ static char * get_local_filename_real(const wget_iri *iri)
 {
 	wget_buffer buf;
 	char *fname;
+	size_t prefix_len = 0;
 	bool directories;
 
 	directories = config.recursive;
@@ -73,6 +74,7 @@ static char * get_local_filename_real(const wget_iri *iri)
 	if (config.directory_prefix && *config.directory_prefix) {
 		wget_buffer_strcat(&buf, config.directory_prefix);
 		wget_buffer_memcat(&buf, "/", 1);
+		prefix_len = buf.length; // a local path, not escaped below
 	}
 
 	if (directories) {
@@ -130,17 +132,20 @@ static char * get_local_filename_real(const wget_iri *iri)
 			fname = wget_iri_get_basename(iri, &buf, config.local_encoding, WGET_IRI_WITH_QUERY);
 	}
 
-	// do the filename escaping here
+	// do the filename escaping here, but leave the directory prefix as given
 	if (config.restrict_file_names) {
 		char tmp[1024];
+		const char *name = buf.data + prefix_len;
+		size_t name_len = buf.length - prefix_len;
 
-		char *fname_esc = (sizeof(tmp) < buf.length * 3 + 1)
-			? wget_malloc(buf.length * 3 + 1)
+		char *fname_esc = (sizeof(tmp) < name_len * 3 + 1)
+			? wget_malloc(name_len * 3 + 1)
 			: tmp;
 
-		if (wget_restrict_file_name(fname, fname_esc, config.restrict_file_names) != fname) {
-			// escaping was really done, replace fname
-			wget_buffer_strcpy(&buf, fname_esc);
+		if (wget_restrict_file_name(name, fname_esc, config.restrict_file_names) != name) {
+			// escaping was really done, replace the part after the prefix
+			buf.length = prefix_len;
+			wget_buffer_strcat(&buf, fname_esc);
 			fname = buf.data;
 		}
 

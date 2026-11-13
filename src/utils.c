@@ -41,7 +41,19 @@ void mkdir_path(const char *_fname, bool is_file)
 	fname = wget_strmemcpy_a(buf, sizeof(buf), _fname, strlen(_fname));
 
 #ifdef _WIN32
-	for (p1 = fname + 1; *p1 && (p2 = strpbrk(p1, "/\\")); p1 = p2 + 1) {
+	// skip a drive ("C:") and a UNC share ("\\server\share"), they can't be created
+	p1 = fname + FILE_SYSTEM_PREFIX_LEN(fname);
+	if (p1 == fname && ISSLASH(p1[0]) && ISSLASH(p1[1]) && p1[2] && !ISSLASH(p1[2])) {
+		p1 += 2 + strcspn(p1 + 2, "/\\"); // server
+		if (*p1)
+			p1 += 1 + strcspn(p1 + 1, "/\\"); // share
+	}
+	if (*p1)
+		p1++;
+
+	for (; *p1 && (p2 = strpbrk(p1, "/\\")); p1 = p2 + 1) {
+		if (p2 == p1 && ISSLASH(p1[-1]))
+			continue; // empty path component, e.g. "C:\/" from a drive root prefix
 #else
 	for (p1 = fname + 1; *p1 && (p2 = strchr(p1, '/')); p1 = p2 + 1) {
 #endif
