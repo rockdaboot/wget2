@@ -74,6 +74,14 @@ int main(void)
 		},
 	};
 
+#ifdef _WIN32
+	// '?' is not allowed in Windows file names, the file is saved as 'third.html%3Fx...',
+	// so the converted link has to escape that '%' as well.
+#define THIRD_LINK "subdir/third.html%253Fx&h=http%253A%252F%252Fexample.com#frag"
+#else
+#define THIRD_LINK "subdir/third.html%3Fx&h=http%253A%252F%252Fexample.com#frag"
+#endif
+
 	const char *converted =
 		"<html><head><title>Main Page</title>" \
 		"<style> html { background: url(second.html); }</style>" \
@@ -82,7 +90,7 @@ int main(void)
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"second.html\">second page</a>." \
 		" <a href=\"subdir/third.html\">third page</a>." \
-		" <a href=\"subdir/third.html%3Fx&h=http%253A%252F%252Fexample.com#frag\">third page</a>." \
+		" <a href=\"" THIRD_LINK "\">third page</a>." \
 		" <SCRIPT LANGUAGE=\"JavaScript\">document.write(\"<img src=\\\"rw1\\\"\");</SCRIPT>" \
 		"</p></body></html>";
 
