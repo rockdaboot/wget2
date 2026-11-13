@@ -3571,6 +3571,14 @@ int init(int argc, const char **argv)
 	if (config.directory_prefix) {
 		char *resolved_path = NULL;
 
+#ifdef _WIN32
+		// let Windows resolve drive letters, \\server\share, drive-relative paths and ".."
+		char *full_path = _fullpath(NULL, config.directory_prefix, 0);
+		if (full_path) {
+			resolved_path = wget_strdup(full_path);
+			free(full_path);
+		}
+#else
 		// If directory_prefix is an absolute path, don't prepend cwd
 		if (config.directory_prefix[0] == '/') {
 			resolved_path = wget_path_sanitize(config.directory_prefix);
@@ -3584,6 +3592,7 @@ int init(int argc, const char **argv)
 			resolved_path = wget_path_sanitize(unresolved_path);
 			xfree(unresolved_path);
 		}
+#endif
 
 		if (resolved_path) {
 			xfree(config.directory_prefix);
