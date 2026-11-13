@@ -70,6 +70,15 @@ int main(void)
 		},
 	};
 
+#ifdef _WIN32
+	// Skip test on Windows for the same reason as test-iri: gnulib's open() emulation does not
+	// respect UNICODE on Windows, so this test fails or succeeds depending on the current locale.
+	//
+	// MinGW+Wine succeeds: TESTS_ENVIRONMENT="LC_ALL=C.UTF-8" make check TESTS=test-iri-percent
+	// MinGW+Wine fails: TESTS_ENVIRONMENT="LC_ALL=C" make check TESTS=test-iri-percent
+	return WGET_TEST_EXIT_SKIP;
+#endif
+
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
