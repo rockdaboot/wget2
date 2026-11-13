@@ -34,6 +34,7 @@ def serve(proxy_mode, result):
 
     try:
         sock,_ = srv.accept()
+        result["connected"] = True
     except (socket.timeout, OSError):
         result["err"] = "no connection"
         srv.close()
@@ -141,6 +142,10 @@ def run(label, proxy_mode, url, extra=()):
     for line in (p.stderr or "").splitlines():
         if line.strip():
             print("  wget2: " + line.strip())
+
+    if not res.get("connected"):
+        print("  >>> wget2 never connected, the test did not run")
+        sys.exit(1)
 
     if res.get("cleartext"):
         print("  >>> CLEARTEXT REQUEST RECEIVED by a peer whose certificate was REJECTED:")
