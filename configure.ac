@@ -37,6 +37,8 @@ case $host_os in
   mingw*)
     AM_CFLAGS="-Wno-attributes -fno-PIC"
 #    XTRA_LIBS=-lws2_32
+    # to link the application manifest (src/wget2.rc) into wget2.exe
+    AC_CHECK_TOOL([WINDRES], [windres], [no])
     ;;
   cygwin*)
     AM_CFLAGS="-Wno-char-subscripts -fno-PIC"
@@ -47,6 +49,10 @@ case $host_os in
 esac
 
 AC_SUBST([AM_CFLAGS])
+AM_CONDITIONAL([WITH_WINDRES], [test -n "$WINDRES" && test "$WINDRES" != "no"])
+AM_COND_IF([WITH_WINDRES], [
+  AC_DEFINE([WINDOWS_UTF8_MANIFEST], [1], [Define if wget2.exe runs with UTF-8 as the process code page (src/wget2.manifest)])
+])
 
 AC_USE_SYSTEM_EXTENSIONS
 

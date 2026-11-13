@@ -36,6 +36,17 @@ wget2_LDADD = ../lib/libgnu.la ../libwget/libwget.la $(LIBOBJS) \
  $(LIBPCRE2_LIBS) $(LIBPCRE_LIBS) \
  $(LIBS)
 
+EXTRA_DIST = wget2.rc wget2.manifest
+
+if WITH_WINDRES
+# Windows: link the application manifest (UTF-8 process code page) into the executables
+wget2_LDADD += wget2-rc.o
+CLEANFILES = wget2-rc.o
+
+wget2-rc.o: wget2.rc wget2.manifest
+	$(AM_V_GEN)$(WINDRES) -I $(srcdir) -O coff -o $@ $(srcdir)/wget2.rc
+endif
+
 wget2_noinstall_SOURCES = $(wget2_SOURCES)
 wget2_noinstall_LDFLAGS = -no-install
 wget2_noinstall_LDADD = $(wget2_LDADD)
