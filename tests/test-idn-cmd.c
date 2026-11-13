@@ -51,6 +51,12 @@ int main(void)
 
 	char options[256];
 
+#if defined _WIN32 && defined WINDOWS_UTF8_MANIFEST
+	// wget2.exe runs with UTF-8 as process code page (src/wget2.manifest), so Windows hands it
+	// the command line in UTF-8: the EUC-JP bytes of the command line can't get through.
+	return WGET_TEST_EXIT_SKIP;
+#endif
+
 	// functions won't come back if an error occurs
 	wget_test_start_server(
 		WGET_TEST_RESPONSE_URLS, &urls, countof(urls),
