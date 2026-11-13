@@ -54,6 +54,7 @@ wget2.stamp:
 	$(AM_V_at)echo > wget2.stamp
 
 DISTCLEANFILES += wget2.texi wget2.info
+LOCAL_DISTCLEAN += man
 EXTRA_DIST += wget2.info $(man1_MANS)
 STAMPS += wget2.stamp
 endif
