@@ -111,7 +111,8 @@ struct JOB {
 		http_fallback : 1, // When true, we try again on error, using HTTP (instead of HTTPS)
 		recursive_send_head : 1, // Indicate whether the HEAD request is sent by the recursive mode
 		redirect_get : 1, // Indicate whether to use GET method for redirection request
-		parse_only : 1; // When true, we only parse the file to queue up the containing links to other files as jobs
+		parse_only : 1, // When true, we only parse the file to queue up the containing links to other files as jobs
+		saved : 1; // The response body is written to a local file (set by prepare_file())
 };
 
 struct DOWNLOADER {

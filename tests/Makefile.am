@@ -34,7 +34,7 @@ WGET_TESTS = test-wget-1$(EXEEXT) test-c-r$(EXEEXT) test-restrict-ascii$(EXEEXT)
  test-http2-connection-errors$(EXEEXT) test-http2-settings$(EXEEXT) \
  test-cert-key-usage$(EXEEXT) test-waitretry$(EXEEXT) \
  test-connection-failure$(EXEEXT) test-span-hosts-domains$(EXEEXT)\
- test-convert-links-css$(EXEEXT)
+ test-convert-links-css$(EXEEXT) test-k-level$(EXEEXT)
 #test-post-file$(EXEEXT)
 
 if WITH_GPGME

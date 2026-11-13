@@ -152,9 +152,9 @@ static void
 	rss_parse(JOB *job, const char *data, const char *encoding, const wget_iri *base),
 	rss_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
 	metalink_parse_localfile(const char *fname),
-	html_parse(JOB *job, int level, const char *fname, const char *html, size_t len, const char *encoding, const wget_iri *base),
+	html_parse(JOB *job, int level, const char *fname, const char *html, size_t len, const char *encoding, const wget_iri *base, bool follow),
 	html_parse_localfile(JOB *job, int level, const char *fname, const char *encoding, const wget_iri *base),
-	css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base),
+	css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base, bool follow),
 	css_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base),
 	fork_to_background(void);
 static void
@@ -2407,12 +2407,12 @@ static void process_response(wget_http_response *resp)
 		if (process_decision && recurse_decision) {
 			if (resp->content_type && resp->body) {
 				if (!wget_strcasecmp_ascii(resp->content_type, "text/html")) {
-					html_parse(job, job->level, job->blacklist_entry->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					html_parse(job, job->level, job->blacklist_entry->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri, true);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")) {
-					html_parse(job, job->level, job->blacklist_entry->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					html_parse(job, job->level, job->blacklist_entry->local_filename, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri, true);
 					// xml_parse(sockfd, resp, job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "text/css")) {
-					css_parse(job, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri);
+					css_parse(job, resp->body->data, resp->body->length, resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding, job->iri, true);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/atom+xml")) { // see RFC4287, https://de.wikipedia.org/wiki/Atom_%28Format%29
 					atom_parse(job, resp->body->data, "utf-8", job->iri);
 				} else if (!wget_strcasecmp_ascii(resp->content_type, "application/rss+xml")) { // see https://cyber.harvard.edu/rss/rss.html
@@ -2426,6 +2426,21 @@ static void process_response(wget_http_response *resp)
 						sitemap_parse_text(job, resp->body->data, "utf-8", job->iri);
 				}
 			}
+		}
+		else if (process_decision && job->saved && resp->content_type && resp->body
+			&& (config.convert_links || config.convert_file_only) && !config.delete_after
+			&& !config.spider && !config.output_document
+			&& (!wget_strcasecmp_ascii(resp->content_type, "text/html")
+				|| !wget_strcasecmp_ascii(resp->content_type, "application/xhtml+xml")
+				|| !wget_strcasecmp_ascii(resp->content_type, "text/css")))
+		{
+			// Not followed (last level or no recursion), but still converted, as Wget 1.x does
+			const char *encoding = resp->content_type_encoding ? resp->content_type_encoding : config.remote_encoding;
+
+			if (!wget_strcasecmp_ascii(resp->content_type, "text/css"))
+				css_parse(job, resp->body->data, resp->body->length, encoding, job->iri, false);
+			else
+				html_parse(job, job->level, job->blacklist_entry->local_filename, resp->body->data, resp->body->length, encoding, job->iri, false);
 		}
 		else if (config.verify_sig != GPG_VERIFY_DISABLED
 			 && resp->content_type) {
@@ -2850,7 +2865,8 @@ static int normalize_uri(const wget_iri *base, const wget_string *url, const cha
 	return 0;
 }
 
-void html_parse(JOB *job, int level, const char *fname, const char *html, size_t html_len, const char *encoding, const wget_iri *base)
+// follow: queue the URLs found, else only remember the document for -k/--convert-links
+void html_parse(JOB *job, int level, const char *fname, const char *html, size_t html_len, const char *encoding, const wget_iri *base, bool follow)
 {
 	wget_iri *allocated_base = NULL;
 	const char *reason;
@@ -2951,7 +2967,7 @@ void html_parse(JOB *job, int level, const char *fname, const char *html, size_t
 		}
 	}
 
-	for (int it = 0; it < wget_vector_size(parsed->uris); it++) {
+	for (int it = 0; follow && it < wget_vector_size(parsed->uris); it++) {
 		wget_html_parsed_url *html_url = wget_vector_get(parsed->uris, it);
 		wget_string *url = &html_url->url;
 
@@ -3027,7 +3043,7 @@ void html_parse_localfile(JOB *job, int level, const char *fname, const char *en
 	size_t n;
 
 	if ((data = wget_read_file(fname, &n))) {
-		html_parse(job, level, fname, data, n, encoding, base);
+		html_parse(job, level, fname, data, n, encoding, base, true);
 	}
 
 	xfree(data);
@@ -3342,7 +3358,8 @@ static void css_parse_uri(void *context, const char *url, size_t len, size_t pos
 		queue_url_from_remote(ctx->job, ctx->encoding, ctx->uri_buf.data, URL_FLG_REQUISITE, NULL);
 }
 
-void css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base)
+// follow: queue the URLs found, else only remember the document for -k/--convert-links
+void css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base, bool follow)
 {
 	// create scheme://authority that will be prepended to relative paths
 	struct css_context context = { .base = base, .job = job, .encoding = encoding };
@@ -3353,7 +3370,8 @@ void css_parse(JOB *job, const char *data, size_t len, const char *encoding, con
 	if (encoding)
 		info_printf(_("URI content encoding = '%s'\n"), encoding);
 
-	wget_css_parse_buffer(data, len, css_parse_uri, css_parse_encoding, &context);
+	if (follow)
+		wget_css_parse_buffer(data, len, css_parse_uri, css_parse_encoding, &context);
 
 	if (context.encoding_allocated)
 		xfree(context.encoding);
@@ -3664,6 +3682,8 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 	size_t fname_length;
 	long long old_quota;
 
+	job->saved = 0;
+
 	if (!fname)
 		return -1;
 
@@ -3867,6 +3887,8 @@ static int WGET_GCC_NONNULL((1)) prepare_file(wget_http_response *resp, const ch
 
 	if (fd >= 0) {
 		ssize_t rc;
+
+		job->saved = 1;
 
 		if (config.hyperlink) {
 			const char *canon_file_name = canonicalize_file_name(*actual_file_name);
