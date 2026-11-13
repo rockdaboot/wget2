@@ -15,7 +15,7 @@ builddir = os.environ["BUILDDIR"]
 print(f"SRCDIR={srcdir}")
 print(f"BUILDDIR={builddir}")
 
-WGET2 = os.path.join(builddir, "src", "wget2")
+WGET2 = os.path.join(builddir, "src", "wget2" + os.environ.get("EXEEXT", ""))
 TMP = f".test_{os.getpid()}"
 CERT = os.path.join(srcdir,"certs","proxy-cert.pem")
 KEY = os.path.join(srcdir,"certs","proxy-key.pem")
@@ -34,6 +34,7 @@ def serve(proxy_mode, result):
 
     try:
         sock,_ = srv.accept()
+        result["connected"] = True
     except (socket.timeout, OSError):
         result["err"] = "no connection"
         srv.close()
@@ -117,7 +118,12 @@ def run(label, proxy_mode, url, extra=()):
     url = url.format(port=port)
 
     # Isolate from the user's proxy bypass settings so the test proxy is used
-    env = {"PATH":"/usr/bin:/bin", "HOME":TMP, "no_proxy":"", "NO_PROXY":""}
+    env = {"PATH":"/usr/bin:/bin", "HOME":os.path.abspath(TMP), "no_proxy":"", "NO_PROXY":""}
+    if os.environ.get("EXEEXT") == ".exe": # MinGW builds run wget2.exe through wine
+        env["WINEPREFIX"] = os.environ.get("WINEPREFIX", os.path.expanduser("~/.wine"))
+        for k in ("WINEPATH", "WINEDEBUG"):
+            if k in os.environ:
+                env[k] = os.environ[k]
     if proxy_mode:
         env["https_proxy"] = f"http://127.0.0.1:{port}"
 
@@ -136,6 +142,10 @@ def run(label, proxy_mode, url, extra=()):
     for line in (p.stderr or "").splitlines():
         if line.strip():
             print("  wget2: " + line.strip())
+
+    if not res.get("connected"):
+        print("  >>> wget2 never connected, the test did not run")
+        sys.exit(1)
 
     if res.get("cleartext"):
         print("  >>> CLEARTEXT REQUEST RECEIVED by a peer whose certificate was REJECTED:")

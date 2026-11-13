@@ -56,9 +56,17 @@ int main(void)
 	// the actual downloaded filename. Since the filename contains special characters (?, |, ,, %),
 	// these need to be percent-encoded in the HTML link to properly reference the file.
 	// Since we use -nH (no host directories), files from different hosts are in the same directory
+#ifdef _WIN32
+	// '?' and '|' are not allowed in Windows file names, they are saved as '%3F' and '%7C',
+	// so the converted link has to escape those '%' as well.
+#define CSS_LINK "css%253Ffamily=Montserrat%253A400,700%257CBitter%253A400,700&display=swap"
+#else
+#define CSS_LINK "css%3Ffamily=Montserrat%253A400,700%7CBitter%253A400,700&display=swap"
+#endif
+
 	const char *converted =
 		"<html><head><title>Home Page</title>" \
-		"<link href=\"css%3Ffamily=Montserrat%253A400,700%7CBitter%253A400,700&display=swap\" rel=\"stylesheet\">" \
+		"<link href=\"" CSS_LINK "\" rel=\"stylesheet\">" \
 		"</head><body><p>Main page with external font link.</p></body></html>";
 
 	// functions won't come back if an error occurs

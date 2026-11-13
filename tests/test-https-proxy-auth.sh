@@ -21,14 +21,15 @@ BUILDDIR="${BUILDDIR:-${SCRIPT_DIR}/..}"
 
 # Find wget2 binary
 # During distcheck, BUILDDIR is the tests directory, so we need ../src
-if [ -f "${BUILDDIR}/../src/wget2_noinstall" ]; then
-    WGET="${BUILDDIR}/../src/wget2_noinstall"
-elif [ -f "${BUILDDIR}/../src/wget2" ]; then
-    WGET="${BUILDDIR}/../src/wget2"
-elif [ -f "${BUILDDIR}/src/wget2_noinstall" ]; then
-    WGET="${BUILDDIR}/src/wget2_noinstall"
-elif [ -f "${BUILDDIR}/src/wget2" ]; then
-    WGET="${BUILDDIR}/src/wget2"
+EXEEXT="${EXEEXT:-}"
+if [ -f "${BUILDDIR}/../src/wget2_noinstall${EXEEXT}" ]; then
+    WGET="${BUILDDIR}/../src/wget2_noinstall${EXEEXT}"
+elif [ -f "${BUILDDIR}/../src/wget2${EXEEXT}" ]; then
+    WGET="${BUILDDIR}/../src/wget2${EXEEXT}"
+elif [ -f "${BUILDDIR}/src/wget2_noinstall${EXEEXT}" ]; then
+    WGET="${BUILDDIR}/src/wget2_noinstall${EXEEXT}"
+elif [ -f "${BUILDDIR}/src/wget2${EXEEXT}" ]; then
+    WGET="${BUILDDIR}/src/wget2${EXEEXT}"
 else
     echo "ERROR: Cannot find wget2 binary"
     exit 1

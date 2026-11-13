@@ -75,8 +75,13 @@ AM_TESTS_ENVIRONMENT = \
     export VALGRIND_TESTS"=@VALGRIND_TESTS@"; \
     export LSAN_OPTIONS=suppressions="$(abs_srcdir)/clang-asan-suppressions"; \
 	export SRCDIR="$(abs_srcdir)"; \
-	export BUILDDIR="$(top_builddir)";
+	export BUILDDIR="$(top_builddir)"; \
+	export EXEEXT="$(EXEEXT)";
 TESTS = $(WGET_TESTS) test-https-proxy-auth.sh
+
+# The script tests start wget2 themselves: run them directly, not through LOG_COMPILER
+# (which is wine for MinGW builds).
+TEST_EXTENSIONS = @EXEEXT@ .test .sh .py
 
 if HAVE_PYTHON3
  TESTS += test-https-proxy.py
