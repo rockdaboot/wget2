@@ -3339,7 +3339,7 @@ static void css_parse_uri(void *context, const char *url, size_t len, size_t pos
 	if (!ctx->base && !ctx->uri_buf.length)
 		info_printf(_("URL '%.*s' not followed (missing base URI)\n"), (int)len, url);
 	else
-		queue_url_from_remote(ctx->job, ctx->encoding, ctx->uri_buf.data, URL_FLG_REQUISITE, NULL);
+		queue_url_from_remote(ctx->job, "utf-8", ctx->uri_buf.data, URL_FLG_REQUISITE, NULL); // normalize_uri() converted it to UTF-8
 }
 
 void css_parse(JOB *job, const char *data, size_t len, const char *encoding, const wget_iri *base)
@@ -3355,15 +3355,16 @@ void css_parse(JOB *job, const char *data, size_t len, const char *encoding, con
 
 	wget_css_parse_buffer(data, len, css_parse_uri, css_parse_encoding, &context);
 
-	if (context.encoding_allocated)
-		xfree(context.encoding);
-
 	wget_buffer_deinit(&context.uri_buf);
 
 	if ((config.convert_links || config.convert_file_only) && !config.delete_after) {
 		wget_vector *css_uris = wget_css_get_urls(data, len, base, NULL);
 		remember_for_conversion(job->blacklist_entry->local_filename, base, CONTENT_TYPE_CSS, context.encoding, NULL, css_uris);
 	}
+
+	// after remember_for_conversion(), which needs the @charset encoding
+	if (context.encoding_allocated)
+		xfree(context.encoding);
 }
 
 void css_parse_localfile(JOB *job, const char *fname, const char *encoding, const wget_iri *base)
