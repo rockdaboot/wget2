@@ -40,6 +40,14 @@ int main(void)
 			.headers = {
 				"Content-Type: text/plain",
 			}
+		},
+		{
+			.name = "/index.html",
+			.code = "200 Dontcare",
+			.body = "hello",
+			.headers = {
+				"Content-Type: text/plain",
+			}
 		}
 	};
 
@@ -73,6 +81,17 @@ int main(void)
 		wget_error_printf_exit("Expected exactly 3x 'HTTP ERROR response 429'\n");
 	}
 	wget_free(logs);
+
+	// --waitretry with a separate value must consume it. Without the fix, '1' was
+	// also fetched as a URL and wget2 exited with 4 although index.html was saved.
+	wget_test(
+		WGET_TEST_OPTIONS, "--waitretry 1",
+		WGET_TEST_REQUEST_URL, "index.html",
+		WGET_TEST_EXPECTED_ERROR_CODE, 0,
+		WGET_TEST_EXPECTED_FILES, &(wget_test_file_t []) {
+			{ urls[1].name + 1, urls[1].body },
+			{	NULL } },
+		0);
 
 	exit(EXIT_SUCCESS);
 }

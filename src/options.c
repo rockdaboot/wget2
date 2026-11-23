@@ -2471,7 +2471,7 @@ static const struct optionw options[] = {
 		  "(per thread). (default: 0)\n"
 		}
 	},
-	{ "waitretry", &config.waitretry, parse_timeout, 10, 0,
+	{ "waitretry", &config.waitretry, parse_timeout, 1, 0,
 		SECTION_DOWNLOAD,
 		{ "Wait up to number of seconds after error\n",
 		  "(per thread). (default: 10)\n"
@@ -4070,6 +4070,15 @@ int selftest_options(void)
 {
 	int ret = 0;
 	size_t it;
+
+	// check that args is -1, 0 or 1
+
+	for (it = 0; it < countof(options); it++) {
+		if (options[it].args < -1 || options[it].args > 1) {
+			error_printf(_("%s: Option '%s' has invalid args %d\n"), __func__, options[it].long_name, options[it].args);
+			ret = 1;
+		}
+	}
 
 	// check if all options are in order (using opt_compare)
 
