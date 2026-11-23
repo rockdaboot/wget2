@@ -49,6 +49,7 @@
 
 #if ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__)
 # include <sys/ioctl.h>
+# include <w32sock.h> // set_winsock_errno()
 #else
 # include <fcntl.h>
 #endif
@@ -705,6 +706,71 @@ static void debug_addr(const char *caption, const struct sockaddr *ai_addr, sock
 		debug_printf("%s ???:%s (%s)...\n", caption, s_port, gai_strerror(rc));
 }
 
+#if ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__)
+/*
+ * On Windows, SO_SNDTIMEO does not bound a blocking connect(), so the connect
+ * timeout would have no effect. Also, AdGuard's SockFilter driver holds every
+ * blocking connect() on a non-overlapped socket (which is what gnulib's socket()
+ * creates) for 20 seconds, see https://github.com/rockdaboot/wget2/issues/420.
+ *
+ * So connect asynchronously and wait for FD_CONNECT on a private event (gnulib's
+ * poll() shares one event object between threads), then switch the socket back
+ * to blocking mode, so that everything after this behaves as before.
+ *
+ * Returns 0 when connected, else -1 with errno set (never to EINPROGRESS).
+ */
+static int win32_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen, int timeout)
+{
+	SOCKET s = gl_fd_to_handle(sockfd);
+	WSAEVENT event = WSACreateEvent();
+	unsigned long nonblocking = 0;
+	int rc, err = 0;
+
+	if (event == WSA_INVALID_EVENT)
+		return connect(sockfd, addr, addrlen);
+
+	// This switches the socket to non-blocking mode, even when it fails
+	if (WSAEventSelect(s, event, FD_CONNECT)) {
+		WSACloseEvent(event);
+		if (ioctl(sockfd, FIONBIO, &nonblocking))
+			return -1; // errno set by gnulib's ioctl()
+		return connect(sockfd, addr, addrlen);
+	}
+
+	// gnulib's connect() maps WSAEWOULDBLOCK to EINPROGRESS
+	if ((rc = connect(sockfd, addr, addrlen)) < 0 && errno == EINPROGRESS) {
+		WSANETWORKEVENTS events;
+
+		// timeout <= 0 means no timeout, as in set_socket_timeout()
+		DWORD wait = WSAWaitForMultipleEvents(1, &event, FALSE,
+			timeout > 0 ? (DWORD) timeout : WSA_INFINITE, FALSE);
+
+		if (wait == WSA_WAIT_TIMEOUT) {
+			errno = ETIMEDOUT;
+		} else if (wait != WSA_WAIT_EVENT_0 || WSAEnumNetworkEvents(s, event, &events)) {
+			set_winsock_errno();
+		} else if (!(events.lNetworkEvents & FD_CONNECT) || (err = events.iErrorCode[FD_CONNECT_BIT])) {
+			WSASetLastError(err ? err : WSAECONNREFUSED);
+			set_winsock_errno(); // same errno values as a blocking connect()
+		} else
+			rc = 0;
+	}
+
+	err = rc < 0 ? errno : 0;
+
+	// FIONBIO fails with WSAEINVAL while the event is still associated
+	WSAEventSelect(s, NULL, 0);
+	WSACloseEvent(event);
+
+	// back to blocking mode, as before
+	if (ioctl(sockfd, FIONBIO, &nonblocking) && rc == 0)
+		return -1;
+
+	errno = err;
+	return rc;
+}
+#endif
+
 static int tcp_connect(wget_tcp *tcp, struct addrinfo *ai, int sockfd)
 {
 	int rc;
@@ -734,7 +800,11 @@ static int tcp_connect(wget_tcp *tcp, struct addrinfo *ai, int sockfd)
 	if (0) {
 #endif
 	} else {
+#if ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__)
+		rc = win32_connect(sockfd, ai->ai_addr, ai->ai_addrlen, tcp->connect_timeout);
+#else
 		rc = connect(sockfd, ai->ai_addr, ai->ai_addrlen);
+#endif
 		tcp->first_send = 0;
 	}
 
